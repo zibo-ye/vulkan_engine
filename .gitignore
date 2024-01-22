@@ -1,0 +1,15 @@
+# Xmake cache
+.xmake/
+build/
+
+# MacOS Cache
+.DS_Store
+
+# Visual Studio Solution
+vsxmake2022
+
+# Visual Studio Code Intellisense (Platform Specific)
+.vscode/compile_commands.json
+.vscode/settings.json
+
+shader_build/**
