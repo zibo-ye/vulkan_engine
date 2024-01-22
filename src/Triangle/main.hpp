@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../Engine/pch.hpp"
-//#include "../Engine/EngineCore.hpp"
+#include "../Engine/EngineCore.hpp"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -106,12 +106,31 @@ const std::vector<uint16_t> indices = {
 };
 
 
-class HelloTriangleApplication {
+class HelloTriangleApplication : public EngineCore::IApp {
+
 public:
-    void run();
+    void Startup(void) override;
+
+    void Cleanup(void) override;
+
+    void Update(float deltaT) override;
+
+    void RenderScene(void) override;
+
+#if USE_NATIVE_WINDOWS_API
+public:
+    void bindHWND(HWND hwnd) override;
 
 private:
-    GLFWwindow* window;
+    HWND m_hwnd;
+#endif
+#if USE_GLFW
+public:
+    void bindGLFWWindow(GLFWwindow* window) override;
+
+private:
+    GLFWwindow* m_pwindow;
+#endif
 
     VkInstance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
@@ -156,15 +175,8 @@ private:
     std::vector<VkFence> inFlightFences;
     uint32_t currentFrame = 0;
 
-    bool framebufferResized = false;
-
-    void initWindow();
-
-    static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
-
+private:
     void initVulkan();
-
-    void mainLoop();
 
     void cleanupSwapChain();
 

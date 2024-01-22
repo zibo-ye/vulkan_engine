@@ -47,7 +47,7 @@ bool UpdateApplication(IApp& game)
     // GameInput::Update(DeltaTime);
     // EngineTuning::Update(DeltaTime);
     //
-    // game.Update(DeltaTime);
+    //game.Update(DeltaTime);
     game.RenderScene();
 
     // PostEffects::Render();
@@ -88,10 +88,9 @@ static void framebufferResizeCallback(GLFWwindow* window, int width, int height)
 }
 int RunApplication(IApp&& app, const char* className)
 {
+    //init window
     glfwInit();
-
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); // to not create an OpenGL context
-
     GLFWwindow* window = glfwCreateWindow(
         g_DisplayWidth, // width
         g_DisplayHeight, // height
@@ -101,15 +100,20 @@ int RunApplication(IApp&& app, const char* className)
     );
     glfwSetWindowUserPointer(window, &app);
     glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+
+    //bind window
     app.bindGLFWWindow(window);
 
+    //init
     InitializeApplication(app);
 
+    //main loop
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
         UpdateApplication(app);
     }
 
+    //cleanup
     TerminateApplication(app);
 
     glfwDestroyWindow(window);
@@ -126,11 +130,7 @@ LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
 int RunApplication(IApp&& app, const char* className, HINSTANCE hInst, int nCmdShow)
 {
-
-    //Microsoft::WRL::Wrappers::RoInitializeWrapper InitializeWinRT(RO_INIT_MULTITHREADED);
-    //ASSERT_SUCCEEDED(InitializeWinRT);
-
-    // Register class
+    // init window
     WNDCLASSEX wcex;
     wcex.cbSize = sizeof(WNDCLASSEX);
     wcex.style = CS_HREDRAW | CS_VREDRAW;
@@ -157,12 +157,15 @@ int RunApplication(IApp&& app, const char* className, HINSTANCE hInst, int nCmdS
 
     //ASSERT(g_hWnd != 0);
 
+    // bind window
     app.bindHWND(g_hWnd);
 
+    // init
     InitializeApplication(app);
 
     ShowWindow(g_hWnd, nCmdShow /*SW_SHOWDEFAULT*/);
 
+    // main loop
     do {
         MSG msg = {};
         bool done = false;
@@ -178,6 +181,7 @@ int RunApplication(IApp&& app, const char* className, HINSTANCE hInst, int nCmdS
             break;
     } while (UpdateApplication(app)); // Returns false to quit loop
 
+    // cleanup
     TerminateApplication(app);
     // Graphics::Shutdown();
     return 0;
