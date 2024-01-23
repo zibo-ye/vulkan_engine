@@ -5,7 +5,7 @@
 
 #define USE_GLFW !USE_NATIVE_API
 #define USE_GLM 1
-//#define USE_GLM !USE_NATIVE_API
+// #define USE_GLM !USE_NATIVE_API
 #define USE_NATIVE_WINDOWS_API (_WIN32 && USE_NATIVE_API)
 
 #pragma warning(disable : 4201) // nonstandard extension used : nameless struct/union
@@ -64,14 +64,15 @@
 #include <glm/gtc/matrix_transform.hpp>
 #endif
 
+#include "Math/math.hpp"
+
 #if USE_VULKAN
-	#if USE_NATIVE_WINDOWS_API
-	#define VK_USE_PLATFORM_WIN32_KHR
-	#endif
-//#define VULKAN_HPP_NO_CONSTRUCTORS
+#if USE_NATIVE_WINDOWS_API
+#define VK_USE_PLATFORM_WIN32_KHR
+#endif
+// #define VULKAN_HPP_NO_CONSTRUCTORS
 #include <vulkan/vulkan.h>
 #endif
-
 
 #include <array>
 #include <cstdarg>
@@ -94,8 +95,6 @@
 #include <functional>
 #include <optional>
 
-
-
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -110,8 +109,6 @@
 #include <set>
 #include <stdexcept>
 #include <vector>
-
-// #include <ppltasks.h>
 
 #include "Utility.hpp"
 // #include "VectorMath.hpp"

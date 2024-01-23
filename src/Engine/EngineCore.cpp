@@ -1,5 +1,5 @@
-#include "pch.hpp"
 #include "EngineCore.hpp"
+#include "pch.hpp"
 // #include "GraphicsCore.hpp"
 // #include "SystemTime.hpp"
 // #include "GameInput.hpp"
@@ -47,7 +47,7 @@ bool UpdateApplication(IApp& game)
     // GameInput::Update(DeltaTime);
     // EngineTuning::Update(DeltaTime);
     //
-    //game.Update(DeltaTime);
+    // game.Update(DeltaTime);
     game.RenderScene();
 
     // PostEffects::Render();
@@ -88,7 +88,7 @@ static void framebufferResizeCallback(GLFWwindow* window, int width, int height)
 }
 int RunApplication(IApp&& app, const char* className)
 {
-    //init window
+    // init window
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); // to not create an OpenGL context
     GLFWwindow* window = glfwCreateWindow(
@@ -101,19 +101,19 @@ int RunApplication(IApp&& app, const char* className)
     glfwSetWindowUserPointer(window, &app);
     glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 
-    //bind window
+    // bind window
     app.bindGLFWWindow(window);
 
-    //init
+    // init
     InitializeApplication(app);
 
-    //main loop
+    // main loop
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
         UpdateApplication(app);
     }
 
-    //cleanup
+    // cleanup
     TerminateApplication(app);
 
     glfwDestroyWindow(window);
@@ -128,8 +128,10 @@ HWND g_hWnd = nullptr;
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
-int RunApplication(IApp&& app, const char* className, HINSTANCE hInst, int nCmdShow)
+int RunApplication(IApp&& app, const char* className)
 {
+    HINSTANCE hInst = GetModuleHandle(nullptr);
+
     // init window
     WNDCLASSEX wcex;
     wcex.cbSize = sizeof(WNDCLASSEX);
@@ -146,7 +148,7 @@ int RunApplication(IApp&& app, const char* className, HINSTANCE hInst, int nCmdS
     wcex.hIconSm = LoadIcon(hInst, IDI_APPLICATION);
 
     auto hr = RegisterClassEx(&wcex);
-    //ASSERT(0 != hr, "Unable to register a window");
+    // ASSERT(0 != hr, "Unable to register a window");
 
     // Create window
     RECT rc = { 0, 0, (LONG)g_DisplayWidth, (LONG)g_DisplayHeight };
@@ -155,15 +157,14 @@ int RunApplication(IApp&& app, const char* className, HINSTANCE hInst, int nCmdS
     g_hWnd = CreateWindow(className, className, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
         rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInst, nullptr);
 
-    //ASSERT(g_hWnd != 0);
+    // ASSERT(g_hWnd != 0);
 
     // bind window
     app.bindHWND(g_hWnd);
 
     // init
     InitializeApplication(app);
-
-    ShowWindow(g_hWnd, nCmdShow /*SW_SHOWDEFAULT*/);
+    ShowWindow(g_hWnd, SW_SHOWDEFAULT);
 
     // main loop
     do {
@@ -186,7 +187,6 @@ int RunApplication(IApp&& app, const char* className, HINSTANCE hInst, int nCmdS
     // Graphics::Shutdown();
     return 0;
 }
-
 
 //--------------------------------------------------------------------------------------
 // Called every time the application receives a message
