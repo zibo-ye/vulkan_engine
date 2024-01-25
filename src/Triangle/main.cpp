@@ -811,14 +811,16 @@ void HelloTriangleApplication::createUniformBuffers()
 
 void HelloTriangleApplication::createDescriptorPool()
 {
-    std::array<VkDescriptorPoolSize, 2> poolSizes { VkDescriptorPoolSize {
-                                                        .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                                        .descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT),
-                                                    },
+    std::array<VkDescriptorPoolSize, 2> poolSizes {
+        VkDescriptorPoolSize {
+            .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT),
+        },
         {
             .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             .descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT),
-        } };
+        }
+    };
 
     VkDescriptorPoolCreateInfo poolInfo {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
@@ -859,15 +861,16 @@ void HelloTriangleApplication::createDescriptorSets()
             .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         };
 
-        std::array<VkWriteDescriptorSet, 2> descriptorWrites { VkWriteDescriptorSet {
-                                                                   .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                                                                   .dstSet = descriptorSets[i],
-                                                                   .dstBinding = 0,
-                                                                   .dstArrayElement = 0,
-                                                                   .descriptorCount = 1,
-                                                                   .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                                                   .pBufferInfo = &bufferInfo,
-                                                               },
+        std::array<VkWriteDescriptorSet, 2> descriptorWrites {
+            VkWriteDescriptorSet {
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .dstSet = descriptorSets[i],
+                .dstBinding = 0,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .pBufferInfo = &bufferInfo,
+            },
             {
                 .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
                 .dstSet = descriptorSets[i],
@@ -876,7 +879,8 @@ void HelloTriangleApplication::createDescriptorSets()
                 .descriptorCount = 1,
                 .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .pImageInfo = &imageInfo,
-            } };
+            }
+        };
 
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
