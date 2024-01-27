@@ -22,6 +22,8 @@ const bool enableValidationLayers = false;
 const bool enableValidationLayers = true;
 #endif
 
+#define VERBOSE 1
+
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
 {
     auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
@@ -288,3 +290,12 @@ private:
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
     void testvkm();
 };
+
+std::vector<VkExtensionProperties> getAllAvailableInstanceExtensions();
+std::vector<VkLayerProperties> getAllAvailableLayers();
+std::vector<VkExtensionProperties> getAllAvailableDeviceExtensions(VkPhysicalDevice device);
+std::vector<VkPhysicalDevice> listAllPhysicalDevices(VkInstance instance);
+std::vector<VkQueueFamilyProperties> listAllQueueFamilies(VkPhysicalDevice device);
+VkPhysicalDeviceMemoryProperties getAllMemoryProperties(VkPhysicalDevice device);
+void printMemoryTypeProperties(VkMemoryPropertyFlags flags);
+void printMemoryHeapProperties(VkMemoryHeapFlags flags);

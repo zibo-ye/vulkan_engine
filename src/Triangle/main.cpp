@@ -130,6 +130,8 @@ void HelloTriangleApplication::createInstance()
         .apiVersion = VK_API_VERSION_1_0,
     };
 
+    getAllAvailableInstanceExtensions();
+
     auto extensions = getRequiredExtensions();
     VkInstanceCreateInfo createInfo {
         .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
@@ -201,15 +203,7 @@ void HelloTriangleApplication::createSurface()
 
 void HelloTriangleApplication::pickPhysicalDevice()
 {
-    uint32_t deviceCount = 0;
-    vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
-
-    if (deviceCount == 0) {
-        throw std::runtime_error("failed to find GPUs with Vulkan support!");
-    }
-
-    std::vector<VkPhysicalDevice> devices(deviceCount);
-    vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+    std::vector<VkPhysicalDevice> devices = listAllPhysicalDevices(instance);
 
     for (const auto& device : devices) {
         if (isDeviceSuitable(device)) {
@@ -998,8 +992,7 @@ void HelloTriangleApplication::endSingleTimeCommands(VkCommandBuffer commandBuff
 
 uint32_t HelloTriangleApplication::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
 {
-    VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+    VkPhysicalDeviceMemoryProperties memProperties = getAllMemoryProperties(physicalDevice);
 
     for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
         if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
@@ -1298,11 +1291,7 @@ bool HelloTriangleApplication::isDeviceSuitable(VkPhysicalDevice device)
 
 bool HelloTriangleApplication::checkDeviceExtensionSupport(VkPhysicalDevice device)
 {
-    uint32_t extensionCount;
-    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
-
-    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+    std::vector<VkExtensionProperties> availableExtensions = getAllAvailableDeviceExtensions(device);
 
     std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
 
@@ -1316,12 +1305,7 @@ bool HelloTriangleApplication::checkDeviceExtensionSupport(VkPhysicalDevice devi
 QueueFamilyIndices HelloTriangleApplication::findQueueFamilies(VkPhysicalDevice device)
 {
     QueueFamilyIndices indices;
-
-    uint32_t queueFamilyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-
-    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+    std::vector<VkQueueFamilyProperties> queueFamilies = listAllQueueFamilies(device);
 
     int i = 0;
     for (const auto& queueFamily : queueFamilies) {
@@ -1369,11 +1353,7 @@ std::vector<const char*> HelloTriangleApplication::getRequiredExtensions()
 
 bool HelloTriangleApplication::checkValidationLayerSupport()
 {
-    uint32_t layerCount;
-    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
-    std::vector<VkLayerProperties> availableLayers(layerCount);
-    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+    std::vector<VkLayerProperties> availableLayers = getAllAvailableLayers();
 
     for (const char* layerName : validationLayers) {
         bool layerFound = false;
@@ -1471,3 +1451,190 @@ void HelloTriangleApplication::bindGLFWWindow(GLFWwindow* window)
     m_pwindow = window;
 }
 #endif
+
+std::vector<VkExtensionProperties> getAllAvailableInstanceExtensions()
+{
+    uint32_t extensionCount;
+    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+
+    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, availableExtensions.data());
+
+#if VERBOSE
+    std::cout << "available instance extensions:\n";
+    for (const auto& extension : availableExtensions) {
+        std::cout << '\t' << extension.extensionName << '\n';
+    }
+#endif // VERBOSE
+    return availableExtensions;
+}
+
+std::vector<VkLayerProperties> getAllAvailableLayers()
+{
+    uint32_t layerCount;
+    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+    std::vector<VkLayerProperties> availableLayers(layerCount);
+    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+#if VERBOSE
+    std::cout << "available layers:\n";
+    for (const auto& layer : availableLayers) {
+        std::cout << '\t' << layer.layerName << '\n';
+    }
+#endif // VERBOSE
+    return availableLayers;
+}
+
+std::vector<VkExtensionProperties> getAllAvailableDeviceExtensions(VkPhysicalDevice device)
+{
+    uint32_t extensionCount;
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+
+    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+
+#if VERBOSE
+    std::cout << "Available Device Extensions:\n";
+    for (const auto& extension : availableExtensions) {
+        std::cout << '\t' << extension.extensionName << '\n';
+    }
+#endif // VERBOSE
+
+    return availableExtensions;
+}
+
+std::vector<VkPhysicalDevice> listAllPhysicalDevices(VkInstance instance)
+{
+    uint32_t deviceCount = 0;
+    vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+
+    if (deviceCount == 0) {
+        throw std::runtime_error("failed to find GPUs with Vulkan support!");
+    }
+
+    std::vector<VkPhysicalDevice> devices(deviceCount);
+    vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+
+#if VERBOSE
+    std::cout << "Available Physical Devices:\n";
+    for (const auto& device : devices) {
+        VkPhysicalDeviceProperties properties {};
+        vkGetPhysicalDeviceProperties(device, &properties);
+        std::cout << '\t' << properties.deviceName << ":\n";
+        std::cout << std::hex << "\t\tapiVersion:\t" << properties.apiVersion << '\n';
+        std::cout << std::hex << "\t\tdriverVersion:\t" << properties.driverVersion << '\n';
+        std::cout << std::hex << "\t\tvendorID:\t" << properties.vendorID << '\n';
+        std::cout << std::hex << "\t\tdeviceID:\t" << properties.deviceID << std::dec << '\n';
+        // std::cout << '\t' << features << '\n';
+    }
+#endif // VERBOSE
+
+    return devices;
+}
+
+std::vector<VkQueueFamilyProperties> listAllQueueFamilies(VkPhysicalDevice device)
+{
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+#if VERBOSE
+
+    std::map<VkQueueFlagBits, std::string> flagNames = {
+        { VK_QUEUE_GRAPHICS_BIT, "VK_QUEUE_GRAPHICS_BIT" },
+        { VK_QUEUE_COMPUTE_BIT, "VK_QUEUE_COMPUTE_BIT" },
+        { VK_QUEUE_TRANSFER_BIT, "VK_QUEUE_TRANSFER_BIT" },
+        { VK_QUEUE_SPARSE_BINDING_BIT, "VK_QUEUE_SPARSE_BINDING_BIT" },
+        { VK_QUEUE_PROTECTED_BIT, "VK_QUEUE_PROTECTED_BIT" },
+        { VK_QUEUE_VIDEO_DECODE_BIT_KHR, "VK_QUEUE_VIDEO_DECODE_BIT_KHR" },
+        //{ VK_QUEUE_VIDEO_ENCODE_BIT_KHR, "VK_QUEUE_VIDEO_ENCODE_BIT_KHR" },
+        { VK_QUEUE_OPTICAL_FLOW_BIT_NV, "VK_QUEUE_OPTICAL_FLOW_BIT_NV" }
+    };
+    static std::set<VkPhysicalDevice> printedDevices;
+    if (printedDevices.find(device) == printedDevices.end()) { 
+        std::cout << "Available Queue Families:\n";
+        for (const auto& queueFamily : queueFamilies) {
+            std::cout << "\t\tqueueCount:\t" << queueFamily.queueCount << '\n';
+            std::cout << "\t\tqueueFlags:\t" << queueFamily.queueFlags << '\n';
+            for (const auto& flag : flagNames) {
+                if (queueFamily.queueFlags & flag.first) {
+                    std::cout << "\t\t\t" << flag.second << "\n";
+                }
+            }
+            std::cout << "\t\ttimestampValidBits:\t" << queueFamily.timestampValidBits << "\n\n";
+            // std::cout << '\t' << queueFamily.minImageTransferGranularity << '\n';
+        }
+        printedDevices.insert(device);
+    }
+
+#endif // VERBOSE
+
+    return queueFamilies;
+}
+
+VkPhysicalDeviceMemoryProperties getAllMemoryProperties(VkPhysicalDevice device)
+{
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(device, &memProperties);
+
+#if VERBOSE
+    static std::set <VkPhysicalDevice> printedDevices;
+    if (printedDevices.find(device) == printedDevices.end()) {
+        std::cout << "Available Memory Types:\n";
+        for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i) {
+            const auto& memType = memProperties.memoryTypes[i];
+            std::cout << "\tMemory Type " << i << ":\n";
+            printMemoryTypeProperties(memType.propertyFlags);
+            std::cout << "\t\tHeap Index: " << memType.heapIndex << std::endl;
+        }
+
+        std::cout << "Memory Heaps:\n";
+        for (uint32_t i = 0; i < memProperties.memoryHeapCount; ++i) {
+            const auto& memHeap = memProperties.memoryHeaps[i];
+            std::cout << "\tMemory Heap " << i << ":\n";
+            std::cout << "\t\tSize: " << memHeap.size << std::endl;
+            printMemoryHeapProperties(memHeap.flags);
+            std::cout << std::endl;
+        }
+        printedDevices.insert(device);
+	}
+#endif // VERBOSE
+    return memProperties;
+}
+
+void printMemoryTypeProperties(VkMemoryPropertyFlags flags)
+{
+    std::cout << "\t\tMemory Properties: ";
+    if (flags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+        std::cout << "DEVICE_LOCAL ";
+    if (flags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
+        std::cout << "HOST_VISIBLE ";
+    if (flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
+        std::cout << "HOST_COHERENT ";
+    if (flags & VK_MEMORY_PROPERTY_HOST_CACHED_BIT)
+        std::cout << "HOST_CACHED ";
+    if (flags & VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT)
+        std::cout << "LAZILY_ALLOCATED ";
+    if (flags & VK_MEMORY_PROPERTY_PROTECTED_BIT)
+        std::cout << "PROTECTED ";
+    if (flags & VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD)
+        std::cout << "DEVICE_COHERENT_AMD ";
+    if (flags & VK_MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD)
+        std::cout << "DEVICE_UNCACHED_AMD ";
+    if (flags & VK_MEMORY_PROPERTY_RDMA_CAPABLE_BIT_NV)
+        std::cout << "RDMA_CAPABLE_NV ";
+    std::cout << std::endl;
+}
+
+void printMemoryHeapProperties(VkMemoryHeapFlags flags)
+{
+    std::cout << "\t\tHeap Properties: ";
+    if (flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
+        std::cout << "DEVICE_LOCAL ";
+    if (flags & VK_MEMORY_HEAP_MULTI_INSTANCE_BIT)
+        std::cout << "MULTI_INSTANCE ";
+    std::cout << std::endl;
+}
