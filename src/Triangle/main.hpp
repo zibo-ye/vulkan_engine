@@ -208,6 +208,11 @@ private:
     VkDeviceMemory depthImageMemory;
     VkImageView depthImageView;
 
+    VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
+    VkImage colorImage;
+    VkDeviceMemory colorImageMemory;
+    VkImageView colorImageView;
+
 private:
     void initVulkan();
 
@@ -227,6 +232,8 @@ private:
 
     void pickPhysicalDevice();
 
+    VkSampleCountFlagBits getMaxUsableSampleCount();
+
     void createLogicalDevice();
 
     void createSwapChain();
@@ -243,8 +250,12 @@ private:
 
     void createCommandPool();
 
+    void createColorResources();
+
     void createDepthResources();
+    
     VkFormat findDepthFormat();
+
 
     void createTextureImage();
 
@@ -279,7 +290,7 @@ private:
 
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 
-    void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
+    void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
