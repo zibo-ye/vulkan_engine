@@ -26,9 +26,11 @@ namespace json {
 
         JsonValue(std::initializer_list<std::pair<const std::string, JsonValue>> init)
             : std::variant<std::string, JsonObject, int, float, JsonArray>(
-                JsonObject(init)){}
+                JsonObject(init))
+        {
+        }
 
-        std::string serialize() const;
+        std::string serialize(bool beautify = false, int indentLevel = 0) const;
 
         JsonValue& operator[](size_t index);
 

@@ -1,35 +1,40 @@
 
 #include "Utility.hpp"
 
-std::string Utility::json::JsonValue::serialize() const
+std::string Utility::json::JsonValue::serialize(bool beautify /*= false*/, int indentLevel /*= 0*/) const
 {
     std::ostringstream os;
+    std::string indent = beautify ? std::string(indentLevel * 2, ' ') : "";
+    std::string newline = beautify ? "\n" : "";
+    std::string separator = beautify ? ",\n" : ", ";
+    std::string space = beautify ? " " : "";
+
     if (std::holds_alternative<std::string>(*this)) {
         os << "\"" << std::get<std::string>(*this) << "\"";
     } else if (std::holds_alternative<JsonObject>(*this)) {
         const auto& obj = std::get<JsonObject>(*this);
-        os << "{";
+        os << "{" << newline;
         for (auto iter = obj.begin(); iter != obj.end();) {
-            os << "\"" << iter->first << "\": " << iter->second.serialize();
+            os << indent << (beautify ? "  " : "") << "\"" << iter->first << "\":" << space << iter->second.serialize(beautify, indentLevel + 1);
             if (++iter != obj.end()) {
-                os << ", ";
+                os << separator;
             }
         }
-        os << "}";
+        os << newline << indent << "}";
     } else if (std::holds_alternative<int>(*this)) {
         os << std::get<int>(*this);
     } else if (std::holds_alternative<float>(*this)) {
         os << std::get<float>(*this);
     } else if (std::holds_alternative<JsonArray>(*this)) {
         const auto& array = std::get<JsonArray>(*this);
-        os << "[";
+        os << "[" << newline;
         for (auto iter = array.begin(); iter != array.end();) {
-            os << iter->serialize();
+            os << indent << (beautify ? "  " : "") << iter->serialize(beautify, indentLevel + 1);
             if (++iter != array.end()) {
-                os << ", ";
+                os << separator;
             }
         }
-        os << "]";
+        os << newline << indent << "]";
     }
     return os.str();
 }
@@ -82,6 +87,7 @@ Utility::json::JsonValue Utility::json::JsonValue::parseJson(const std::string& 
     return parseValue(json, pos);
 }
 
+// skip whitespace in json, including space (' '), tab ('\t'), newline ('\n'), vertical tab ('\v'), feed ('\f'), and carriage return ('\r').
 void Utility::json::skipWhitespace(const std::string& json, size_t& pos)
 {
     while (pos < json.size() && std::isspace(json[pos])) {
@@ -130,7 +136,7 @@ Utility::json::JsonObject Utility::json::parseObject(const std::string& json, si
             skipWhitespace(json, pos);
         }
     }
-++pos; // Skip the closing '}'
+    ++pos; // Skip the closing '}'
 
     return obj;
 }
