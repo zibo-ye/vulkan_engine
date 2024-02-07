@@ -23,20 +23,25 @@ public:
     // Official rendering pass
     virtual void RenderScene(void) = 0;
 
-    // Optional UI (overlay) rendering pass.  This is LDR.  The buffer is already cleared.
-    virtual void RenderUI(class GraphicsContext&) {};
-
-    // Override this in applications that use DirectX Raytracing to require a DXR-capable device.
-    virtual bool RequiresRaytracingSupport() const { return false; }
-
 #if USE_NATIVE_WINDOWS_API
-    virtual void bindHWND(HWND hwnd) = 0;
+public:
+    void bindHWND(HWND hwnd) { info.m_hwnd = hwnd; }
 #endif
 #if USE_GLFW
-    virtual void bindGLFWWindow(GLFWwindow* window) = 0;
-#endif
 public:
-    bool windowResized = false;
+    void bindGLFWWindow(GLFWwindow* window) { info.m_pGLFWWindow = window; }
+#endif
+
+public:
+    struct IAppInfo {
+#if USE_NATIVE_WINDOWS_API
+        HWND m_hwnd;
+#endif
+#if USE_GLFW
+        GLFWwindow* m_pGLFWWindow = nullptr;
+#endif
+        bool windowResized = false;
+    } info;
 };
 }
 
@@ -56,17 +61,3 @@ int RunApplication(IApp&& app, const char* className);
                                                                  \
         return EXIT_SUCCESS;                                     \
     }
-// #if USE_NATIVE_WINDOWS_API
-// #def ine  CREA TE_APPLICATION(app_class)                                                                                                  \
-//    int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE /*hPrevInstance*/, _In_ LPWSTR /*lpCmdLine*/, _In_ int nCmdShow) \
-//    {                                                                                                                                 \
-//        try {                                                                                                                         \
-//            EngineCore::RunApplication(app_class(), #app_class, hInstance, nCmdShow);                                                 \
-//        } catch (const std::exception& e) {                                                                                           \
-//            std::cerr << e.what() << std::endl;                                                                                       \
-//            return EXIT_FAILURE;                                                                                                      \
-//        }                                                                                                                             \
-//                                                                                                                                      \
-//        return EXIT_SUCCESS;                                                                                                          \
-//    }
-// #endif

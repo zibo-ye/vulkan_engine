@@ -13,8 +13,10 @@ target("Engine")
     set_kind("static")
     add_packages("vulkansdk", "glfw", "glm")
     -- set_pcheader("src/Engine/pch.hpp")
+    add_headerfiles("src/Engine/**/*.hpp")
     add_headerfiles("src/Engine/**.hpp")
     add_includedirs("src/Engine")
+    add_files("src/Engine/**/*.cpp")
     add_files("src/Engine/**.cpp")
 
 

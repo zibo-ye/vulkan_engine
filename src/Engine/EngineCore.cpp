@@ -84,7 +84,7 @@ uint32_t g_DisplayHeight = 600;
 static void framebufferResizeCallback(GLFWwindow* window, int width, int height)
 {
     auto app = reinterpret_cast<IApp*>(glfwGetWindowUserPointer(window));
-    app->windowResized = true;
+    app->info.windowResized = true;
 }
 int RunApplication(IApp&& app, const char* className)
 {
