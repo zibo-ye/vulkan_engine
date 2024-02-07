@@ -1,7 +1,8 @@
 #pragma once
 
-#include "EngineCore.hpp"
 #include "pch.hpp"
+#include "EngineCore.hpp"
+#include "Model.hpp"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -47,65 +48,6 @@ struct SwapChainSupportDetails {
     std::vector<VkPresentModeKHR> presentModes;
 };
 
-struct Vertex {
-    glm::vec3 pos;
-    glm::vec3 color;
-    glm::vec2 texCoord;
-
-    static VkVertexInputBindingDescription getBindingDescription()
-    {
-        VkVertexInputBindingDescription bindingDescription
-        {
-            .binding = 0,
-            .stride = sizeof(Vertex),
-            .inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
-        };
-
-        return bindingDescription;
-    }
-
-    static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions()
-    {
-        std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{ 
-            VkVertexInputAttributeDescription
-            {
-                .location = 0,
-                .binding = 0,
-                .format = VK_FORMAT_R32G32B32_SFLOAT,
-                .offset = offsetof(Vertex, pos),
-            },
-            {
-                .location = 1,
-                .binding = 0,
-                .format = VK_FORMAT_R32G32B32_SFLOAT,
-                .offset = offsetof(Vertex, color),
-            },
-            {
-                .location = 2,
-                .binding = 0,
-                .format = VK_FORMAT_R32G32_SFLOAT,
-                .offset = offsetof(Vertex, texCoord),
-            },
-        };
-
-        return attributeDescriptions;
-    }
-
-    bool operator==(const Vertex& other) const
-    {
-        return pos == other.pos && color == other.color && texCoord == other.texCoord;
-    }
-};
-
-namespace std {
-template <>
-struct hash<Vertex> {
-    size_t operator()(Vertex const& vertex) const
-    {
-        return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^ (hash<glm::vec2>()(vertex.texCoord) << 1);
-    }
-};
-}
 
 struct UniformBufferObject {
     alignas(16) glm::mat4 model;
@@ -142,12 +84,7 @@ private:
 
     VkCommandPool commandPool;
 
-    std::vector<Vertex> vertices;
-    std::vector<uint32_t> indices;
-    VkBuffer vertexBuffer;
-    VkDeviceMemory vertexBufferMemory;
-    VkBuffer indexBuffer;
-    VkDeviceMemory indexBufferMemory;
+    Model aRandomModel;
 
     std::vector<VkBuffer> uniformBuffers;
     std::vector<VkDeviceMemory> uniformBuffersMemory;
@@ -235,9 +172,6 @@ public:
 
     void loadModel();
 
-    void createVertexBuffer();
-
-    void createIndexBuffer();
 
     void createUniformBuffers();
 
@@ -245,18 +179,18 @@ public:
 
     void createDescriptorSets();
 
-    void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+    void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) const;
 
-    void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+    void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) const;
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 
-    VkCommandBuffer beginSingleTimeCommands();
+    VkCommandBuffer beginSingleTimeCommands() const;
 
-    void endSingleTimeCommands(VkCommandBuffer commandBuffer);
+    void endSingleTimeCommands(VkCommandBuffer commandBuffer)  const;
 
     void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 
-    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const;
 
     void createCommandBuffers();
 
@@ -292,6 +226,9 @@ public:
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
     void testvkm();
+
+public:
+    VkDevice GetDevice() const { return device; }
 };
 
 std::vector<VkExtensionProperties> getAllAvailableInstanceExtensions();

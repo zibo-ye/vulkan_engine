@@ -6,8 +6,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "ThirdParty/stb_image.h"
 
-#define TINYOBJLOADER_IMPLEMENTATION
-#include "ThirdParty/tiny_obj_loader.h"
 
 void VulkanCore::Init(EngineCore::IApp* pApp)
 {
@@ -35,8 +33,6 @@ void VulkanCore::Init(EngineCore::IApp* pApp)
     createTextureImageView();
     createTextureSampler();
     loadModel();
-    createVertexBuffer();
-    createIndexBuffer();
     createUniformBuffers();
     createDescriptorPool();
     createDescriptorSets();
@@ -83,11 +79,7 @@ void VulkanCore::Shutdown()
 
     vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
 
-    vkDestroyBuffer(device, indexBuffer, nullptr);
-    vkFreeMemory(device, indexBufferMemory, nullptr);
-
-    vkDestroyBuffer(device, vertexBuffer, nullptr);
-    vkFreeMemory(device, vertexBufferMemory, nullptr);
+    aRandomModel.releaseModelFromGPU();
 
     vkDestroySampler(device, textureSampler, nullptr);
     vkDestroyImageView(device, textureImageView, nullptr);
@@ -990,80 +982,10 @@ void VulkanCore::createTextureSampler()
 
 void VulkanCore::loadModel()
 {
-    tinyobj::attrib_t attrib;
-    std::vector<tinyobj::shape_t> shapes;
-    std::vector<tinyobj::material_t> materials;
-    std::string warn, err;
-
-    if (!tinyobj::LoadObj(&attrib,&shapes,&materials,&err,MODEL_PATH.c_str())) {
-        throw std::runtime_error(warn + err);
-    }
-
-    std::unordered_map<Vertex, uint32_t> uniqueVertices {};
-
-    for (const auto& shape : shapes) {
-        for (const auto& index : shape.mesh.indices) {
-            Vertex vertex {
-                .pos = {
-                    attrib.vertices[3 * index.vertex_index + 0],
-                    attrib.vertices[3 * index.vertex_index + 1],
-                    attrib.vertices[3 * index.vertex_index + 2] },
-                .color = { 1.0f, 1.0f, 1.0f },
-                .texCoord = { attrib.texcoords[2 * index.texcoord_index + 0], 1.0f - attrib.texcoords[2 * index.texcoord_index + 1] },
-            };
-
-            if (uniqueVertices.count(vertex) == 0)
-            {
-                uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
-                vertices.push_back(vertex);
-            }
-
-            indices.push_back(uniqueVertices[vertex]);
-        }
-    }
+    aRandomModel.loadModelFromFile(MODEL_PATH);
+    aRandomModel.uploadModelToGPU(this);
 }
 
-void VulkanCore::createVertexBuffer()
-{
-    VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
-
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-    void* data;
-    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, vertices.data(), (size_t)bufferSize);
-    vkUnmapMemory(device, stagingBufferMemory);
-
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
-
-    copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
-
-    vkDestroyBuffer(device, stagingBuffer, nullptr);
-    vkFreeMemory(device, stagingBufferMemory, nullptr);
-}
-
-void VulkanCore::createIndexBuffer()
-{
-    VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
-
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-    void* data;
-    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, indices.data(), (size_t)bufferSize);
-    vkUnmapMemory(device, stagingBufferMemory);
-
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
-
-    copyBuffer(stagingBuffer, indexBuffer, bufferSize);
-
-    vkDestroyBuffer(device, stagingBuffer, nullptr);
-    vkFreeMemory(device, stagingBufferMemory, nullptr);
-}
 
 void VulkanCore::createUniformBuffers()
 {
@@ -1157,7 +1079,7 @@ void VulkanCore::createDescriptorSets()
     }
 }
 
-void VulkanCore::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
+void VulkanCore::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) const
 {
     VkBufferCreateInfo bufferInfo {
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -1186,7 +1108,7 @@ void VulkanCore::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMem
     vkBindBufferMemory(device, buffer, bufferMemory, 0);
 }
 
-void VulkanCore::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
+void VulkanCore::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) const
 {
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
@@ -1230,7 +1152,7 @@ void VulkanCore::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t widt
     endSingleTimeCommands(commandBuffer);
 }
 
-VkCommandBuffer VulkanCore::beginSingleTimeCommands()
+VkCommandBuffer VulkanCore::beginSingleTimeCommands() const
 {
     VkCommandBufferAllocateInfo allocInfo {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -1251,7 +1173,7 @@ VkCommandBuffer VulkanCore::beginSingleTimeCommands()
     return commandBuffer;
 }
 
-void VulkanCore::endSingleTimeCommands(VkCommandBuffer commandBuffer)
+void VulkanCore::endSingleTimeCommands(VkCommandBuffer commandBuffer) const
 {
     vkEndCommandBuffer(commandBuffer);
 
@@ -1267,7 +1189,7 @@ void VulkanCore::endSingleTimeCommands(VkCommandBuffer commandBuffer)
     vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
 }
 
-uint32_t VulkanCore::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
+uint32_t VulkanCore::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const
 {
     VkPhysicalDeviceMemoryProperties memProperties = getAllMemoryProperties(physicalDevice);
 
@@ -1349,15 +1271,15 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t ima
 
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    VkBuffer vertexBuffers[] = { vertexBuffer };
+    VkBuffer vertexBuffers[] = { aRandomModel.GetVertexBuffer() };
     VkDeviceSize offsets[] = { 0 };
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-    vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindIndexBuffer(commandBuffer, aRandomModel.GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
-    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(aRandomModel.getIndices().size()), 1, 0, 0, 0);
 
     vkCmdEndRenderPass(commandBuffer);
 
