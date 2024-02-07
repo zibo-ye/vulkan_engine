@@ -5,6 +5,16 @@
 namespace EngineCore {
 extern bool gIsSupending;
 
+struct IOInput {
+    // IOInput(int key, int scancode, int action, int mods)
+    //     : key(key)
+    //     , scancode(scancode)
+    //     , action(action)
+    //     , mods(mods)
+    //{}
+    int key, scancode, action, mods;
+};
+
 class IApp {
 public:
     // This function can be used to initialize application state and will run after essential
@@ -40,8 +50,26 @@ public:
 #if USE_GLFW
         GLFWwindow* m_pGLFWWindow = nullptr;
 #endif
-        bool windowResized = false;
     } info;
+
+    struct IAppEvent {
+        bool windowResized = false;
+        std::queue<IOInput> IOInputs;
+    } events;
+
+private:
+    int nextHandlerId = 0; // For generating unique handler IDs
+
+protected:
+    std::unordered_map<int, std::vector<std::pair<int, std::function<void(EngineCore::IOInput)>>>> eventHandlers;
+
+public:
+    // Returns the handler ID
+    int RegisterEventHandler(int eventType, std::function<void(EngineCore::IOInput)> handler);
+
+    void RemoveEventHandler(int eventType, int handlerId);
+
+    void RemoveAllEventHandlersForType(int eventType);
 };
 }
 

@@ -42,12 +42,16 @@ bool UpdateApplication(IApp& game)
 {
     // EngineProfiling::Update();
 
+    static auto startTime = std::chrono::high_resolution_clock::now();
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    float DeltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
     // float DeltaTime = Graphics::GetFrameTime();
 
     // GameInput::Update(DeltaTime);
     // EngineTuning::Update(DeltaTime);
     //
-    // game.Update(DeltaTime);
+    game.Update(DeltaTime);
     game.RenderScene();
 
     // PostEffects::Render();
@@ -77,6 +81,26 @@ bool IApp::IsDone(void)
     // return GameInput::IsFirstPressed(GameInput::kKey_escape);
 }
 
+int IApp::RegisterEventHandler(int eventType, std::function<void(EngineCore::IOInput)> handler)
+{
+    int handlerId = nextHandlerId++;
+    eventHandlers[eventType].emplace_back(handlerId, handler);
+    return handlerId;
+}
+
+void IApp::RemoveEventHandler(int eventType, int handlerId)
+{
+    auto& handlers = eventHandlers[eventType];
+    auto it = std::remove_if(handlers.begin(), handlers.end(),
+        [handlerId](const auto& pair) { return pair.first == handlerId; });
+    handlers.erase(it, handlers.end());
+}
+
+void IApp::RemoveAllEventHandlersForType(int eventType)
+{
+    eventHandlers.erase(eventType);
+}
+
 uint32_t g_DisplayWidth = 800;
 uint32_t g_DisplayHeight = 600;
 
@@ -84,8 +108,15 @@ uint32_t g_DisplayHeight = 600;
 static void framebufferResizeCallback(GLFWwindow* window, int width, int height)
 {
     auto app = reinterpret_cast<IApp*>(glfwGetWindowUserPointer(window));
-    app->info.windowResized = true;
+    app->events.windowResized = true;
 }
+
+static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    auto app = reinterpret_cast<IApp*>(glfwGetWindowUserPointer(window));
+    app->events.IOInputs.push({ key, scancode, action, mods });
+}
+
 int RunApplication(IApp&& app, const char* className)
 {
     // init window

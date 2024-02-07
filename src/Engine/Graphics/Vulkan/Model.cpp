@@ -66,7 +66,6 @@ bool Model::releaseModelFromGPU()
     return true;
 }
 
-
 void Model::createVertexBuffer(const VulkanCore* vulkanCore)
 {
     VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();

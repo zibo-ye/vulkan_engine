@@ -1,8 +1,8 @@
 #pragma once
 
-#include "pch.hpp"
 #include "EngineCore.hpp"
 #include "Model.hpp"
+#include "pch.hpp"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -48,14 +48,13 @@ struct SwapChainSupportDetails {
     std::vector<VkPresentModeKHR> presentModes;
 };
 
-
 struct UniformBufferObject {
     alignas(16) glm::mat4 model;
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
 };
 
-class VulkanCore  {
+class VulkanCore {
 private:
     EngineCore::IApp* m_pApp = nullptr;
 
@@ -155,7 +154,7 @@ public:
     void createColorResources();
 
     void createDepthResources();
-    
+
     VkFormat findDepthFormat();
 
     void createTextureImage();
@@ -172,7 +171,6 @@ public:
 
     void loadModel();
 
-
     void createUniformBuffers();
 
     void createDescriptorPool();
@@ -186,7 +184,7 @@ public:
 
     VkCommandBuffer beginSingleTimeCommands() const;
 
-    void endSingleTimeCommands(VkCommandBuffer commandBuffer)  const;
+    void endSingleTimeCommands(VkCommandBuffer commandBuffer) const;
 
     void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 

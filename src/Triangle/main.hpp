@@ -1,7 +1,7 @@
 #pragma once
-#include "../Engine/pch.hpp"
 #include "../Engine/EngineCore.hpp"
 #include "../Engine/Graphics/Vulkan/VulkanCore.hpp"
+#include "../Engine/pch.hpp"
 
 class HelloTriangleApplication : public EngineCore::IApp {
 
@@ -13,6 +13,9 @@ public:
     void Update(float deltaT) override;
 
     void RenderScene(void) override;
+
+private:
+    void ProcessEvents();
 
 private:
     VulkanCore m_VulkanCore;

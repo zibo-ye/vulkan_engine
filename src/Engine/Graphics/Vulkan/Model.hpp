@@ -90,6 +90,7 @@ public:
 private:
     void createVertexBuffer(const VulkanCore* vulkanCore);
     void createIndexBuffer(const VulkanCore* vulkanCore);
+
 private:
     bool isOnGPU = false;
     const VulkanCore* m_pVulkanCore = nullptr;

@@ -1,6 +1,6 @@
 #pragma once
 
-#define USE_NATIVE_API 1
+#define USE_NATIVE_API 0
 #define USE_VULKAN 1
 
 #define USE_GLFW !USE_NATIVE_API
@@ -93,6 +93,7 @@
 #include <stdexcept>
 
 #include <map>
+#include <queue>
 #include <ranges>
 #include <set>
 

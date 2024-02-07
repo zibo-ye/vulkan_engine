@@ -6,7 +6,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "ThirdParty/stb_image.h"
 
-
 void VulkanCore::Init(EngineCore::IApp* pApp)
 {
     if (!pApp) {
@@ -196,8 +195,7 @@ void VulkanCore::setupDebugMessenger()
 void VulkanCore::createSurface()
 {
 #if USE_NATIVE_WINDOWS_API
-    VkWin32SurfaceCreateInfoKHR createInfo
-    {
+    VkWin32SurfaceCreateInfoKHR createInfo {
         .sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
         .hinstance = GetModuleHandle(nullptr),
         .hwnd = m_pApp->info.m_hwnd
@@ -384,14 +382,14 @@ void VulkanCore::createRenderPass()
     };
 
     VkAttachmentDescription depthAttachment {
-    .format = findDepthFormat(),
-    .samples = msaaSamples,
-    .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-    .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-    .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-    .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-    .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-    .finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+        .format = findDepthFormat(),
+        .samples = msaaSamples,
+        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+        .finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
     };
 
     VkAttachmentReference depthAttachmentRef {
@@ -410,8 +408,8 @@ void VulkanCore::createRenderPass()
         .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
     };
 
-    VkAttachmentReference colorAttachmentResolveRef { 
-        .attachment = 2, 
+    VkAttachmentReference colorAttachmentResolveRef {
+        .attachment = 2,
         .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
     };
 
@@ -750,7 +748,7 @@ void VulkanCore::createTextureImage()
 
     // copy staging -> image
     copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-    //transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevels);
+    // transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevels);
     generateMipmaps(textureImage, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, mipLevels);
 
     vkDestroyBuffer(device, stagingBuffer, nullptr);
@@ -792,7 +790,7 @@ void VulkanCore::transitionImageLayout(VkImage image, VkFormat format, VkImageLa
         barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     }
 
-if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+    if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
         barrier.srcAccessMask = 0;
         barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
@@ -933,7 +931,7 @@ void VulkanCore::generateMipmaps(VkImage image, VkFormat imageFormat, int32_t te
             mipHeight /= 2;
     }
 
-    //handle last level mipmap barrier
+    // handle last level mipmap barrier
     barrier.subresourceRange.baseMipLevel = mipLevels - 1,
     barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
     barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -978,14 +976,11 @@ void VulkanCore::createTextureSampler()
     }
 }
 
-
-
 void VulkanCore::loadModel()
 {
     aRandomModel.loadModelFromFile(MODEL_PATH);
     aRandomModel.uploadModelToGPU(this);
 }
-
 
 void VulkanCore::createUniformBuffers()
 {
@@ -1316,6 +1311,10 @@ void VulkanCore::updateUniformBuffer(uint32_t currentImage)
     auto currentTime = std::chrono::high_resolution_clock::now();
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
+    m_pApp->RegisterEventHandler(GLFW_KEY_1, [](EngineCore::IOInput input) {
+        // Handle the event using input
+    });
+
     UniformBufferObject ubo {
         .model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
         .view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
@@ -1377,8 +1376,8 @@ void VulkanCore::drawFrame()
 
     result = vkQueuePresentKHR(presentQueue, &presentInfo);
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_pApp->info.windowResized) {
-        m_pApp->info.windowResized = false;
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_pApp->events.windowResized) {
+        m_pApp->events.windowResized = false;
         recreateSwapChain();
     } else if (result != VK_SUCCESS) {
         throw std::runtime_error("failed to present swap chain image!");
@@ -1746,7 +1745,7 @@ std::vector<VkQueueFamilyProperties> listAllQueueFamilies(VkPhysicalDevice devic
         { VK_QUEUE_OPTICAL_FLOW_BIT_NV, "VK_QUEUE_OPTICAL_FLOW_BIT_NV" }
     };
     static std::set<VkPhysicalDevice> printedDevices;
-    if (printedDevices.find(device) == printedDevices.end()) { 
+    if (printedDevices.find(device) == printedDevices.end()) {
         std::cout << "Available Queue Families:\n";
         for (const auto& queueFamily : queueFamilies) {
             std::cout << "\t\tqueueCount:\t" << queueFamily.queueCount << '\n';
@@ -1773,7 +1772,7 @@ VkPhysicalDeviceMemoryProperties getAllMemoryProperties(VkPhysicalDevice device)
     vkGetPhysicalDeviceMemoryProperties(device, &memProperties);
 
 #if VERBOSE
-    static std::set <VkPhysicalDevice> printedDevices;
+    static std::set<VkPhysicalDevice> printedDevices;
     if (printedDevices.find(device) == printedDevices.end()) {
         std::cout << "Available Memory Types:\n";
         for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i) {
@@ -1792,7 +1791,7 @@ VkPhysicalDeviceMemoryProperties getAllMemoryProperties(VkPhysicalDevice device)
             std::cout << std::endl;
         }
         printedDevices.insert(device);
-	}
+    }
 #endif // VERBOSE
     return memProperties;
 }
