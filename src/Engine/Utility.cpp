@@ -1,7 +1,9 @@
 
 #include "Utility.hpp"
 
-std::string Utility::json::JsonValue::serialize(bool beautify /*= false*/, int indentLevel /*= 0*/) const
+using namespace Utility::json;
+
+std::string JsonValue::serialize(bool beautify /*= false*/, int indentLevel /*= 0*/) const
 {
     std::ostringstream os;
     std::string indent = beautify ? std::string(indentLevel * 2, ' ') : "";
@@ -39,15 +41,14 @@ std::string Utility::json::JsonValue::serialize(bool beautify /*= false*/, int i
     return os.str();
 }
 
-Utility::json::JsonValue& Utility::json::JsonValue::operator[](size_t index)
+const JsonValue& JsonValue::operator[](size_t index) const
 {
-    if (std::holds_alternative<JsonArray>(*this)) {
+    if (isArray()) {
         auto& array = std::get<JsonArray>(*this);
         if (index >= array.size()) {
             throw std::out_of_range(
                 "Index out of range"); // Throw an exception if index is out of range
-            // array.resize(index + 1); //Maybe resize the array to accommodate the
-            // new index
+            // array.resize(index + 1); //Maybe resize the array to accommodate the new index
         }
         return array[index];
     }
@@ -55,47 +56,75 @@ Utility::json::JsonValue& Utility::json::JsonValue::operator[](size_t index)
     throw std::runtime_error("JsonValue is not an array");
 }
 
-Utility::json::JsonValue& Utility::json::JsonValue::operator[](const std::string& key)
+const JsonValue& JsonValue::operator[](const std::string& key) const
 {
-    if (std::holds_alternative<JsonObject>(*this)) {
-        return std::get<JsonObject>(*this)[key];
+    if (isObject()) {
+        return std::get<JsonObject>(*this).at(key);
     }
 
     throw std::runtime_error("JsonValue is not an object");
 }
 
-void Utility::json::JsonValue::printType() const
+void JsonValue::printType() const
 {
-    if (std::holds_alternative<std::string>(*this)) {
+    if (isString()) {
         std::cout << "Type: string" << std::endl;
-    } else if (std::holds_alternative<JsonObject>(*this)) {
+    } else if (isObject()) {
         std::cout << "Type: JsonObject" << std::endl;
-    } else if (std::holds_alternative<int>(*this)) {
+    } else if (isInt()) {
         std::cout << "Type: int" << std::endl;
-    } else if (std::holds_alternative<float>(*this)) {
+    } else if (isFloat()) {
         std::cout << "Type: float" << std::endl;
-    } else if (std::holds_alternative<JsonArray>(*this)) {
+    } else if (isArray()) {
         std::cout << "Type: JsonArray" << std::endl;
     } else {
         std::cout << "Unknown Type" << std::endl;
     }
 }
 
-Utility::json::JsonValue Utility::json::JsonValue::parseJson(const std::string& json)
+JsonValue JsonValue::parseJsonFromString(const std::string& jsonStr)
 {
     size_t pos = 0; // Keep track of the current position in the string
-    return parseValue(json, pos);
+    return parseValue(jsonStr, pos);
+}
+
+JsonValue JsonValue::parseJsonFromFile(const std::string& path)
+{
+    std::ifstream ifs(path);
+    if (!ifs) {
+        throw std::runtime_error("Could not open file for reading: " + path);
+    }
+    std::stringstream buffer;
+    buffer << ifs.rdbuf();
+    return parseJsonFromString(buffer.str());
+}
+
+bool JsonValue::saveJsonToString(const JsonValue& json, std::string& str)
+{
+    str = json.serialize();
+    return true;
+}
+
+bool JsonValue::saveJsonToFile(const JsonValue& json, const std::string& path)
+{
+    std::ofstream ofs(path);
+    if (!ofs) {
+        throw std::runtime_error("Could not open file for writing: " + path);
+    }
+    std::stringstream buffer;
+    buffer << json.serialize();
+    return true;
 }
 
 // skip whitespace in json, including space (' '), tab ('\t'), newline ('\n'), vertical tab ('\v'), feed ('\f'), and carriage return ('\r').
-void Utility::json::skipWhitespace(const std::string& json, size_t& pos)
+void JsonValue::skipWhitespace(const std::string& json, size_t& pos)
 {
     while (pos < json.size() && std::isspace(json[pos])) {
         ++pos;
     }
 }
 
-std::string Utility::json::extractString(const std::string& json, size_t& pos)
+std::string JsonValue::extractString(const std::string& json, size_t& pos)
 {
     if (json[pos] != '"')
         throw std::runtime_error("JSON parse error: Expected '\"'");
@@ -113,7 +142,7 @@ std::string Utility::json::extractString(const std::string& json, size_t& pos)
     return result;
 }
 
-Utility::json::JsonObject Utility::json::parseObject(const std::string& json, size_t& pos)
+JsonObject JsonValue::parseObject(const std::string& json, size_t& pos)
 {
     JsonObject obj;
     ++pos; // Skip the opening '{'
@@ -141,7 +170,7 @@ Utility::json::JsonObject Utility::json::parseObject(const std::string& json, si
     return obj;
 }
 
-Utility::json::JsonArray Utility::json::parseArray(const std::string& json, size_t& pos)
+JsonArray JsonValue::parseArray(const std::string& json, size_t& pos)
 {
     JsonArray array;
     ++pos; // Skip the opening '['
@@ -161,34 +190,45 @@ Utility::json::JsonArray Utility::json::parseArray(const std::string& json, size
     return array;
 }
 
-Utility::json::JsonValue Utility::json::parseNumber(const std::string& json, size_t& pos)
+JsonValue JsonValue::parseNumber(const std::string& json, size_t& pos)
 {
     size_t startPos = pos;
-    while (pos < json.size() && (std::isdigit(json[pos]) || json[pos] == '.' || json[pos] == '-' || json[pos] == '+')) {
-        ++pos;
+    bool hasExponent = false;
+
+    while (pos < json.size()) {
+        char ch = json[pos];
+        if (std::isdigit(ch) || ch == '.' || ch == '-' || ch == '+') {
+            ++pos;
+        } else if ((ch == 'e' || ch == 'E') && !hasExponent) { // Exponent can only appear once
+            hasExponent = true;
+            ++pos;
+            if (pos < json.size() && (json[pos] == '+' || json[pos] == '-')) { // Skip the sign of the exponent
+                ++pos;
+            }
+        } else {
+            break;
+        }
     }
 
     std::string_view numberStr(json.data() + startPos, pos - startPos);
     if (numberStr.find('.') != std::string_view::npos) { // Float
-        float value;
-        auto [ptr, ec] = std::from_chars(
-            numberStr.data(), numberStr.data() + numberStr.size(), value);
-        if (ec == std::errc()) {
+        try {
+            float value = std::stof(std::string(numberStr));
             return JsonValue(value);
+        } catch (const std::exception&) {
+            throw std::runtime_error("JSON parse error: Invalid float number");
         }
     } else { // Integer
-        int value;
-        auto [ptr, ec] = std::from_chars(
-            numberStr.data(), numberStr.data() + numberStr.size(), value);
-        if (ec == std::errc()) {
+        try {
+            int value = std::stoi(std::string(numberStr));
             return JsonValue(value);
+        } catch (const std::exception&) {
+            throw std::runtime_error("JSON parse error: Invalid int number");
         }
     }
-
-    throw std::runtime_error("JSON parse error: Invalid number");
 }
 
-Utility::json::JsonValue Utility::json::parseValue(const std::string& json, size_t& pos)
+JsonValue JsonValue::parseValue(const std::string& json, size_t& pos)
 {
     skipWhitespace(json, pos);
     char valueStart = json[pos];

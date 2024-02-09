@@ -1,10 +1,20 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "main.hpp"
+#include "Scene/Scene.hpp"
 
 CREATE_APPLICATION(HelloTriangleApplication)
 
 void HelloTriangleApplication::Startup(void)
 {
+    // std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sg-Articulation.s72");
+    // std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sg-Containment.s72" );
+    // std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sg-Grouping.s72"    );
+    std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sg-Support.s72");
+    // std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sphereflake.s72"    );
+
+    auto pScene = Scene::loadSceneFromFile(scenePath);
+    pScene->PrintStatistics();
+    pScene->Traverse();
     m_VulkanCore.Init(this);
 }
 
