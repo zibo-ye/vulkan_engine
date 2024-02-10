@@ -61,7 +61,7 @@ struct hash<Vertex> {
 };
 }
 
-class Model {
+class MeshData {
 public:
     bool loadModelFromFile(std::string path);
 

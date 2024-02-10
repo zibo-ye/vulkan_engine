@@ -1,11 +1,11 @@
 
-#include "Model.hpp"
+#include "MeshData.hpp"
 #include "VulkanCore.hpp"
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "ThirdParty/tiny_obj_loader.h"
 
-bool Model::loadModelFromFile(std::string path)
+bool MeshData::loadModelFromFile(std::string path)
 {
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
@@ -41,7 +41,7 @@ bool Model::loadModelFromFile(std::string path)
     return true;
 }
 
-bool Model::uploadModelToGPU(const VulkanCore* vulkanCore)
+bool MeshData::uploadModelToGPU(const VulkanCore* vulkanCore)
 {
     if (isOnGPU)
         return false;
@@ -53,7 +53,7 @@ bool Model::uploadModelToGPU(const VulkanCore* vulkanCore)
     return true;
 }
 
-bool Model::releaseModelFromGPU()
+bool MeshData::releaseModelFromGPU()
 {
     if (!isOnGPU)
         return false;
@@ -66,7 +66,7 @@ bool Model::releaseModelFromGPU()
     return true;
 }
 
-void Model::createVertexBuffer(const VulkanCore* vulkanCore)
+void MeshData::createVertexBuffer(const VulkanCore* vulkanCore)
 {
     VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
@@ -87,7 +87,7 @@ void Model::createVertexBuffer(const VulkanCore* vulkanCore)
     vkFreeMemory(vulkanCore->GetDevice(), stagingBufferMemory, nullptr);
 }
 
-void Model::createIndexBuffer(const VulkanCore* vulkanCore)
+void MeshData::createIndexBuffer(const VulkanCore* vulkanCore)
 {
     VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
 

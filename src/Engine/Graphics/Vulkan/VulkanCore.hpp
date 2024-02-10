@@ -1,7 +1,7 @@
 #pragma once
 
 #include "EngineCore.hpp"
-#include "Model.hpp"
+#include "MeshData.hpp"
 #include "pch.hpp"
 
 const uint32_t WIDTH = 800;
@@ -83,7 +83,7 @@ private:
 
     VkCommandPool commandPool;
 
-    Model aRandomModel;
+    MeshData aRandomModel;
 
     std::vector<VkBuffer> uniformBuffers;
     std::vector<VkDeviceMemory> uniformBuffersMemory;
