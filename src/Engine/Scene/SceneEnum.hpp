@@ -27,3 +27,4 @@ EDriverInterpolationType GetDriverInterpolationType(const std::string& typeStr);
 VkPrimitiveTopology GetVkPrimitiveTopology(const std::string& typeStr);
 
 VkFormat GetVkFormat(const std::string& typeStr);
+int GetVkFormatByteSize(VkFormat format);

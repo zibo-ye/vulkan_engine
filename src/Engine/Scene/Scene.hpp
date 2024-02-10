@@ -1,58 +1,14 @@
 #pragma once
 #include "SceneEnum.hpp"
+#include "SceneObj.hpp"
+#include "Mesh.hpp"
 #include "pch.hpp"
 
-class SceneObj;
-class Mesh;
 class Node;
+class Mesh;
 class Camera;
 class Driver;
 class Scene;
-
-class SceneObj {
-public:
-    SceneObj(std::weak_ptr<Scene> pScene, size_t index, ESceneObjType type)
-        : pScene(pScene)
-        , index(index)
-        , type(type) {};
-
-    ESceneObjType type;
-    std::weak_ptr<Scene> pScene;
-    size_t index;
-};
-
-struct MeshIndices {
-    MeshIndices() = default;
-    MeshIndices(const Utility::json::JsonValue& jsonObj);
-
-    std::string src;
-    size_t offset;
-    VkFormat format;
-    std::optional<std::vector<BYTE>> data;
-};
-
-struct MeshAttributes {
-    MeshAttributes() = default;
-    MeshAttributes(const Utility::json::JsonValue& jsonObj);
-
-    std::string src;
-    size_t offset;
-    size_t stride;
-    VkFormat format = VK_FORMAT_UNDEFINED;
-    std::optional<std::vector<BYTE>> data = std::nullopt;
-};
-
-class Mesh : public SceneObj {
-public:
-    Mesh(std::weak_ptr<Scene> pScene, size_t index, const Utility::json::JsonValue& jsonObj);
-
-    std::string name;
-    VkPrimitiveTopology topology;
-    size_t count;
-    std::optional<MeshIndices> indices;
-
-    std::unordered_map<std::string, MeshAttributes> attributes;
-};
 
 class Node : public SceneObj {
 public:
@@ -100,6 +56,7 @@ public:
     void Init(const Utility::json::JsonValue& jsonObj);
 
     std::string name = "";
+    std::string src = "";
     std::vector<int> roots;
 
     std::unordered_map<size_t, std::shared_ptr<SceneObj>> sceneObjs;

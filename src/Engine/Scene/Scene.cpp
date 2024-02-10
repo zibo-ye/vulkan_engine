@@ -41,6 +41,7 @@ void Scene::Init(const Utility::json::JsonValue& jsonObj)
 std::shared_ptr<Scene> Scene::loadSceneFromFile(const std::string& path)
 {
     auto pScene = std::make_shared<Scene>();
+    pScene->src = path;
     pScene->Init(Utility::json::JsonValue::parseJsonFromFile(path));
     return pScene;
 }
@@ -70,22 +71,6 @@ static std::shared_ptr<Scene> defaultScene()
     return defScene;
 }
 
-Mesh::Mesh(std::weak_ptr<Scene> pScene, size_t index, const Utility::json::JsonValue& jsonObj)
-    : SceneObj(pScene, index, ESceneObjType::MESH)
-{
-    name = jsonObj["name"].getString();
-    topology = GetVkPrimitiveTopology(jsonObj["topology"].getString());
-    count = jsonObj["count"].getInt();
-
-    if (jsonObj.getObject().find("indices") != jsonObj.getObject().end()) {
-        indices = MeshIndices(jsonObj["indices"]);
-    }
-
-    auto& attributes = jsonObj["attributes"];
-    for (auto& [attrName, attrVal] : attributes.getObject()) {
-        this->attributes[attrName] = MeshAttributes(attrVal);
-    }
-}
 
 Node::Node(std::weak_ptr<Scene> pScene, size_t index, const Utility::json::JsonValue& jsonObj)
     : SceneObj(pScene, index, ESceneObjType::NODE)
@@ -146,19 +131,4 @@ Driver::Driver(std::weak_ptr<Scene> pScene, size_t index, const Utility::json::J
     : SceneObj(pScene, index, ESceneObjType::DRIVER)
 {
     name = jsonObj["name"].getString();
-}
-
-MeshIndices::MeshIndices(const Utility::json::JsonValue& jsonObj)
-{
-    src = jsonObj["src"].getString();
-    offset = jsonObj["offset"].getInt();
-    format = GetVkFormat(jsonObj["format"].getString());
-}
-
-MeshAttributes::MeshAttributes(const Utility::json::JsonValue& jsonObj)
-{
-    src = jsonObj["src"].getString();
-    offset = jsonObj["offset"].getInt();
-    stride = jsonObj["stride"].getInt();
-    format = GetVkFormat(jsonObj["format"].getString());
 }

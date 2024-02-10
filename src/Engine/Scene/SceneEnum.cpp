@@ -95,3 +95,28 @@ VkFormat GetVkFormat(const std::string& typeStr)
         return VK_FORMAT_UNDEFINED;
     }
 }
+
+int GetVkFormatByteSize(VkFormat format)
+{
+    switch (format) {
+    case VK_FORMAT_R32_SFLOAT:
+        return 4;
+    case VK_FORMAT_R32G32_SFLOAT:
+        return 8;
+    case VK_FORMAT_R32G32B32_SFLOAT:
+        return 12;
+    case VK_FORMAT_R32G32B32A32_SFLOAT:
+        return 16;
+    case VK_FORMAT_R8_UNORM:
+        return 1;
+    case VK_FORMAT_R8G8_UNORM:
+        return 2;
+    case VK_FORMAT_R8G8B8_UNORM:
+        return 3;
+    case VK_FORMAT_R8G8B8A8_UNORM:
+        return 4;
+    default:
+        throw std::runtime_error("Unknown format: " + std::to_string(format));
+        return 0;
+    }
+}
