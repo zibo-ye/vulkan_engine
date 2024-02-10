@@ -1,8 +1,11 @@
 #pragma once
 
-#include "EngineCore.hpp"
-#include "MeshData.hpp"
 #include "pch.hpp"
+
+class Scene;
+namespace EngineCore {
+	class IApp;
+}
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -49,7 +52,7 @@ struct SwapChainSupportDetails {
 };
 
 struct UniformBufferObject {
-    alignas(16) glm::mat4 model;
+    alignas(16) glm::mat4 lightFromLocal;
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
 };
@@ -82,8 +85,6 @@ private:
     VkPipeline graphicsPipeline;
 
     VkCommandPool commandPool;
-
-    MeshData aRandomModel;
 
     std::vector<VkBuffer> uniformBuffers;
     std::vector<VkDeviceMemory> uniformBuffersMemory;
@@ -169,8 +170,6 @@ public:
 
     void createTextureSampler();
 
-    void loadModel();
-
     void createUniformBuffers();
 
     void createDescriptorPool();
@@ -192,13 +191,13 @@ public:
 
     void createCommandBuffers();
 
-    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, Scene & scene);
 
     void createSyncObjects();
 
     void updateUniformBuffer(uint32_t currentImage);
 
-    void drawFrame();
+    void drawFrame(Scene & scene);
 
     VkShaderModule createShaderModule(const std::vector<char>& code);
 

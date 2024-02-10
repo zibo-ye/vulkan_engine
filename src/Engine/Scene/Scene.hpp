@@ -1,11 +1,12 @@
 #pragma once
+#include "Mesh.hpp"
 #include "SceneEnum.hpp"
 #include "SceneObj.hpp"
-#include "Mesh.hpp"
 #include "pch.hpp"
 
 class Node;
 class Mesh;
+struct MeshInstance;
 class Camera;
 class Driver;
 class Scene;
@@ -15,14 +16,15 @@ public:
     Node(std::weak_ptr<Scene> pScene, size_t index, const Utility::json::JsonValue& jsonObj);
 
     std::string name;
-    std::vector<float> translation = { 0.0f, 0.0f, 0.0f };
-    std::vector<float> rotation = { 0.0f, 0.0f, 0.0f, 1.0f }; // Quaternion
-    std::vector<float> scale = { 1.0f, 1.0f, 1.0f };
+    glm::vec3 translation = { 0.0f, 0.0f, 0.0f };
+	glm::quat rotation = { 0.0f, 0.0f, 0.0f, 1.0f }; // Quaternion
+    glm::vec3 scale = { 1.0f, 1.0f, 1.0f };
     std::optional<int> meshIdx;
     std::optional<int> cameraIdx;
     std::vector<int> childrenIdx;
 
-    void Traverse();
+    glm::mat4 GetTransform() const;
+    void Traverse(glm::mat4 transform, std::vector<MeshInstance>& meshInsts);
 };
 
 class Camera : public SceneObj {
@@ -70,7 +72,5 @@ public:
     static std::shared_ptr<Scene> defaultScene();
 
 public:
-    void Traverse();
-
-private:
+    void Traverse(std::vector<MeshInstance>& meshInsts);
 };

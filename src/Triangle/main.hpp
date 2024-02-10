@@ -19,4 +19,5 @@ private:
 
 private:
     VulkanCore m_VulkanCore;
+    std::shared_ptr<Scene> m_Scene;
 };

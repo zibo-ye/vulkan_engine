@@ -8,32 +8,49 @@ Mesh::Mesh(std::weak_ptr<Scene> pScene, size_t index, const Utility::json::JsonV
     count = jsonObj["count"].getInt();
 
     if (jsonObj.getObject().find("indices") != jsonObj.getObject().end()) {
-        indices = MeshIndices(jsonObj["indices"]);
+        indiceDescription = MeshIndices(jsonObj["indices"]);
     }
 
     auto& attributes = jsonObj["attributes"];
     for (auto& [attrName, attrVal] : attributes.getObject()) {
-        this->attributes[attrName] = MeshAttributes(attrVal, pScene.lock()->src);
+        this->attributeDescriptions[attrName] = MeshAttributes(attrVal, pScene.lock()->src);
     }
+
+    LoadMeshData();
 }
 
-//VkPipelineVertexInputStateCreateInfo Mesh::getVertexInputInfo() const
-//{
-//    // TODO: Dynamic vertex input
-//
-//    //    auto bindingDescription = Vertex::getBindingDescription();
-//    // auto attributeDescriptions = Vertex::getAttributeDescriptions();
-//
-//    // VkPipelineVertexInputStateCreateInfo vertexInputInfo {
-//    //     .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-//    //     .vertexBindingDescriptionCount = 1,
-//    //     .pVertexBindingDescriptions = &bindingDescription,
-//    //     .vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size()),
-//    //     .pVertexAttributeDescriptions = attributeDescriptions.data(),
-//    // };
-//
-//    // return vertexInputInfo;
-//}
+void Mesh::LoadMeshData()
+{
+    meshData = std::make_shared<MeshData<NewVertex, uint32_t>>();
+
+    // Load indices
+    if (indiceDescription.has_value()) {
+        std::ifstream ifs(indiceDescription->src);
+        if (!ifs) {
+            throw std::runtime_error("Could not open file for reading: " + indiceDescription->src);
+        }
+
+        // offset -> offset + count * sizeof(index)
+        ifs.seekg(indiceDescription->offset);
+        meshData->indices = std::vector<uint32_t>(count);
+        ifs.read(reinterpret_cast<char*>(meshData->indices.value().data()), count * GetVkFormatByteSize(indiceDescription->format));
+    }
+
+    meshData->vertices = std::vector<NewVertex>(count);
+
+    for (auto& [attrName, attrVal] : attributeDescriptions) {
+        int memOffset = NewVertex::getAttributeOffset(attrName);
+
+        std::ifstream ifs(attrVal.src);
+        if (!ifs) {
+            throw std::runtime_error("Could not open file for reading: " + attrVal.src);
+        }
+        for (int i = 0; i < count; i++) {
+            ifs.seekg(attrVal.offset + i * attrVal.stride);
+            ifs.read(reinterpret_cast<char*>(&meshData->vertices[i]) + memOffset, GetVkFormatByteSize(attrVal.format));
+        }
+    }
+}
 
 MeshIndices::MeshIndices(const Utility::json::JsonValue& jsonObj)
 {
@@ -49,34 +66,4 @@ MeshAttributes::MeshAttributes(const Utility::json::JsonValue& jsonObj, const st
     offset = jsonObj["offset"].getInt();
     stride = jsonObj["stride"].getInt();
     format = GetVkFormat(jsonObj["format"].getString());
- }
-//
-//void MeshAttributes::LoadData()
-//{
-//    std::ifstream ifs(src);
-//    if (!ifs) {
-//        throw std::runtime_error("Could not open file for reading: " + src);
-//    }
-//    //get file size
-//    ifs.seekg(0, std::ios::end);
-//    size_t size = ifs.tellg();
-//    ifs.seekg(0, std::ios::beg);
-//
-//    int count = size / stride;
-//    data = std::vector<char>(GetVkFormatByteSize(format) * count);
-//    
-//    for (int i = 0; i < count; i++) {
-//		ifs.seekg(offset + i * stride);
-//		ifs.read(data->data() + i * GetVkFormatByteSize(format), GetVkFormatByteSize(format));
-//	}
-//}
-
-//VkVertexInputAttributeDescription MeshAttributes::makeVertexInputAttributeDescription(size_t location) const
-//{
-//	return {
-//		.location = static_cast<uint32_t>(location),
-//		.binding = 0,
-//		.format = format,
-//		.offset = static_cast<uint32_t>(offset), //This is wrong at the moment, the offset variable is in file, not the memory layout.
-//	};
-//}
+}

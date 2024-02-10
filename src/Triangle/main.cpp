@@ -6,15 +6,14 @@ CREATE_APPLICATION(HelloTriangleApplication)
 
 void HelloTriangleApplication::Startup(void)
 {
-    // std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sg-Articulation.s72");
-    // std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sg-Containment.s72" );
-    // std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sg-Grouping.s72"    );
-    std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sg-Support.s72");
-    // std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sphereflake.s72"    );
+    //std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sg-Articulation.s72");
+    //std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sg-Containment.s72");
+    //std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sg-Grouping.s72");
+    //std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sg-Support.s72");
+    std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sphereflake.s72");
 
-    auto pScene = Scene::loadSceneFromFile(scenePath);
-    pScene->PrintStatistics();
-    pScene->Traverse();
+    m_Scene = Scene::loadSceneFromFile(scenePath);
+    m_Scene->PrintStatistics();
     m_VulkanCore.Init(this);
 }
 
@@ -30,7 +29,7 @@ void HelloTriangleApplication::Update(float deltaT)
 
 void HelloTriangleApplication::RenderScene(void)
 {
-    m_VulkanCore.drawFrame();
+    m_VulkanCore.drawFrame(*m_Scene);
 }
 
 void HelloTriangleApplication::ProcessEvents()

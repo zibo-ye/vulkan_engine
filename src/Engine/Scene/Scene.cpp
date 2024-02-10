@@ -57,11 +57,10 @@ void Scene::PrintStatistics() const
     std::cout << "Root Count: " << roots.size() << std::endl;
 }
 
-void Scene::Traverse()
+void Scene::Traverse(std::vector<MeshInstance>& meshInsts)
 {
     for (auto& root : roots) {
-
-        nodes[root]->Traverse();
+        nodes[root]->Traverse(glm::mat4(1.0f), meshInsts);
     }
 }
 
@@ -71,20 +70,22 @@ static std::shared_ptr<Scene> defaultScene()
     return defScene;
 }
 
-
 Node::Node(std::weak_ptr<Scene> pScene, size_t index, const Utility::json::JsonValue& jsonObj)
     : SceneObj(pScene, index, ESceneObjType::NODE)
 {
     name = jsonObj["name"].getString();
 
     if (jsonObj.getObject().find("translation") != jsonObj.getObject().end()) {
-        translation = jsonObj["translation"].getVecFloat();
+        auto vec = jsonObj["translation"].getVecFloat();
+        translation = glm::vec3(vec[0], vec[1], vec[2]);
     }
     if (jsonObj.getObject().find("rotation") != jsonObj.getObject().end()) {
-        rotation = jsonObj["rotation"].getVecFloat();
+        auto vec = jsonObj["rotation"].getVecFloat();
+        rotation = glm::quat(vec[3] ,vec[0], vec[1], vec[2]);
     }
     if (jsonObj.getObject().find("scale") != jsonObj.getObject().end()) {
-        scale = jsonObj["scale"].getVecFloat();
+        auto vec = jsonObj["scale"].getVecFloat();
+        scale = glm::vec3(vec[0], vec[1], vec[2]);
     }
 
     if (jsonObj.getObject().find("children") != jsonObj.getObject().end()) {
@@ -101,13 +102,32 @@ Node::Node(std::weak_ptr<Scene> pScene, size_t index, const Utility::json::JsonV
     }
 }
 
-void Node::Traverse()
+glm::mat4 Node::GetTransform() const
 {
-    std::cout << "Node: " << name << std::endl;
+    glm::mat4 mat = glm::mat4(1.0f);
+    mat = glm::translate(mat, translation);
+    mat = mat * glm::mat4_cast(rotation);
+    mat = glm::scale(mat, scale);
+    return mat;
+}
+
+void Node::Traverse(glm::mat4 transform, std::vector<MeshInstance>& meshInst)
+{
+    if (!meshIdx && childrenIdx.empty()) {
+        return;
+    }
+
+    auto worldTransform = transform * GetTransform();
+
+    if (meshIdx) {
+        auto pMesh = pScene.lock()->meshes[*meshIdx];
+        meshInst.push_back({ pMesh, worldTransform });
+    }
+
     for (auto& child : childrenIdx) {
         if (!pScene.lock())
             break;
-        pScene.lock()->nodes[child]->Traverse();
+        pScene.lock()->nodes[child]->Traverse(worldTransform, meshInst);
     }
 }
 

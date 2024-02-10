@@ -3,6 +3,11 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "VulkanCore.hpp"
 
+#include "EngineCore.hpp"
+#include "Scene/Mesh.hpp"
+#include "Scene/Scene.hpp"
+
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "ThirdParty/stb_image.h"
 
@@ -31,7 +36,6 @@ void VulkanCore::Init(EngineCore::IApp* pApp)
     createTextureImage();
     createTextureImageView();
     createTextureSampler();
-    loadModel();
     createUniformBuffers();
     createDescriptorPool();
     createDescriptorSets();
@@ -77,8 +81,6 @@ void VulkanCore::Shutdown()
     vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 
     vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
-
-    aRandomModel.releaseModelFromGPU();
 
     vkDestroySampler(device, textureSampler, nullptr);
     vkDestroyImageView(device, textureImageView, nullptr);
@@ -481,8 +483,8 @@ void VulkanCore::createGraphicsPipeline()
 {
     std::filesystem::path cwd = std::filesystem::current_path();
     std::filesystem::path shaderPath = cwd / "shader_build";
-    std::filesystem::path vertShaderPath = shaderPath / "HelloTriangle.vert.spv";
-    std::filesystem::path fragShaderPath = shaderPath / "HelloTriangle.frag.spv";
+    std::filesystem::path vertShaderPath = shaderPath / "s72.vert.spv";
+    std::filesystem::path fragShaderPath = shaderPath / "s72.frag.spv";
 
     auto vertShaderCode = readFile(vertShaderPath);
     auto fragShaderCode = readFile(fragShaderPath);
@@ -503,8 +505,10 @@ void VulkanCore::createGraphicsPipeline()
         .pName = "main",
     };
     VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
-    auto bindingDescription = Vertex::getBindingDescription();
-    auto attributeDescriptions = Vertex::getAttributeDescriptions();
+
+    //VkPipelineVertexInputStateCreateInfo vertexInputInfo = getVertexInputInfo();
+    auto bindingDescription = NewVertex::getBindingDescription();
+    auto attributeDescriptions = NewVertex::getAttributeDescriptions();
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
@@ -513,6 +517,7 @@ void VulkanCore::createGraphicsPipeline()
         .vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size()),
         .pVertexAttributeDescriptions = attributeDescriptions.data(),
     };
+
     VkPipelineInputAssemblyStateCreateInfo inputAssembly {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
         .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
@@ -574,10 +579,19 @@ void VulkanCore::createGraphicsPipeline()
         .dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()),
         .pDynamicStates = dynamicStates.data(),
     };
+
+    VkPushConstantRange push_constant {
+		.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+		.offset = 0,
+		.size = sizeof(glm::mat4),
+	};
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
         .setLayoutCount = 1,
         .pSetLayouts = &descriptorSetLayout,
+        .pushConstantRangeCount = 1,
+        .pPushConstantRanges = &push_constant,
     };
     if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
@@ -976,12 +990,6 @@ void VulkanCore::createTextureSampler()
     }
 }
 
-void VulkanCore::loadModel()
-{
-    aRandomModel.loadModelFromFile(MODEL_PATH);
-    aRandomModel.uploadModelToGPU(this);
-}
-
 void VulkanCore::createUniformBuffers()
 {
     VkDeviceSize bufferSize = sizeof(UniformBufferObject);
@@ -1213,7 +1221,7 @@ void VulkanCore::createCommandBuffers()
     }
 }
 
-void VulkanCore::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+void VulkanCore::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, Scene & scene)
 {
     VkCommandBufferBeginInfo beginInfo {};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -1266,15 +1274,34 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t ima
 
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    VkBuffer vertexBuffers[] = { aRandomModel.GetVertexBuffer() };
-    VkDeviceSize offsets[] = { 0 };
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-
-    vkCmdBindIndexBuffer(commandBuffer, aRandomModel.GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
-
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
-    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(aRandomModel.getIndices().size()), 1, 0, 0, 0);
+    std::vector<MeshInstance> meshInstances;
+    scene.Traverse(meshInstances);
+    for (auto& MeshInst : meshInstances)
+    {
+        auto& meshData = MeshInst.pMesh->meshData;
+        if (!meshData->uploadModelToGPU(this)) continue;
+
+        VkBuffer vertexBuffers[] = { meshData->vertexBuffer };
+        VkDeviceSize offsets[] = { 0 };
+        vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+
+        glm::mat4 matWorld = MeshInst.matWorld;
+
+        // upload the matrix to the GPU via push constants
+        vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &matWorld);
+
+        if (meshData->indices.has_value()) // Has indices
+        {
+            vkCmdBindIndexBuffer(commandBuffer, meshData->indexBuffer.value(), 0, VK_INDEX_TYPE_UINT32);
+            vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(meshData->indices.value().size()), 1, 0, 0, 0);
+        }
+        else // No indices
+		{
+			vkCmdDraw(commandBuffer, static_cast<uint32_t>(meshData->vertices.size()), 1, 0, 0);
+		}
+    }
 
     vkCmdEndRenderPass(commandBuffer);
 
@@ -1316,16 +1343,16 @@ void VulkanCore::updateUniformBuffer(uint32_t currentImage)
     });
 
     UniformBufferObject ubo {
-        .model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
-        .view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
-        .proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 10.0f),
+        .lightFromLocal = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+        .view = glm::lookAt(glm::vec3(5.0f, 5.0f, 5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+        .proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height , 0.1f, 10.0f),
     };
     ubo.proj[1][1] *= -1;
 
     memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
 }
 
-void VulkanCore::drawFrame()
+void VulkanCore::drawFrame(Scene & scene)
 {
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
@@ -1344,7 +1371,7 @@ void VulkanCore::drawFrame()
     vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
     vkResetCommandBuffer(commandBuffers[currentFrame], /*VkCommandBufferResetFlagBits*/ 0);
-    recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
+    recordCommandBuffer(commandBuffers[currentFrame], imageIndex, scene);
 
     VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
     VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
