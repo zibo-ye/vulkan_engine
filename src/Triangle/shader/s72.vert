@@ -1,7 +1,6 @@
 #version 450
 
 layout(binding = 0) uniform UniformBufferObject {
-    mat4 lightFromLocal;
     mat4 view;
     mat4 proj;
 } ubo;
@@ -20,8 +19,8 @@ layout( push_constant ) uniform constants
 } PushConstants;
 
 void main() {
-    fragPosition = vec3(ubo.lightFromLocal * vec4(inPosition, 1.0)); // Transform position by light matrix
-    fragNormal = mat3(ubo.lightFromLocal) * inNormal; // Transform normal by light matrix (3x3 part)
+    fragPosition = vec3(PushConstants.model * vec4(inPosition, 1.0)); // Transform position by light matrix
+    fragNormal = mat3(PushConstants.model) * inNormal; // Transform normal by light matrix (3x3 part)
     fragColor = inColor; // Pass color directly
     gl_Position = ubo.proj * ubo.view * PushConstants.model * vec4(inPosition,  1.0);
 }

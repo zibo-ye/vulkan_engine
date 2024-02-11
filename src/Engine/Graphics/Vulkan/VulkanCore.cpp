@@ -1343,7 +1343,6 @@ void VulkanCore::updateUniformBuffer(uint32_t currentImage)
     });
 
     UniformBufferObject ubo {
-        .lightFromLocal = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
         .view = glm::lookAt(glm::vec3(5.0f, 5.0f, 5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
         .proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height , 0.1f, 10.0f),
     };

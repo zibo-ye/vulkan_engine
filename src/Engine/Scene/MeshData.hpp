@@ -20,7 +20,7 @@ public:
 
     VkBuffer vertexBuffer;
     std::optional<VkBuffer> indexBuffer;
-
+    // #TODO: buffer's lifecycle is limited by vulkanCore.
 private:
     void createVertexBuffer(const VulkanCore* vulkanCore);
     void createIndexBuffer(const VulkanCore* vulkanCore);

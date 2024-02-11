@@ -41,13 +41,16 @@ void Mesh::LoadMeshData()
     for (auto& [attrName, attrVal] : attributeDescriptions) {
         int memOffset = NewVertex::getAttributeOffset(attrName);
 
-        std::ifstream ifs(attrVal.src);
+        std::ifstream ifs(attrVal.src, std::ios::binary);
         if (!ifs) {
             throw std::runtime_error("Could not open file for reading: " + attrVal.src);
         }
         for (int i = 0; i < count; i++) {
             ifs.seekg(attrVal.offset + i * attrVal.stride);
             ifs.read(reinterpret_cast<char*>(&meshData->vertices[i]) + memOffset, GetVkFormatByteSize(attrVal.format));
+        }
+        if (!ifs) {
+            throw std::runtime_error("Error Reading file: " + attrVal.src);
         }
     }
 }
