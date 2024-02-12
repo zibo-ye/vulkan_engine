@@ -5,14 +5,21 @@
 namespace EngineCore {
 extern bool gIsSupending;
 
+enum EIOInputType {
+    KEYBOARD,
+    MOUSE_BUTTON,
+    MOUSE_MOVE,
+    MOUSE_SCROLL,
+};
+
 struct IOInput {
-    // IOInput(int key, int scancode, int action, int mods)
-    //     : key(key)
-    //     , scancode(scancode)
-    //     , action(action)
-    //     , mods(mods)
-    //{}
-    int key, scancode, action, mods;
+    EIOInputType type;
+    std::optional<double> x, y;
+    std::optional<int> button;
+    std::optional<int> key;
+    std::optional<int> scancode;
+    std::optional<int> action;
+    std::optional<int> mods;
 };
 
 class IApp {
@@ -57,15 +64,12 @@ public:
         std::queue<IOInput> IOInputs;
     } events;
 
-private:
-    int nextHandlerId = 0; // For generating unique handler IDs
-
 protected:
     std::unordered_map<int, std::vector<std::pair<int, std::function<void(EngineCore::IOInput)>>>> eventHandlers;
 
 public:
     // Returns the handler ID
-    int RegisterEventHandler(int eventType, std::function<void(EngineCore::IOInput)> handler);
+    int RegisterEventHandler(EIOInputType eventType, std::function<void(EngineCore::IOInput)> handler);
 
     void RemoveEventHandler(int eventType, int handlerId);
 

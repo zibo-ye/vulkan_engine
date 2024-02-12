@@ -81,9 +81,10 @@ bool IApp::IsDone(void)
     // return GameInput::IsFirstPressed(GameInput::kKey_escape);
 }
 
-int IApp::RegisterEventHandler(int eventType, std::function<void(EngineCore::IOInput)> handler)
+int IApp::RegisterEventHandler(EIOInputType eventType, std::function<void(EngineCore::IOInput)> handler)
 {
-    int handlerId = nextHandlerId++;
+    static int handlerId = 0;
+    handlerId++;
     eventHandlers[eventType].emplace_back(handlerId, handler);
     return handlerId;
 }
@@ -111,10 +112,52 @@ static void framebufferResizeCallback(GLFWwindow* window, int width, int height)
     app->events.windowResized = true;
 }
 
-static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     auto app = reinterpret_cast<IApp*>(glfwGetWindowUserPointer(window));
-    app->events.IOInputs.push({ key, scancode, action, mods });
+    app->events.IOInputs.push(IOInput{
+        .type = EIOInputType::KEYBOARD,
+        .key = key,
+        .scancode = scancode,
+        .action = action,
+        .mods = mods,
+    });
+}
+
+static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
+{
+	auto app = reinterpret_cast<IApp*>(glfwGetWindowUserPointer(window));
+	app->events.IOInputs.push(IOInput{
+		.type = EIOInputType::MOUSE_MOVE,
+		.x = xpos,
+		.y = ypos,
+	});
+}
+
+static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+    auto app = reinterpret_cast<IApp*>(glfwGetWindowUserPointer(window));
+        double xpos, ypos;
+        glfwGetCursorPos(window, &xpos, &ypos);
+
+    app->events.IOInputs.push(IOInput {
+            .type = EIOInputType::MOUSE_BUTTON,
+            .x = xpos,
+            .y = ypos,
+            .button = button,
+            .action = action,
+            .mods = mods,
+    });
+}
+
+static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    auto app = reinterpret_cast<IApp*>(glfwGetWindowUserPointer(window));
+	app->events.IOInputs.push(IOInput {
+		.type = EIOInputType::MOUSE_SCROLL,
+		.x = xoffset,
+		.y = yoffset,
+	});
 }
 
 int RunApplication(IApp&& app, const char* className)
@@ -134,7 +177,10 @@ int RunApplication(IApp&& app, const char* className)
 
     // bind window
     app.bindGLFWWindow(window);
-
+    glfwSetKeyCallback(window, key_callback);
+    glfwSetCursorPosCallback(window, cursor_position_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
+    glfwSetScrollCallback(window, scroll_callback);
     // init
     InitializeApplication(app);
 

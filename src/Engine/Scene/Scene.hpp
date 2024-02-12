@@ -2,12 +2,12 @@
 #include "Mesh.hpp"
 #include "SceneEnum.hpp"
 #include "SceneObj.hpp"
+#include "Camera.hpp"
 #include "pch.hpp"
 
 class Node;
 class Mesh;
 struct MeshInstance;
-class Camera;
 class Driver;
 class Scene;
 
@@ -25,20 +25,6 @@ public:
 
     glm::mat4 GetTransform() const;
     void Traverse(glm::mat4 transform, std::vector<MeshInstance>& meshInsts);
-};
-
-class Camera : public SceneObj {
-public:
-    Camera(std::weak_ptr<Scene> pScene, size_t index, const Utility::json::JsonValue& jsonObj);
-
-    std::string name;
-    struct Perspective {
-        float aspect;
-        float vfov;
-        float near_plane;
-        float far_plane;
-    } perspective;
-    std::vector<int> parents; // To track the node hierarchy
 };
 
 class Driver : public SceneObj {
@@ -63,14 +49,20 @@ public:
 
     std::unordered_map<size_t, std::shared_ptr<SceneObj>> sceneObjs;
     std::unordered_map<size_t, std::shared_ptr<Node>> nodes;
-    std::unordered_map<size_t, std::shared_ptr<Camera>> cameras;
+    std::unordered_map<size_t, std::shared_ptr<SceneCamera>> cameras;
     std::unordered_map<size_t, std::shared_ptr<Mesh>> meshes;
     std::unordered_map<size_t, std::shared_ptr<Driver>> drivers;
+
+    // parents relationship recording
+    std::unordered_map<size_t, std::vector<size_t>> nodeParents;
+
 
     static std::shared_ptr<Scene> loadSceneFromFile(const std::string& path);
     void PrintStatistics() const;
     static std::shared_ptr<Scene> defaultScene();
 
 public:
+    void Update(float time);
+    // #TODO: don't have to traverse and update all meshInstances every frame, only the ones that have changed, the rest can be cached
     void Traverse(std::vector<MeshInstance>& meshInsts);
 };

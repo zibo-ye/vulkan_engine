@@ -90,7 +90,7 @@ JsonValue JsonValue::parseJsonFromString(const std::string& jsonStr)
 
 JsonValue JsonValue::parseJsonFromFile(const std::string& path)
 {
-    std::ifstream ifs(path);
+    std::ifstream ifs(path, std::ios::binary);
     if (!ifs) {
         throw std::runtime_error("Could not open file for reading: " + path);
     }
@@ -107,7 +107,7 @@ bool JsonValue::saveJsonToString(const JsonValue& json, std::string& str)
 
 bool JsonValue::saveJsonToFile(const JsonValue& json, const std::string& path)
 {
-    std::ofstream ofs(path);
+    std::ofstream ofs(path, std::ios::binary);
     if (!ofs) {
         throw std::runtime_error("Could not open file for writing: " + path);
     }

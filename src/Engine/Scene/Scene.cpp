@@ -1,5 +1,6 @@
 
 #include "Scene.hpp"
+#include "CameraManager.hpp"
 
 void Scene::Init(const Utility::json::JsonValue& jsonObj)
 {
@@ -22,9 +23,10 @@ void Scene::Init(const Utility::json::JsonValue& jsonObj)
             meshes[i] = pMesh;
             sceneObjs[i] = pMesh;
         } else if (val["type"].getString() == "CAMERA") {
-            auto pCamera = std::make_shared<Camera>(shared_from_this(), i, val);
+            auto pCamera = std::make_shared<SceneCamera>(shared_from_this(), i, val);
             cameras[i] = pCamera;
             sceneObjs[i] = pCamera;
+            CameraManager::GetInstance().AddCamera(pCamera->name, pCamera);
         } else if (val["type"].getString() == "DRIVER") {
             auto pDriver = std::make_shared<Driver>(shared_from_this(), i, val);
             drivers[i] = pDriver;
@@ -36,6 +38,8 @@ void Scene::Init(const Utility::json::JsonValue& jsonObj)
             }
         }
     }
+
+    //#TODO: Update the parentIdx of the nodes
 }
 
 std::shared_ptr<Scene> Scene::loadSceneFromFile(const std::string& path)
@@ -90,15 +94,19 @@ Node::Node(std::weak_ptr<Scene> pScene, size_t index, const Utility::json::JsonV
 
     if (jsonObj.getObject().find("children") != jsonObj.getObject().end()) {
         for (auto& child : jsonObj["children"].getArray()) {
-            childrenIdx.push_back(child.getInt());
+            auto idx = child.getInt();
+            childrenIdx.push_back(idx);
+            pScene.lock()->nodeParents[idx].push_back(index);
         }
     }
 
     if (jsonObj.getObject().find("mesh") != jsonObj.getObject().end()) {
         meshIdx = jsonObj["mesh"].getInt();
+        pScene.lock()->nodeParents[meshIdx.value()].push_back(index);
     }
     if (jsonObj.getObject().find("camera") != jsonObj.getObject().end()) {
         cameraIdx = jsonObj["camera"].getInt();
+        pScene.lock()->nodeParents[cameraIdx.value()].push_back(index);
     }
 }
 
@@ -128,22 +136,6 @@ void Node::Traverse(glm::mat4 transform, std::vector<MeshInstance>& meshInst)
         if (!pScene.lock())
             break;
         pScene.lock()->nodes[child]->Traverse(worldTransform, meshInst);
-    }
-}
-
-Camera::Camera(std::weak_ptr<Scene> pScene, size_t index, const Utility::json::JsonValue& jsonObj)
-    : SceneObj(pScene, index, ESceneObjType::CAMERA)
-{
-    name = jsonObj["name"].getString();
-
-    if (jsonObj.getObject().find("perspective") != jsonObj.getObject().end()) {
-        auto& persp = jsonObj["perspective"];
-        perspective = {
-            .aspect = persp["aspect"].getFloat(),
-            .vfov = persp["vfov"].getFloat(),
-            .near_plane = persp["near"].getFloat(),
-            .far_plane = persp["far"].getFloat()
-        };
     }
 }
 

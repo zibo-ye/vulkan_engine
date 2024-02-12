@@ -6,6 +6,7 @@
 #include "EngineCore.hpp"
 #include "Scene/Mesh.hpp"
 #include "Scene/Scene.hpp"
+#include "Scene/CameraManager.hpp"
 
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -1277,7 +1278,7 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t ima
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
     std::vector<MeshInstance> meshInstances;
-    scene.Traverse(meshInstances);
+    scene.Traverse(meshInstances);  
     for (auto& MeshInst : meshInstances)
     {
         auto& meshData = MeshInst.pMesh->meshData;
@@ -1338,13 +1339,11 @@ void VulkanCore::updateUniformBuffer(uint32_t currentImage)
     auto currentTime = std::chrono::high_resolution_clock::now();
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-    m_pApp->RegisterEventHandler(GLFW_KEY_1, [](EngineCore::IOInput input) {
-        // Handle the event using input
-    });
-
+    auto activeCamera = CameraManager::GetInstance().GetActiveCamera();
+    
     UniformBufferObject ubo {
-        .view = glm::lookAt(glm::vec3(5.0f, 5.0f, 5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
-        .proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height , 0.1f, 10.0f),
+        .view = activeCamera->getViewMatrix(),
+        .proj = activeCamera->getProjectionMatrix(),
     };
     ubo.proj[1][1] *= -1;
 

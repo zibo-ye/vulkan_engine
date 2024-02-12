@@ -25,7 +25,7 @@ void Mesh::LoadMeshData()
 
     // Load indices
     if (indiceDescription.has_value()) {
-        std::ifstream ifs(indiceDescription->src);
+        std::ifstream ifs(indiceDescription->src, std::ios::binary);
         if (!ifs) {
             throw std::runtime_error("Could not open file for reading: " + indiceDescription->src);
         }
