@@ -26,7 +26,7 @@ void UserCamera::UpdateCameraParameters(UserCameraUpdateParameters params)
 
 glm::mat4 SceneCamera::getViewMatrix() const
 {
-    glm::mat4 viewMatrix = glm::mat4(1.0f);
+    glm::mat4 InvViewMatrix = glm::mat4(1.0f);
 
     size_t childIdx = index;
     while (true) {
@@ -38,9 +38,9 @@ glm::mat4 SceneCamera::getViewMatrix() const
 
         // for (auto parentIdx : parentIdxs) {
         auto parent = pSScene->nodes.at(parentIdxs[0]); // Assuming only one parent for now
-        viewMatrix = parent->GetTransform() * viewMatrix;
+        InvViewMatrix = parent->GetTransform() * InvViewMatrix;
         childIdx = parentIdxs[0];
     }
 
-    return viewMatrix;
+    return glm::inverse(InvViewMatrix);
 }
