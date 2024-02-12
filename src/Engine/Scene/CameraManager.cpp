@@ -133,7 +133,7 @@ void CameraManager::UpdateCamera(float deltaTime)
     if (IsDebugModeActive())
         camera = GetDebugCamera();
 #endif
-    // Update the active camera position when keysActivated WASDQE are pressed, or R -> Reset
+    // Update the active camera position when keysActivated WASDQE are pressed, or X -> Reset
     if (camera->getType() == ECameraType::EUser) {
         UserCamera* userCamera = static_cast<UserCamera*>(camera.get());
 
@@ -143,7 +143,7 @@ void CameraManager::UpdateCamera(float deltaTime)
         auto upDir = glm::vec3(0.0f, 0.0f, 1.0f);
         auto right = glm::cross(lookAtDir, upDir);
 
-        float movingSpeed = keyboardMovingSpeed * deltaTime / 1000.0f;
+        float movingSpeed = keyboardMovingSpeed * deltaTime;
 
         if (keysActivated[GLFW_KEY_W]) {
             auto right = glm::cross(lookAtDir, upDir);
@@ -171,7 +171,7 @@ void CameraManager::UpdateCamera(float deltaTime)
         } else if (keysActivated[GLFW_KEY_E]) {
             userCamera->fromPos -= lookAtDir * movingSpeed;
             userCamera->lookAtPos -= lookAtDir * movingSpeed;
-        } else if (keysActivated[GLFW_KEY_R]) {
+        } else if (keysActivated[GLFW_KEY_X]) {
             *userCamera = UserCamera(userCamera->name);
         }
     }

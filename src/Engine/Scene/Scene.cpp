@@ -1,6 +1,7 @@
 
 #include "Scene.hpp"
 #include "CameraManager.hpp"
+#include "EngineCore.hpp"
 
 void Scene::Init(const Utility::json::JsonValue& jsonObj)
 {
@@ -38,8 +39,6 @@ void Scene::Init(const Utility::json::JsonValue& jsonObj)
             }
         }
     }
-
-    // #TODO: Update the parentIdx of the nodes
 }
 
 std::shared_ptr<Scene> Scene::loadSceneFromFile(const std::string& path)
@@ -59,6 +58,62 @@ void Scene::PrintStatistics() const
     std::cout << "Camera Count: " << cameras.size() << std::endl;
     std::cout << "Driver Count: " << drivers.size() << std::endl;
     std::cout << "Root Count: " << roots.size() << std::endl;
+}
+
+void Scene::RegisterEventHandlers(EngineCore::IApp* pApp)
+{
+    pApp->RegisterEventHandler(EngineCore::KEYBOARD, [this](EngineCore::IOInput input) {
+        if (input.key == GLFW_KEY_SPACE && input.action == GLFW_PRESS) {
+            m_isPlaying = !m_isPlaying;
+        }
+        if (input.key == GLFW_KEY_L && input.action == GLFW_PRESS) {
+            m_isLooping = !m_isLooping;
+        }
+        if (input.key == GLFW_KEY_R && input.action == GLFW_PRESS) {
+            m_elapsedTime = 0.0f;
+        }
+    });
+}
+
+void Scene::Update(float deltaTime)
+{
+    if (m_isPlaying)
+        m_elapsedTime += deltaTime;
+
+    float inloopTime = m_elapsedTime;
+    if (m_isLooping) {
+        m_elapsedTime = fmodf(m_elapsedTime, m_minDriverLoopTime);
+    }
+
+    for (auto& [nodeIdx, driverIdxs] : activeDrivers) {
+        auto pNode = nodes[nodeIdx];
+        for (auto& driverIdx : driverIdxs) {
+            auto pDriver = drivers[driverIdx];
+            auto value = pDriver->GetValue(inloopTime);
+            if (value) {
+                // std::cout<< "Updating Node " << pNode->name << " with Driver " << pDriver->name << " at time " << m_elapsedTime << "\n";
+                switch (pDriver->channel) {
+                case EDriverChannelType::TRANSLATION: {
+                    pNode->translation = glm::vec3(value.value()[0], value.value()[1], value.value()[2]);
+                    // std::cout << "Translation: " << value.value()[0] << " " << value.value()[1] << " " << value.value()[2] << "\n";
+                    break;
+                }
+                case EDriverChannelType::ROTATION: {
+                    pNode->rotation = glm::quat(value.value()[3], value.value()[0], value.value()[1], value.value()[2]);
+                    // std::cout <<  "Rotation: " << value.value()[0] << " " << value.value()[1] << " " << value.value()[2] << " " << value.value()[3] << "\n";
+                    break;
+                }
+                case EDriverChannelType::SCALE: {
+                    pNode->scale = glm::vec3(value.value()[0], value.value()[1], value.value()[2]);
+                    // std::cout <<  "Scale: " << value.value()[0] << " " << value.value()[1] << " " << value.value()[2] << "\n";
+                    break;
+                }
+                default:
+                    break;
+                }
+            }
+        }
+    }
 }
 
 void Scene::Traverse(std::vector<MeshInstance>& meshInsts)
@@ -145,4 +200,57 @@ Driver::Driver(std::weak_ptr<Scene> pScene, size_t index, const Utility::json::J
     : SceneObj(pScene, index, ESceneObjType::DRIVER)
 {
     name = jsonObj["name"].getString();
+    nodeIdx = jsonObj["node"].getInt();
+    channel = GetDriverChannelType(jsonObj["channel"].getString());
+    times = jsonObj["times"].getVecFloat();
+    values = jsonObj["values"].getVecFloat();
+    if (jsonObj.getObject().find("interpolation") != jsonObj.getObject().end()) {
+        interpolation = GetDriverInterpolationType(jsonObj["interpolation"].getString());
+    }
+
+    pScene.lock()->activeDrivers[nodeIdx].push_back(index);
+    pScene.lock()->m_minDriverLoopTime = std::max(pScene.lock()->m_minDriverLoopTime, *(times.rbegin()));
+}
+
+std::optional<std::vector<float>> Driver::GetValue(float time) const
+{
+    if (times.size() == 0)
+        return std::nullopt;
+
+    if (time < times[0])
+        return std::nullopt;
+
+    size_t resultSize = values.size() / times.size();
+
+    if (time > times[times.size() - 1]) { // Extrapolation
+        return std::vector<float>(values.end() - resultSize, values.end());
+    }
+
+    for (size_t i = 0; i < times.size() - 1; ++i) {
+        if (time >= times[i] && time <= times[i + 1]) {
+            if (interpolation == EDriverInterpolationType::STEP)
+                return std::vector<float>(values.begin() + i * resultSize, values.begin() + (i + 1) * resultSize);
+
+            float t = (time - times[i]) / (times[i + 1] - times[i]);
+            std::vector<float> value1 = std::vector<float>(values.begin() + i * resultSize, values.begin() + (i + 1) * resultSize);
+            std::vector<float> value2 = std::vector<float>(values.begin() + (i + 1) * resultSize, values.begin() + (i + 2) * resultSize);
+
+            if (interpolation == EDriverInterpolationType::LINEAR) {
+                std::vector<float> result(resultSize);
+                for (size_t j = 0; j < resultSize; ++j) {
+                    result[j] = (value1[j] * (1 - t) + value2[j] * t);
+                }
+                return result;
+            } else if (interpolation == EDriverInterpolationType::SLERP) {
+                assert(resultSize == 4);
+                glm::quat q1 = glm::quat(value1[3], value1[0], value1[1], value1[2]);
+                glm::quat q2 = glm::quat(value2[3], value2[0], value2[1], value2[2]);
+                glm::quat result = glm::slerp(q1, q2, t);
+                return std::vector<float> { result.x, result.y, result.z, result.w };
+            }
+            break;
+        }
+    }
+
+    return std::nullopt;
 }

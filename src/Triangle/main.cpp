@@ -8,13 +8,14 @@ CREATE_APPLICATION(HelloTriangleApplication)
 
 void HelloTriangleApplication::Startup(void)
 {
-    // std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sg-Articulation.s72");
+    std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sg-Articulation.s72");
     // std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sg-Containment.s72");
-    std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sg-Grouping.s72");
+    // std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sg-Grouping.s72"); //Animation
     // std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sg-Support.s72");
     // std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sphereflake.s72");
 
     m_Scene = Scene::loadSceneFromFile(scenePath);
+    m_Scene->RegisterEventHandlers(this);
     m_Scene->PrintStatistics();
 
     CameraManager::GetInstance().Init(this);
@@ -30,6 +31,7 @@ void HelloTriangleApplication::Update(float deltaT)
 {
     ProcessEvents();
     CameraManager::GetInstance().Update(deltaT);
+    m_Scene->Update(deltaT);
 }
 
 void HelloTriangleApplication::RenderScene(void)

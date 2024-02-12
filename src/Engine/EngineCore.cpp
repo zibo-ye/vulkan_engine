@@ -43,8 +43,11 @@ bool UpdateApplication(IApp& game)
     // EngineProfiling::Update();
 
     static auto startTime = std::chrono::high_resolution_clock::now();
+    static auto lastTime = std::chrono::high_resolution_clock::now();
     auto currentTime = std::chrono::high_resolution_clock::now();
-    float DeltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+    float DeltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
+    lastTime = currentTime;
+    float ElapsedTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
     // float DeltaTime = Graphics::GetFrameTime();
 
