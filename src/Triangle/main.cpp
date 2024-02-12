@@ -8,7 +8,8 @@ CREATE_APPLICATION(HelloTriangleApplication)
 
 void HelloTriangleApplication::Startup(void)
 {
-    std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sg-Articulation.s72");
+    // std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sg-Articulation.s72");
+    // std::string scenePath("/Users/immmortal/dev/s72/examples/sg-Articulation.s72");
     // std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sg-Containment.s72");
     // std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sg-Grouping.s72"); //Animation
     // std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sg-Support.s72");
