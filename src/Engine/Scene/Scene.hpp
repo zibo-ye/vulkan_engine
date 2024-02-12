@@ -1,8 +1,8 @@
 #pragma once
+#include "Camera.hpp"
 #include "Mesh.hpp"
 #include "SceneEnum.hpp"
 #include "SceneObj.hpp"
-#include "Camera.hpp"
 #include "pch.hpp"
 
 class Node;
@@ -17,7 +17,7 @@ public:
 
     std::string name;
     glm::vec3 translation = { 0.0f, 0.0f, 0.0f };
-	glm::quat rotation = { 0.0f, 0.0f, 0.0f, 1.0f }; // Quaternion
+    glm::quat rotation = { 0.0f, 0.0f, 0.0f, 1.0f }; // Quaternion
     glm::vec3 scale = { 1.0f, 1.0f, 1.0f };
     std::optional<int> meshIdx;
     std::optional<int> cameraIdx;
@@ -55,7 +55,6 @@ public:
 
     // parents relationship recording
     std::unordered_map<size_t, std::vector<size_t>> nodeParents;
-
 
     static std::shared_ptr<Scene> loadSceneFromFile(const std::string& path);
     void PrintStatistics() const;

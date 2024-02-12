@@ -53,6 +53,27 @@ void Mesh::LoadMeshData()
             throw std::runtime_error("Error Reading file: " + attrVal.src);
         }
     }
+
+    // Update bounds
+    for (auto& vertex : meshData->vertices) {
+        UpdateBounds(vertex);
+    }
+}
+
+void Mesh::UpdateBounds(const NewVertex& vertex)
+{
+    if (vertex.position.x < min.x)
+        min.x = vertex.position.x;
+    if (vertex.position.y < min.y)
+        min.y = vertex.position.y;
+    if (vertex.position.z < min.z)
+        min.z = vertex.position.z;
+    if (vertex.position.x > max.x)
+        max.x = vertex.position.x;
+    if (vertex.position.y > max.y)
+        max.y = vertex.position.y;
+    if (vertex.position.z > max.z)
+        max.z = vertex.position.z;
 }
 
 MeshIndices::MeshIndices(const Utility::json::JsonValue& jsonObj)

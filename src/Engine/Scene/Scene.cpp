@@ -39,7 +39,7 @@ void Scene::Init(const Utility::json::JsonValue& jsonObj)
         }
     }
 
-    //#TODO: Update the parentIdx of the nodes
+    // #TODO: Update the parentIdx of the nodes
 }
 
 std::shared_ptr<Scene> Scene::loadSceneFromFile(const std::string& path)
@@ -85,7 +85,7 @@ Node::Node(std::weak_ptr<Scene> pScene, size_t index, const Utility::json::JsonV
     }
     if (jsonObj.getObject().find("rotation") != jsonObj.getObject().end()) {
         auto vec = jsonObj["rotation"].getVecFloat();
-        rotation = glm::quat(vec[3] ,vec[0], vec[1], vec[2]);
+        rotation = glm::quat(vec[3], vec[0], vec[1], vec[2]);
     }
     if (jsonObj.getObject().find("scale") != jsonObj.getObject().end()) {
         auto vec = jsonObj["scale"].getVecFloat();
@@ -129,7 +129,9 @@ void Node::Traverse(glm::mat4 transform, std::vector<MeshInstance>& meshInst)
 
     if (meshIdx) {
         auto pMesh = pScene.lock()->meshes[*meshIdx];
-        meshInst.push_back({ pMesh, worldTransform });
+        // Frustum Culling
+        if (CameraManager::GetInstance().GetActiveCamera()->FrustumCulling(pMesh, worldTransform))
+            meshInst.push_back({ pMesh, worldTransform });
     }
 
     for (auto& child : childrenIdx) {

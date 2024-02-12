@@ -4,6 +4,7 @@
 #include "SceneEnum.hpp"
 #include "SceneObj.hpp"
 #include "pch.hpp"
+#include <limits>
 
 struct MeshIndices {
     MeshIndices() = default;
@@ -117,6 +118,13 @@ public:
 
     std::shared_ptr<MeshData<NewVertex, uint32_t>> meshData;
     void LoadMeshData();
+
+public:
+    glm::vec3 min = glm::vec3(std::numeric_limits<float>::max());
+    glm::vec3 max = -min;
+
+private:
+    void UpdateBounds(const NewVertex& vertex);
 };
 
 inline static VkPipelineVertexInputStateCreateInfo getVertexInputInfo()
@@ -137,7 +145,6 @@ inline static VkPipelineVertexInputStateCreateInfo getVertexInputInfo()
 }
 
 struct MeshInstance {
-	std::shared_ptr<Mesh> pMesh;
+    std::shared_ptr<Mesh> pMesh;
     glm::mat4 matWorld;
 };
-

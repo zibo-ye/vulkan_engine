@@ -9,7 +9,7 @@ public:
     ~MeshData()
     {
         if (isOnGPU)
-			releaseModelFromGPU();
+            releaseModelFromGPU();
     }
     std::vector<VertexType> vertices;
     std::optional<std::vector<IndexType>> indices;
@@ -36,7 +36,7 @@ template <typename VertexType, typename IndexType /*= uint32_t*/>
 void MeshData<VertexType, IndexType>::createIndexBuffer(const VulkanCore* vulkanCore)
 {
     if (!indices.has_value())
-		return;
+        return;
     VkDeviceSize bufferSize = sizeof(indices.value()[0]) * indices.value().size();
 
     VkBuffer stagingBuffer;

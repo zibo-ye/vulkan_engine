@@ -3,6 +3,7 @@
 #include "pch.hpp"
 
 class Scene;
+class Mesh;
 
 enum ECameraType {
     EScene,
@@ -17,10 +18,11 @@ public:
     virtual void update(float deltaTime) = 0;
     virtual glm::mat4 getViewMatrix() const = 0;
     virtual glm::mat4 getProjectionMatrix() const = 0;
+    virtual bool FrustumCulling(std::shared_ptr<Mesh> pMesh, glm::mat4& worldTransform);
 };
 
 struct Perspective {
-    float aspect = 800.f/600.f;
+    float aspect = 800.f / 600.f;
     float vfov = glm::radians(45.f);
     float near_plane = 0.1f;
     float far_plane = 10.f;
@@ -33,7 +35,7 @@ struct Perspective {
 class SceneCamera : public SceneObj, public ICamera {
 public:
     SceneCamera(std::weak_ptr<Scene> pScene, size_t index, const Utility::json::JsonValue& jsonObj)
-        : SceneObj(pScene,index,ESceneObjType::CAMERA)
+        : SceneObj(pScene, index, ESceneObjType::CAMERA)
     {
         name = jsonObj["name"].getString();
 
@@ -51,12 +53,12 @@ public:
     ECameraType getType() const override { return ECameraType::EScene; }
     std::string getName() const override { return name; }
 
-
     void update(float deltaTime) override { }
 
     glm::mat4 getViewMatrix() const override;
 
-    glm::mat4 getProjectionMatrix() const override {
+    glm::mat4 getProjectionMatrix() const override
+    {
         return perspective.getProjectionMatrix();
     }
 
@@ -84,7 +86,7 @@ public:
     void update(float deltaTime) override
     {
     }
-    
+
     glm::mat4 getViewMatrix() const override
     {
         return glm::lookAt(fromPos, lookAtPos, glm::vec3(0.0f, 0.0f, 1.0f));
@@ -98,7 +100,7 @@ public:
     void UpdateCameraParameters(UserCameraUpdateParameters params);
 
     std::string name;
-    glm::vec3 fromPos = glm::vec3(5.0f, 5.0f, 5.0f);
+    glm::vec3 fromPos = glm::vec3(2.0f, 2.0f, 2.0f);
     glm::vec3 lookAtPos = glm::vec3(0.0f, 0.0f, 0.0f);
     Perspective perspective;
 };

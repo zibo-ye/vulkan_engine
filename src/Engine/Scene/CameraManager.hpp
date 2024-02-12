@@ -1,9 +1,9 @@
 #pragma once
-#include "pch.hpp"
 #include "Camera.hpp"
+#include "pch.hpp"
 
 namespace EngineCore {
-	class IApp;
+class IApp;
 }
 
 class CameraManager {
@@ -19,9 +19,9 @@ public:
         return instance;
     }
 
-	void Init(EngineCore::IApp* pApp);
+    void Init(EngineCore::IApp* pApp);
 
-	void UpdateCamera(float deltaTime);
+    void UpdateCamera(float deltaTime);
 
     void AddCamera(const std::string& name, std::shared_ptr<ICamera> camera)
     {
@@ -53,24 +53,22 @@ public:
     }
 
     void SwitchToNextCamera()
-	{
-		if (cameras.size() > 1) {
-			auto it = cameras.find(activeCamera->getName());
-			if (it != cameras.end()) {
-				++it;
-				if (it == cameras.end()) {
-					it = cameras.begin();
-				}
-				activeCamera = it->second;
+    {
+        if (cameras.size() > 1) {
+            auto it = cameras.find(activeCamera->getName());
+            if (it != cameras.end()) {
+                ++it;
+                if (it == cameras.end()) {
+                    it = cameras.begin();
+                }
+                activeCamera = it->second;
 
-                #if defined(DEBUG) || defined(_DEBUG) || !defined(NDEBUG)
+#if defined(DEBUG) || defined(_DEBUG) || !defined(NDEBUG)
                 std::cout << "Switched to camera: " << activeCamera->getName() << std::endl;
-				#endif
-			}
-		}
-	}
-
-
+#endif
+            }
+        }
+    }
 
 private:
     // Private constructor to prevent instantiation outside of getInstance()

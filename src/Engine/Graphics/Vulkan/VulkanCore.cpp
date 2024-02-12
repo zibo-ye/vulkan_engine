@@ -4,10 +4,9 @@
 #include "VulkanCore.hpp"
 
 #include "EngineCore.hpp"
+#include "Scene/CameraManager.hpp"
 #include "Scene/Mesh.hpp"
 #include "Scene/Scene.hpp"
-#include "Scene/CameraManager.hpp"
-
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "ThirdParty/stb_image.h"
@@ -507,7 +506,7 @@ void VulkanCore::createGraphicsPipeline()
     };
     VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
-    //VkPipelineVertexInputStateCreateInfo vertexInputInfo = getVertexInputInfo();
+    // VkPipelineVertexInputStateCreateInfo vertexInputInfo = getVertexInputInfo();
     auto bindingDescription = NewVertex::getBindingDescription();
     auto attributeDescriptions = NewVertex::getAttributeDescriptions();
 
@@ -582,10 +581,10 @@ void VulkanCore::createGraphicsPipeline()
     };
 
     VkPushConstantRange push_constant {
-		.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-		.offset = 0,
-		.size = sizeof(glm::mat4),
-	};
+        .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+        .offset = 0,
+        .size = sizeof(glm::mat4),
+    };
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
@@ -1222,7 +1221,7 @@ void VulkanCore::createCommandBuffers()
     }
 }
 
-void VulkanCore::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, Scene & scene)
+void VulkanCore::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, Scene& scene)
 {
     VkCommandBufferBeginInfo beginInfo {};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -1278,11 +1277,14 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t ima
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
     std::vector<MeshInstance> meshInstances;
-    scene.Traverse(meshInstances);  
-    for (auto& MeshInst : meshInstances)
-    {
+    scene.Traverse(meshInstances);
+#ifndef NDEBUG
+    std::cout << "MeshInstances: " << meshInstances.size() << std::endl;
+#endif
+    for (auto& MeshInst : meshInstances) {
         auto& meshData = MeshInst.pMesh->meshData;
-        if (!meshData->uploadModelToGPU(this)) continue;
+        if (!meshData->uploadModelToGPU(this))
+            continue;
 
         VkBuffer vertexBuffers[] = { meshData->vertexBuffer };
         VkDeviceSize offsets[] = { 0 };
@@ -1297,11 +1299,10 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t ima
         {
             vkCmdBindIndexBuffer(commandBuffer, meshData->indexBuffer.value(), 0, VK_INDEX_TYPE_UINT32);
             vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(meshData->indices.value().size()), 1, 0, 0, 0);
+        } else // No indices
+        {
+            vkCmdDraw(commandBuffer, static_cast<uint32_t>(meshData->vertices.size()), 1, 0, 0);
         }
-        else // No indices
-		{
-			vkCmdDraw(commandBuffer, static_cast<uint32_t>(meshData->vertices.size()), 1, 0, 0);
-		}
     }
 
     vkCmdEndRenderPass(commandBuffer);
@@ -1340,7 +1341,7 @@ void VulkanCore::updateUniformBuffer(uint32_t currentImage)
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
     auto activeCamera = CameraManager::GetInstance().GetActiveCamera();
-    
+
     UniformBufferObject ubo {
         .view = activeCamera->getViewMatrix(),
         .proj = activeCamera->getProjectionMatrix(),
@@ -1350,7 +1351,7 @@ void VulkanCore::updateUniformBuffer(uint32_t currentImage)
     memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
 }
 
-void VulkanCore::drawFrame(Scene & scene)
+void VulkanCore::drawFrame(Scene& scene)
 {
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 

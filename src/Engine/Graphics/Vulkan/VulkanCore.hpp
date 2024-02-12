@@ -4,7 +4,7 @@
 
 class Scene;
 namespace EngineCore {
-	class IApp;
+class IApp;
 }
 
 const uint32_t WIDTH = 800;
@@ -190,13 +190,13 @@ public:
 
     void createCommandBuffers();
 
-    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, Scene & scene);
+    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, Scene& scene);
 
     void createSyncObjects();
 
     void updateUniformBuffer(uint32_t currentImage);
 
-    void drawFrame(Scene & scene);
+    void drawFrame(Scene& scene);
 
     VkShaderModule createShaderModule(const std::vector<char>& code);
 

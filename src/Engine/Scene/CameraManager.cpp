@@ -1,7 +1,7 @@
 
 #include "CameraManager.hpp"
-#include "Scene.hpp"
 #include "EngineCore.hpp"
+#include "Scene.hpp"
 
 void CameraManager::Init(EngineCore::IApp* pApp)
 {
@@ -13,12 +13,12 @@ void CameraManager::Init(EngineCore::IApp* pApp)
 
     // Register event handlers
     // #TODO: Support allocating different keys
-    
+
     // Tab: Switch between cameras
     pApp->RegisterEventHandler(EngineCore::KEYBOARD, [this](EngineCore::IOInput input) {
         if (input.key == GLFW_KEY_TAB && input.action == GLFW_PRESS)
             this->SwitchToNextCamera();
-    }); 
+    });
 
     // W, A, S, D, Q, E, R: Move the user camera
     pApp->RegisterEventHandler(EngineCore::KEYBOARD, [this](EngineCore::IOInput input) {
@@ -90,7 +90,7 @@ void CameraManager::Init(EngineCore::IApp* pApp)
     pApp->RegisterEventHandler(EngineCore::MOUSE_SCROLL, [this](EngineCore::IOInput input) {
         if (activeCamera->getType() == ECameraType::EUser) {
             UserCamera* userCamera = static_cast<UserCamera*>(activeCamera.get());
-            float zoomSpeed = 0.1f; 
+            float zoomSpeed = 0.1f;
             // userCamera->fov -= input.yoffset * zoomSpeed; //TODO: clamp
 
             glm::vec3 lookAtDir = userCamera->lookAtPos - userCamera->fromPos;
@@ -114,12 +114,16 @@ void CameraManager::UpdateCamera(float deltaTime)
 
         float movingSpeed = keyboardMovingSpeed * deltaTime / 1000.0f;
 
-        if (keysActivated[GLFW_KEY_W] ) {
-            userCamera->fromPos += lookAtDir * movingSpeed;
-            userCamera->lookAtPos += lookAtDir * movingSpeed;
+        if (keysActivated[GLFW_KEY_W]) {
+            auto right = glm::cross(lookAtDir, upDir);
+            auto screenUp = glm::cross(right, lookAtDir);
+            userCamera->fromPos += screenUp * movingSpeed;
+            userCamera->lookAtPos += screenUp * movingSpeed;
         } else if (keysActivated[GLFW_KEY_S]) {
-            userCamera->fromPos -= lookAtDir * movingSpeed;
-            userCamera->lookAtPos -= lookAtDir * movingSpeed;
+            auto right = glm::cross(lookAtDir, upDir);
+            auto screenUp = glm::cross(right, lookAtDir);
+            userCamera->fromPos -= screenUp * movingSpeed;
+            userCamera->lookAtPos -= screenUp * movingSpeed;
         } else if (keysActivated[GLFW_KEY_A]) {
             auto right = glm::cross(lookAtDir, upDir);
             right = glm::normalize(right);
@@ -131,11 +135,11 @@ void CameraManager::UpdateCamera(float deltaTime)
             userCamera->fromPos += right * movingSpeed;
             userCamera->lookAtPos += right * movingSpeed;
         } else if (keysActivated[GLFW_KEY_Q]) {
-            userCamera->fromPos += upDir * movingSpeed;
-            userCamera->lookAtPos += upDir * movingSpeed;
+            userCamera->fromPos += lookAtDir * movingSpeed;
+            userCamera->lookAtPos += lookAtDir * movingSpeed;
         } else if (keysActivated[GLFW_KEY_E]) {
-            userCamera->fromPos -= upDir * movingSpeed;
-            userCamera->lookAtPos -= upDir * movingSpeed;
+            userCamera->fromPos -= lookAtDir * movingSpeed;
+            userCamera->lookAtPos -= lookAtDir * movingSpeed;
         } else if (keysActivated[GLFW_KEY_R]) {
             *userCamera = UserCamera(userCamera->name);
         }

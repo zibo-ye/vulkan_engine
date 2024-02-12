@@ -115,7 +115,7 @@ static void framebufferResizeCallback(GLFWwindow* window, int width, int height)
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     auto app = reinterpret_cast<IApp*>(glfwGetWindowUserPointer(window));
-    app->events.IOInputs.push(IOInput{
+    app->events.IOInputs.push(IOInput {
         .type = EIOInputType::KEYBOARD,
         .key = key,
         .scancode = scancode,
@@ -126,38 +126,38 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 {
-	auto app = reinterpret_cast<IApp*>(glfwGetWindowUserPointer(window));
-	app->events.IOInputs.push(IOInput{
-		.type = EIOInputType::MOUSE_MOVE,
-		.x = xpos,
-		.y = ypos,
-	});
+    auto app = reinterpret_cast<IApp*>(glfwGetWindowUserPointer(window));
+    app->events.IOInputs.push(IOInput {
+        .type = EIOInputType::MOUSE_MOVE,
+        .x = xpos,
+        .y = ypos,
+    });
 }
 
 static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
     auto app = reinterpret_cast<IApp*>(glfwGetWindowUserPointer(window));
-        double xpos, ypos;
-        glfwGetCursorPos(window, &xpos, &ypos);
+    double xpos, ypos;
+    glfwGetCursorPos(window, &xpos, &ypos);
 
     app->events.IOInputs.push(IOInput {
-            .type = EIOInputType::MOUSE_BUTTON,
-            .x = xpos,
-            .y = ypos,
-            .button = button,
-            .action = action,
-            .mods = mods,
+        .type = EIOInputType::MOUSE_BUTTON,
+        .x = xpos,
+        .y = ypos,
+        .button = button,
+        .action = action,
+        .mods = mods,
     });
 }
 
 static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     auto app = reinterpret_cast<IApp*>(glfwGetWindowUserPointer(window));
-	app->events.IOInputs.push(IOInput {
-		.type = EIOInputType::MOUSE_SCROLL,
-		.x = xoffset,
-		.y = yoffset,
-	});
+    app->events.IOInputs.push(IOInput {
+        .type = EIOInputType::MOUSE_SCROLL,
+        .x = xoffset,
+        .y = yoffset,
+    });
 }
 
 int RunApplication(IApp&& app, const char* className)
