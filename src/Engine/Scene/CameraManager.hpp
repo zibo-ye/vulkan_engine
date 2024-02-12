@@ -21,6 +21,8 @@ public:
 
 	void Init(EngineCore::IApp* pApp);
 
+	void UpdateCamera(float deltaTime);
+
     void AddCamera(const std::string& name, std::shared_ptr<ICamera> camera)
     {
         cameras[name] = camera;
@@ -38,6 +40,8 @@ public:
 
     void Update(float deltaTime)
     {
+        UpdateCamera(deltaTime);
+
         if (activeCamera) {
             activeCamera->update(deltaTime);
         }
@@ -75,6 +79,10 @@ private:
     std::unordered_map<std::string, std::shared_ptr<ICamera>> cameras;
     std::shared_ptr<ICamera> activeCamera;
 
+    std::unordered_map<int, bool> keysActivated;
+    float keyboardMovingSpeed = 0.1f;
+
+    float mouseSensitivity = glm::radians(1.0f);
     glm::vec2 lastMousePos;
     bool isMouseLeftButtonDown = false;
 };

@@ -29,6 +29,7 @@ void HelloTriangleApplication::Cleanup(void)
 void HelloTriangleApplication::Update(float deltaT)
 {
     ProcessEvents();
+    CameraManager::GetInstance().Update(deltaT);
 }
 
 void HelloTriangleApplication::RenderScene(void)
