@@ -70,12 +70,29 @@ public:
         }
     }
 
+#ifndef NDEBUG
+    bool IsDebugModeActive() const
+    {
+        return isDebugCameraActive;
+    }
+
+    std::shared_ptr<UserCamera> GetDebugCamera() const
+    {
+        return debugCamera;
+    }
+#endif
+
 private:
     // Private constructor to prevent instantiation outside of getInstance()
     CameraManager() = default;
 
     std::unordered_map<std::string, std::shared_ptr<ICamera>> cameras;
     std::shared_ptr<ICamera> activeCamera;
+
+#ifndef NDEBUG
+    std::shared_ptr<UserCamera> debugCamera;
+    bool isDebugCameraActive = false;
+#endif
 
     std::unordered_map<int, bool> keysActivated;
     float keyboardMovingSpeed = 0.1f;

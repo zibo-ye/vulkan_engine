@@ -1279,7 +1279,11 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t ima
     std::vector<MeshInstance> meshInstances;
     scene.Traverse(meshInstances);
 #ifndef NDEBUG
-    std::cout << "MeshInstances: " << meshInstances.size() << std::endl;
+    static size_t lastMeshInstanceCount = meshInstances.size();
+    if (lastMeshInstanceCount != meshInstances.size()) {
+        lastMeshInstanceCount = meshInstances.size();
+        std::cout << "MeshInstances: " << meshInstances.size() << std::endl;
+    }
 #endif
     for (auto& MeshInst : meshInstances) {
         auto& meshData = MeshInst.pMesh->meshData;
@@ -1340,11 +1344,16 @@ void VulkanCore::updateUniformBuffer(uint32_t currentImage)
     auto currentTime = std::chrono::high_resolution_clock::now();
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-    auto activeCamera = CameraManager::GetInstance().GetActiveCamera();
+    auto camera = CameraManager::GetInstance().GetActiveCamera();
+
+#ifndef NDEBUG
+    if (CameraManager::GetInstance().IsDebugModeActive())
+        camera = CameraManager::GetInstance().GetDebugCamera();
+#endif
 
     UniformBufferObject ubo {
-        .view = activeCamera->getViewMatrix(),
-        .proj = activeCamera->getProjectionMatrix(),
+        .view = camera->getViewMatrix(),
+        .proj = camera->getProjectionMatrix(),
     };
     ubo.proj[1][1] *= -1;
 

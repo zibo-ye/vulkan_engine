@@ -11,6 +11,10 @@ void CameraManager::Init(EngineCore::IApp* pApp)
     CameraManager::GetInstance().AddCamera(name, userCamera);
     activeCamera = userCamera;
 
+#ifndef NDEBUG
+    debugCamera = std::make_shared<UserCamera>("DebugCamera");
+#endif
+
     // Register event handlers
     // #TODO: Support allocating different keys
 
@@ -24,11 +28,23 @@ void CameraManager::Init(EngineCore::IApp* pApp)
     pApp->RegisterEventHandler(EngineCore::KEYBOARD, [this](EngineCore::IOInput input) {
         // GLFW_REPEAT only works after a delay, so event won't be triggered immediately, see CameraManager::UpdateCamera()
         keysActivated[input.key.value()] = (input.action == GLFW_PRESS || input.action == GLFW_REPEAT); // no GLFW_RELEASE means activated.
+
+#ifndef NDEBUG
+        if (input.key == GLFW_KEY_F5 && input.action == GLFW_PRESS) {
+            isDebugCameraActive = !isDebugCameraActive;
+            std::cout << "Debug Camera: " << (isDebugCameraActive ? "Active" : "Inactive") << "\n";
+        }
+#endif
     });
 
     // Mouse drag: Rotate the user camera
     pApp->RegisterEventHandler(EngineCore::MOUSE_BUTTON, [this](EngineCore::IOInput input) {
-        if (activeCamera->getType() == ECameraType::EUser && input.button == GLFW_MOUSE_BUTTON_LEFT) {
+        auto camera = activeCamera;
+#ifndef NDEBUG
+        if (IsDebugModeActive())
+            camera = GetDebugCamera();
+#endif
+        if (camera->getType() == ECameraType::EUser && input.button == GLFW_MOUSE_BUTTON_LEFT) {
             if (input.action == GLFW_PRESS) {
                 // When the left mouse button is pressed, record the current mouse position
                 lastMousePos = glm::vec2(input.x.value(), input.y.value());
@@ -42,12 +58,17 @@ void CameraManager::Init(EngineCore::IApp* pApp)
     });
 
     pApp->RegisterEventHandler(EngineCore::MOUSE_MOVE, [this](EngineCore::IOInput input) {
-        if (activeCamera->getType() == ECameraType::EUser && isMouseLeftButtonDown) {
+        auto camera = activeCamera;
+#ifndef NDEBUG
+        if (IsDebugModeActive())
+            camera = GetDebugCamera();
+#endif
+        if (camera->getType() == ECameraType::EUser && isMouseLeftButtonDown) {
             if (lastMousePos.x >= 0 && lastMousePos.y >= 0) {
-                UserCamera* userCamera = static_cast<UserCamera*>(activeCamera.get());
+                UserCamera* userCamera = static_cast<UserCamera*>(camera.get());
                 glm::vec2 currentMousePos = glm::vec2(input.x.value(), input.y.value());
                 glm::vec2 mouseDelta = currentMousePos - lastMousePos;
-                std::cout << "Mouse Delta: " << mouseDelta.x << ", " << mouseDelta.y << "\n";
+                // std::cout << "Mouse Delta: " << mouseDelta.x << ", " << mouseDelta.y << "\n";
                 lastMousePos = currentMousePos;
 
                 constexpr float vertical_angle_limit = glm::radians(80.0f); //+-80 degrees
@@ -88,8 +109,13 @@ void CameraManager::Init(EngineCore::IApp* pApp)
 
     // Mouse Scroll: Zoom in/out the user camera
     pApp->RegisterEventHandler(EngineCore::MOUSE_SCROLL, [this](EngineCore::IOInput input) {
-        if (activeCamera->getType() == ECameraType::EUser) {
-            UserCamera* userCamera = static_cast<UserCamera*>(activeCamera.get());
+        auto camera = activeCamera;
+#ifndef NDEBUG
+        if (IsDebugModeActive())
+            camera = GetDebugCamera();
+#endif
+        if (camera->getType() == ECameraType::EUser) {
+            UserCamera* userCamera = static_cast<UserCamera*>(camera.get());
             float zoomSpeed = 0.1f;
             // userCamera->fov -= input.yoffset * zoomSpeed; //TODO: clamp
 
@@ -102,9 +128,14 @@ void CameraManager::Init(EngineCore::IApp* pApp)
 
 void CameraManager::UpdateCamera(float deltaTime)
 {
+    auto camera = activeCamera;
+#ifndef NDEBUG
+    if (IsDebugModeActive())
+        camera = GetDebugCamera();
+#endif
     // Update the active camera position when keysActivated WASDQE are pressed, or R -> Reset
-    if (activeCamera->getType() == ECameraType::EUser) {
-        UserCamera* userCamera = static_cast<UserCamera*>(activeCamera.get());
+    if (camera->getType() == ECameraType::EUser) {
+        UserCamera* userCamera = static_cast<UserCamera*>(camera.get());
 
         auto lookAtDir = userCamera->lookAtPos - userCamera->fromPos;
         lookAtDir = glm::normalize(lookAtDir);
