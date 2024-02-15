@@ -10,6 +10,8 @@
 #include <unordered_map>
 #include <variant>
 
+#include "Utilities/ArgsParser.hpp"
+
 namespace Utility {
 namespace json {
 

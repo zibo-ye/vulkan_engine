@@ -163,8 +163,9 @@ static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
     });
 }
 
-int RunApplication(IApp&& app, const char* className)
+int RunApplication(IApp&& app, const char* className, const Utility::ArgsParser & args)
 {
+
     // init window
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); // to not create an OpenGL context
@@ -208,7 +209,7 @@ HWND g_hWnd = nullptr;
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
-int RunApplication(IApp&& app, const char* className)
+int RunApplication(IApp&& app, const char* className, const Utility::ArgsParser& args)
 {
     HINSTANCE hInst = GetModuleHandle(nullptr);
 

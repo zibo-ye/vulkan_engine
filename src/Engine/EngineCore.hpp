@@ -78,18 +78,19 @@ public:
 }
 
 namespace EngineCore {
-int RunApplication(IApp&& app, const char* className);
+int RunApplication(IApp&& app, const char* className, const Utility::ArgsParser& args);
 }
 
-#define CREATE_APPLICATION(app_class)                            \
-    int main()                                                   \
-    {                                                            \
-        try {                                                    \
-            EngineCore::RunApplication(app_class(), #app_class); \
-        } catch (const std::exception& e) {                      \
-            std::cerr << e.what() << std::endl;                  \
-            return EXIT_FAILURE;                                 \
-        }                                                        \
-                                                                 \
-        return EXIT_SUCCESS;                                     \
+#define CREATE_APPLICATION(app_class)                                  \
+    int main(int argc, const char* argv[])                             \
+    {                                                                  \
+        try {                                                          \
+            auto args = Utility::ArgsParser(argc, argv);               \
+            EngineCore::RunApplication(app_class(), #app_class, args); \
+        } catch (const std::exception& e) {                            \
+            std::cerr << e.what() << std::endl;                        \
+            return EXIT_FAILURE;                                       \
+        }                                                              \
+                                                                       \
+        return EXIT_SUCCESS;                                           \
     }

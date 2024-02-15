@@ -8,6 +8,8 @@
 // #define USE_GLM !USE_NATIVE_API
 #define USE_NATIVE_WINDOWS_API (_WIN32 && USE_NATIVE_API)
 
+#define VERBOSE 1
+
 #pragma warning(disable : 4201) // nonstandard extension used : nameless struct/union
 #pragma warning(disable : 4238) // nonstandard extension used : class rvalue used as lvalue
 #pragma warning(disable : 4239) // A non-const reference may only be bound to an lvalue; assignment operator takes a reference to non-const

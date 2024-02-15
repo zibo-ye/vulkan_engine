@@ -4,9 +4,9 @@
 #include "Scene/Scene.hpp"
 
 // #TODO: change name
-CREATE_APPLICATION(HelloTriangleApplication)
+CREATE_APPLICATION(MainApplication)
 
-void HelloTriangleApplication::Startup(void)
+void MainApplication::Startup(void)
 {
     std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sg-Articulation.s72");
     // std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sg-Containment.s72");
@@ -22,24 +22,24 @@ void HelloTriangleApplication::Startup(void)
     m_VulkanCore.Init(this);
 }
 
-void HelloTriangleApplication::Cleanup(void)
+void MainApplication::Cleanup(void)
 {
     m_VulkanCore.Shutdown();
 }
 
-void HelloTriangleApplication::Update(float deltaT)
+void MainApplication::Update(float deltaT)
 {
     ProcessEvents();
     CameraManager::GetInstance().Update(deltaT);
     m_Scene->Update(deltaT);
 }
 
-void HelloTriangleApplication::RenderScene(void)
+void MainApplication::RenderScene(void)
 {
     m_VulkanCore.drawFrame(*m_Scene);
 }
 
-void HelloTriangleApplication::ProcessEvents()
+void MainApplication::ProcessEvents()
 {
     while (!events.IOInputs.empty()) {
         auto& ioInput = events.IOInputs.front();

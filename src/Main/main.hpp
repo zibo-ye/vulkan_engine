@@ -3,7 +3,7 @@
 #include "../Engine/Graphics/Vulkan/VulkanCore.hpp"
 #include "../Engine/pch.hpp"
 
-class HelloTriangleApplication : public EngineCore::IApp {
+class MainApplication : public EngineCore::IApp {
 
 public:
     void Startup(void) override;
