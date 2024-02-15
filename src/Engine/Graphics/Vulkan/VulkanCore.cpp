@@ -151,6 +151,9 @@ void VulkanCore::createInstance()
         .enabledExtensionCount = static_cast<uint32_t>(extensions.size()),
         .ppEnabledExtensionNames = extensions.data(),
     };
+#if __APPLE__
+    createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR; // VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR
+#endif
 
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo {};
     if (enableValidationLayers) {
@@ -1585,6 +1588,13 @@ std::vector<const char*> VulkanCore::getRequiredExtensions()
 
     std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
+#if __APPLE__
+    // Encountered VK_ERROR_INCOMPATIBLE_DRIVER on MacOS with MoltenVK
+    // https://vulkan-tutorial.com/Drawing_a_triangle/Setup/Instance#:~:text=is%20created%20successfully.-,Encountered%20VK_ERROR_INCOMPATIBLE_DRIVER,-%3A
+    extensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+#endif // __APPLE__
+
+    // VK_EXT_debug_utils
     if (enableValidationLayers) {
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
