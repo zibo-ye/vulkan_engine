@@ -220,7 +220,7 @@ void VulkanCore::createSurface()
 
 void VulkanCore::pickPhysicalDevice()
 {
-    std::vector<VkPhysicalDevice> devices = listAllPhysicalDevices(instance);
+    std::vector<VkPhysicalDevice> devices = getAllPhysicalDevices(instance);
 
     for (const auto& device : devices) {
         if (isDeviceSuitable(device)) {
@@ -1550,7 +1550,7 @@ bool VulkanCore::checkDeviceExtensionSupport(VkPhysicalDevice device)
 QueueFamilyIndices VulkanCore::findQueueFamilies(VkPhysicalDevice device)
 {
     QueueFamilyIndices indices;
-    std::vector<VkQueueFamilyProperties> queueFamilies = listAllQueueFamilies(device);
+    std::vector<VkQueueFamilyProperties> queueFamilies = getAllQueueFamilies(device);
 
     int i = 0;
     for (const auto& queueFamily : queueFamilies) {

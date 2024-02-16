@@ -8,7 +8,7 @@ CREATE_APPLICATION(MainApplication)
 void MainApplication::ParseArguments(const Utility::ArgsParser& argsParser)
 {
     if (argsParser.GetArg("list-physical-devices")) {
-        printPhysicalDevices();
+        printAllPhysicalDevices();
         exit(0);
     }
     if (argsParser.GetArg("list-instance-extensions")) {
