@@ -165,13 +165,16 @@ static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 
 int RunApplication(IApp&& app, const char* className, const Utility::ArgsParser & args)
 {
-
+    app.ParseArguments(args);
     // init window
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); // to not create an OpenGL context
+
+    auto windowSize = app.GetWindowSize();
+
     GLFWwindow* window = glfwCreateWindow(
-        g_DisplayWidth, // width
-        g_DisplayHeight, // height
+        windowSize.first, // width
+        windowSize.second, // height
         className, // window title
         nullptr, // monitor
         nullptr // share

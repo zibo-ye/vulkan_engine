@@ -3,19 +3,60 @@
 #include "Scene/CameraManager.hpp"
 #include "Scene/Scene.hpp"
 
-// #TODO: change name
 CREATE_APPLICATION(MainApplication)
+
+void MainApplication::ParseArguments(const Utility::ArgsParser& argsParser)
+{
+    if (argsParser.GetArg("list-physical-devices")) {
+        printPhysicalDevices();
+        exit(0);
+    }
+    if (argsParser.GetArg("list-instance-extensions")) {
+        printAllAvailableInstanceExtensions();
+        exit(0);
+    }
+    //if (argsParser.GetArg("list-device-extensions")) {
+    //    printAllAvailableDeviceExtensions();
+    //    exit(0);
+    //}
+
+    auto sceneArg = argsParser.GetArg("scene");
+    if (sceneArg.has_value()) {
+        args.scenePath = sceneArg.value()[0];
+    } else {
+        throw std::runtime_error("No scene file provided.");
+    }
+
+    auto cameraArg = argsParser.GetArg("camera");
+    if (cameraArg.has_value()) {
+		args.cameraName = cameraArg.value()[0];
+	}
+
+	auto physicalDeviceArg = argsParser.GetArg("physical-device");
+    if (physicalDeviceArg.has_value()) {
+		args.physicalDeviceName = physicalDeviceArg.value()[0];
+	}
+
+	auto windowSizeArg = argsParser.GetArg("drawing-size");
+    if (windowSizeArg.has_value()) {
+		args.windowSize.first = std::stoi(windowSizeArg.value()[0]);
+		args.windowSize.second = std::stoi(windowSizeArg.value()[1]);
+	}
+
+	auto cullingTypeArg = argsParser.GetArg("culling");
+    if (cullingTypeArg.has_value()) {
+		args.cullingType = cullingTypeArg.value()[0];
+	}
+
+	auto headlessEventsPathArg = argsParser.GetArg("headless");
+    if (headlessEventsPathArg.has_value()) {
+		args.headlessEventsPath = headlessEventsPathArg.value()[0];
+	}
+}
 
 void MainApplication::Startup(void)
 {
-    // std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sg-Articulation.s72");
-    // std::string scenePath("/Users/immmortal/dev/s72/examples/sg-Articulation.s72");
-    // std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sg-Containment.s72");
-    // std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sg-Grouping.s72"); //Animation
-    // std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sg-Support.s72");
-    // std::string scenePath("D:\\dev\\Vulkan\\s72\\examples\\sphereflake.s72");
-
-    m_Scene = Scene::loadSceneFromFile(scenePath);
+    m_Scene = Scene::loadSceneFromFile(args.scenePath);
     m_Scene->RegisterEventHandlers(this);
     m_Scene->PrintStatistics();
 

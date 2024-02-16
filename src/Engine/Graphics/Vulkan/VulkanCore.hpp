@@ -26,7 +26,6 @@ const bool enableValidationLayers = false;
 const bool enableValidationLayers = true;
 #endif
 
-#define VERBOSE 1
 
 const std::string MODEL_PATH = "models/viking_room.obj";
 const std::string TEXTURE_PATH = "textures/viking_room.png";
@@ -225,15 +224,5 @@ public:
 
 public:
     VkDevice GetDevice() const { return device; }
+    VkInstance GetInstance() const { return instance; }
 };
-
-std::vector<VkExtensionProperties> getAllAvailableInstanceExtensions();
-std::vector<VkLayerProperties> getAllAvailableLayers();
-std::vector<VkExtensionProperties> getAllAvailableDeviceExtensions(VkPhysicalDevice device);
-std::vector<VkPhysicalDevice> listAllPhysicalDevices(VkInstance instance);
-std::vector<VkQueueFamilyProperties> listAllQueueFamilies(VkPhysicalDevice device);
-VkPhysicalDeviceMemoryProperties getAllMemoryProperties(VkPhysicalDevice device);
-void printMemoryTypeProperties(VkMemoryPropertyFlags flags);
-void printMemoryHeapProperties(VkMemoryHeapFlags flags);
-VkFormat findSupportedFormat(VkPhysicalDevice device, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
-bool hasStencilComponent(VkFormat format);

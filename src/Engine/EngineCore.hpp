@@ -24,6 +24,7 @@ struct IOInput {
 
 class IApp {
 public:
+    virtual void ParseArguments(const Utility::ArgsParser& argsParser) = 0;
     // This function can be used to initialize application state and will run after essential
     // hardware resources are allocated.  Some state that does not depend on these resources
     // should still be initialized in the constructor such as pointers and flags.
@@ -39,6 +40,8 @@ public:
 
     // Official rendering pass
     virtual void RenderScene(void) = 0;
+
+    virtual std::pair<int,int> GetWindowSize() = 0;
 
 #if USE_NATIVE_WINDOWS_API
 public:
