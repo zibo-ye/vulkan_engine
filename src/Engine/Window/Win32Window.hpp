@@ -1,11 +1,11 @@
 #pragma once
-#include "pch.hpp"
 #include "IWindow.hpp"
+#include "pch.hpp"
 #include <Windows.h>
 #include <memory>
 
 namespace EngineCore {
-	class IApp;
+class IApp;
 }
 
 class Win32Window : public IWindow {

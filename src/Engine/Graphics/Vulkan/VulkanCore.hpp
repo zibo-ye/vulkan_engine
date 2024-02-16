@@ -1,7 +1,7 @@
 #pragma once
 
-#include "pch.hpp"
 #include "Window/IWindow.hpp"
+#include "pch.hpp"
 
 class Scene;
 namespace EngineCore {

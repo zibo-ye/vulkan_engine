@@ -18,6 +18,7 @@ public:
     void RenderScene(void) override;
 
     std::pair<int, int> GetWindowSize() override { return args.windowSize; };
+
 private:
     void ProcessEvents();
 

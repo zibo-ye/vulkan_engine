@@ -1,7 +1,7 @@
 #include "Win32Window.hpp"
+#include "EngineCore.hpp"
 #include <stdexcept>
 #include <vulkan/vulkan_win32.h> // Include this for Vulkan surface creation on Win32
-#include "EngineCore.hpp"
 
 // Create window
 void Win32Window::Create(const std::string& title, int width, int height, EngineCore::IApp& app)
@@ -90,39 +90,39 @@ VkSurfaceKHR Win32Window::CreateSurface(VkInstance instance)
 EKeyboardKeys TranslateKey(int key)
 {
     switch (key) {
-        case 'W':
-		return EKeyboardKeys::W;
-        case 'S':
+    case 'W':
+        return EKeyboardKeys::W;
+    case 'S':
         return EKeyboardKeys::S;
-        case 'A':
+    case 'A':
         return EKeyboardKeys::A;
-        case 'D':
+    case 'D':
         return EKeyboardKeys::D;
-        case 'Q':
+    case 'Q':
         return EKeyboardKeys::Q;
-        case 'E':
+    case 'E':
         return EKeyboardKeys::E;
-        case 'R':
+    case 'R':
         return EKeyboardKeys::R;
-        case 'X':
+    case 'X':
         return EKeyboardKeys::X;
-        case 'L':
+    case 'L':
         return EKeyboardKeys::L;
-        case VK_UP:
+    case VK_UP:
         return EKeyboardKeys::UP;
-        case VK_DOWN:
+    case VK_DOWN:
         return EKeyboardKeys::DOWN;
-        case VK_LEFT:
+    case VK_LEFT:
         return EKeyboardKeys::LEFT;
-        case VK_RIGHT:
+    case VK_RIGHT:
         return EKeyboardKeys::RIGHT;
-        case VK_SPACE:
+    case VK_SPACE:
         return EKeyboardKeys::SPACE;
-        case VK_TAB:
+    case VK_TAB:
         return EKeyboardKeys::TAB;
-        case VK_F5:
+    case VK_F5:
         return EKeyboardKeys::F5;
-        default:
+    default:
         return EKeyboardKeys::UNKNOWN;
     }
     return EKeyboardKeys::UNKNOWN;
@@ -155,7 +155,7 @@ LRESULT CALLBACK Win32Window::WindowProc(HWND hWnd, UINT message, WPARAM wParam,
         int key = static_cast<int>(wParam); // Virtual-Key Code
         EKeyAction action = (message == WM_KEYDOWN) ? EKeyAction::PRESS : EKeyAction::RELEASE;
 
-         window->m_pApp->events.IOInputs.push(IOInput {
+        window->m_pApp->events.IOInputs.push(IOInput {
             .type = EIOInputType::KEYBOARD,
             .key = TranslateKey(key),
             .action = action,
@@ -174,22 +174,20 @@ LRESULT CALLBACK Win32Window::WindowProc(HWND hWnd, UINT message, WPARAM wParam,
     case WM_LBUTTONDOWN:
     case WM_LBUTTONUP:
     case WM_RBUTTONDOWN:
-    case WM_RBUTTONUP:
-        {
-            EMouseButton button = (message == WM_LBUTTONDOWN || message == WM_LBUTTONUP) ? EMouseButton::LEFT : EMouseButton::RIGHT;
-            EKeyAction action = (message == WM_LBUTTONDOWN || message == WM_RBUTTONDOWN) ? EKeyAction::PRESS : EKeyAction::RELEASE;
-            // Getting cursor position
-            WORD xpos = LOWORD(lParam);
-            WORD ypos = HIWORD(lParam);
-            window->m_pApp->events.IOInputs.push(IOInput {
-                .type = EIOInputType::MOUSE_BUTTON,
-                .x = static_cast<double>(xpos),
-                .y = static_cast<double>(ypos),
-                .button = button,
-                .action = action,
-            });
-        }
-        break;
+    case WM_RBUTTONUP: {
+        EMouseButton button = (message == WM_LBUTTONDOWN || message == WM_LBUTTONUP) ? EMouseButton::LEFT : EMouseButton::RIGHT;
+        EKeyAction action = (message == WM_LBUTTONDOWN || message == WM_RBUTTONDOWN) ? EKeyAction::PRESS : EKeyAction::RELEASE;
+        // Getting cursor position
+        WORD xpos = LOWORD(lParam);
+        WORD ypos = HIWORD(lParam);
+        window->m_pApp->events.IOInputs.push(IOInput {
+            .type = EIOInputType::MOUSE_BUTTON,
+            .x = static_cast<double>(xpos),
+            .y = static_cast<double>(ypos),
+            .button = button,
+            .action = action,
+        });
+    } break;
     case WM_MOUSEWHEEL: {
         auto zDelta = GET_WHEEL_DELTA_WPARAM(wParam); // Wheel rotation
         double yoffset = zDelta / WHEEL_DELTA; // Wheel delta is defined as 120
@@ -199,7 +197,6 @@ LRESULT CALLBACK Win32Window::WindowProc(HWND hWnd, UINT message, WPARAM wParam,
             .y = yoffset,
         });
     } break;
-
 
     case WM_DESTROY:
         PostQuitMessage(0);

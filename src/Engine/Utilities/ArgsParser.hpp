@@ -9,7 +9,6 @@
 #include <unordered_map>
 #include <vector>
 
-
 namespace Utility {
 
 // This ArgsParser assumes that there is no naked values, i.e. all values must be associated with a key. Either the key has a value or it doesn't.

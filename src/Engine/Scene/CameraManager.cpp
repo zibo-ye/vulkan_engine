@@ -1,8 +1,8 @@
 
 #include "CameraManager.hpp"
 #include "EngineCore.hpp"
-#include "Scene.hpp"
 #include "IO/IOInput.hpp"
+#include "Scene.hpp"
 
 void CameraManager::Init(EngineCore::IApp* pApp)
 {
@@ -17,14 +17,11 @@ void CameraManager::Init(EngineCore::IApp* pApp)
     debugCamera->UpdateCameraParameters({ .aspect = float(pApp->args.windowSize.first) / float(pApp->args.windowSize.second) });
 #endif
 
-    if (pApp->args.cameraName)
-    {
+    if (pApp->args.cameraName) {
         CameraManager::GetInstance().SetActiveCamera(pApp->args.cameraName.value());
-    }
-    else
-    {
+    } else {
         CameraManager::GetInstance().SetActiveCamera(userCamera->name);
-	}
+    }
 
     // Register event handlers
     // #TODO: Support allocating different keys

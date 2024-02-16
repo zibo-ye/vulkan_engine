@@ -7,12 +7,12 @@ VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMes
 void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
 
 #ifndef NDEBUG
-#define VK_CHECK_RESULT(FN)                                                                                                                \
-	{                                                                                                                                      \
-		if (VkResult result = FN) {                                                                                                         \
-			throw std::runtime_error("Call '" #FN "' returned " + std::to_string(result) + " [" + std::string(string_VkResult(result)) + "]."); \
-		}                                                                                                                                  \
-	}
+#define VK_CHECK_RESULT(FN)                                                                                                                     \
+    {                                                                                                                                           \
+        if (VkResult result = FN) {                                                                                                             \
+            throw std::runtime_error("Call '" #FN "' returned " + std::to_string(result) + " [" + std::string(string_VkResult(result)) + "]."); \
+        }                                                                                                                                       \
+    }
 #else
 #define VK_CHECK_RESULT(FN) FN
 #endif
@@ -34,7 +34,7 @@ void printAllQueueFamilies(VkPhysicalDevice device, std::vector<VkQueueFamilyPro
 void printMemoryTypeProperties(VkMemoryPropertyFlags flags);
 void printMemoryHeapProperties(VkMemoryHeapFlags flags);
 
-void printAllMemoryProperties(VkPhysicalDeviceMemoryProperties &memoryProperties);
+void printAllMemoryProperties(VkPhysicalDeviceMemoryProperties& memoryProperties);
 void printAllMemoryTypeProperties(VkMemoryPropertyFlags flags);
 void printAllMemoryHeapProperties(VkMemoryHeapFlags flags);
 void printAllPhysicalDevices(std::vector<VkPhysicalDevice> physicalDevices);

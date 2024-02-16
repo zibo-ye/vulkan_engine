@@ -18,8 +18,8 @@ void ArgsParser::PrintArgs()
     for (const auto& [key, values] : m_Args) {
         std::cout << "Key:" << key << "\tValue:";
         for (const auto& value : values) {
-			std::cout << value << " ";
-		}
+            std::cout << value << " ";
+        }
         std::cout << std::endl;
     }
     std::cout << std::endl;
@@ -43,11 +43,10 @@ ArgsParser::ArgsParser(int argc, const char** argv)
                     // Extract the key using the position of the first space
                     currentKey = arg.substr(1, firstSpacePos - 2); // Remove -
                     m_Args[currentKey].push_back(arg.substr(firstSpacePos + 1));
+                } else {
+                    currentKey = arg.substr(1); // Remove -
+                    m_Args[currentKey] = std::vector<std::string>();
                 }
-                else {
-					currentKey = arg.substr(1); // Remove -
-					m_Args[currentKey] = std::vector<std::string>();
-				}
             }
         } else if (!currentKey.empty()) { // Value
             std::string value = arg;
@@ -60,15 +59,11 @@ ArgsParser::ArgsParser(int argc, const char** argv)
         }
     }
 
-    if (GetArg("verbose"))
-    {
+    if (GetArg("verbose")) {
         PrintArgs();
-    }
-    else
-    {
+    } else {
 #ifdef VERBOSE
         PrintArgs();
 #endif
     }
-
 }

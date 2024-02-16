@@ -1,6 +1,6 @@
 #pragma once
-#include "pch.hpp"
 #include "IWindow.hpp"
+#include "pch.hpp"
 
 #if USE_GLFW
 class GLFWWindow : public IWindow {

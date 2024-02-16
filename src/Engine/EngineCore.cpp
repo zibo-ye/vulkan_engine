@@ -1,6 +1,6 @@
 #include "EngineCore.hpp"
-#include "pch.hpp"
 #include "IO/IOInput.hpp"
+#include "pch.hpp"
 
 // #include "GraphicsCore.hpp"
 // #include "SystemTime.hpp"
@@ -14,7 +14,6 @@
 
 #include "Window/GLFWWindow.hpp"
 #include "Window/Win32Window.hpp"
-
 
 #pragma comment(lib, "runtimeobject.lib")
 
@@ -134,8 +133,8 @@ int RunApplication(IApp&& app, const char* className, const Utility::ArgsParser&
     InitializeApplication(app);
 
     while (!window->ShouldClose()) {
-        window->Update(); // Poll GLFW events
-        UpdateApplication(app); // Update your application
+        window->Update();
+        UpdateApplication(app);
     }
 
     TerminateApplication(app);
@@ -143,65 +142,4 @@ int RunApplication(IApp&& app, const char* className, const Utility::ArgsParser&
 
     return 0;
 }
-//
-//#if USE_NATIVE_WINDOWS_API
-//
-//int RunApplication(IApp&& app, const char* className, const Utility::ArgsParser& args)
-//{
-//    HINSTANCE hInst = GetModuleHandle(nullptr);
-//
-//    // init window
-//    WNDCLASSEX wcex;
-//    wcex.cbSize = sizeof(WNDCLASSEX);
-//    wcex.style = CS_HREDRAW | CS_VREDRAW;
-//    wcex.lpfnWndProc = WndProc;
-//    wcex.cbClsExtra = 0;
-//    wcex.cbWndExtra = 0;
-//    wcex.hInstance = hInst;
-//    wcex.hIcon = LoadIcon(hInst, IDI_APPLICATION);
-//    wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
-//    wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-//    wcex.lpszMenuName = nullptr;
-//    wcex.lpszClassName = className;
-//    wcex.hIconSm = LoadIcon(hInst, IDI_APPLICATION);
-//
-//    auto hr = RegisterClassEx(&wcex);
-//    // ASSERT(0 != hr, "Unable to register a window");
-//
-//    // Create window
-//    RECT rc = { 0, 0, (LONG)g_DisplayWidth, (LONG)g_DisplayHeight };
-//    AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
-//
-//    g_hWnd = CreateWindow(className, className, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
-//        rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInst, nullptr);
-//
-//    // ASSERT(g_hWnd != 0);
-//
-//    // bind window
-//    app.bindHWND(g_hWnd);
-//
-//    // init
-//    InitializeApplication(app);
-//    ShowWindow(g_hWnd, SW_SHOWDEFAULT);
-//
-//    // main loop
-//    do {
-//        MSG msg = {};
-//        bool done = false;
-//        while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
-//            TranslateMessage(&msg);
-//            DispatchMessage(&msg);
-//
-//            if (msg.message == WM_QUIT)
-//                done = true;
-//        }
-//
-//        if (done)
-//            break;
-//    } while (UpdateApplication(app)); // Returns false to quit loop
-//
-//    return 0;
-//}
-//#endif
-
 }

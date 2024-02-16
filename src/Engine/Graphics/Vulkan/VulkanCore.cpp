@@ -199,20 +199,19 @@ void VulkanCore::pickPhysicalDevice()
 
     if (m_pApp->args.physicalDeviceName.has_value()) {
         for (const auto& device : devices) {
-			VkPhysicalDeviceProperties properties;
-			vkGetPhysicalDeviceProperties(device, &properties);
-			if (std::string(properties.deviceName) == m_pApp->args.physicalDeviceName.value()) {
-                if (!isDeviceSuitable(device))
-                {
-                                std::cout << "The device given in args is not suitable: " << properties.deviceName << std::endl;
-                                std::runtime_error("The device given in args is not suitable");
+            VkPhysicalDeviceProperties properties;
+            vkGetPhysicalDeviceProperties(device, &properties);
+            if (std::string(properties.deviceName) == m_pApp->args.physicalDeviceName.value()) {
+                if (!isDeviceSuitable(device)) {
+                    std::cout << "The device given in args is not suitable: " << properties.deviceName << std::endl;
+                    std::runtime_error("The device given in args is not suitable");
                 }
-				physicalDevice = device;
-				msaaSamples = getMaxUsableSampleCount();
-				break;
-			}
-		}
-	}
+                physicalDevice = device;
+                msaaSamples = getMaxUsableSampleCount();
+                break;
+            }
+        }
+    }
 
     for (const auto& device : devices) {
         if (isDeviceSuitable(device)) {
@@ -1275,23 +1274,22 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t ima
     std::vector<MeshInstance> meshInstances;
     scene.Traverse(meshInstances);
     auto totalMeshCount = meshInstances.size();
-    if (m_pApp->args.cullingType == "frustum")
-    {
+    if (m_pApp->args.cullingType == "frustum") {
         std::vector<MeshInstance> meshInstancesCulled;
-		for (auto& MeshInst : meshInstances) {
-			// Frustum Culling
-			if (CameraManager::GetInstance().GetActiveCamera()->FrustumCulling(MeshInst.pMesh, MeshInst.matWorld))
-				meshInstancesCulled.push_back(MeshInst);
-		}
-		meshInstances = std::move(meshInstancesCulled);
+        for (auto& MeshInst : meshInstances) {
+            // Frustum Culling
+            if (CameraManager::GetInstance().GetActiveCamera()->FrustumCulling(MeshInst.pMesh, MeshInst.matWorld))
+                meshInstancesCulled.push_back(MeshInst);
+        }
+        meshInstances = std::move(meshInstancesCulled);
     }
     auto totalMeshCountAfterCulling = meshInstances.size();
 
 #if VERBOSE
     static size_t lastMeshInstanceCount = totalMeshCountAfterCulling;
     if (lastMeshInstanceCount != totalMeshCountAfterCulling) {
-                lastMeshInstanceCount = totalMeshCountAfterCulling;
-                std::cout << "MeshInstances: " << totalMeshCountAfterCulling << "/" << totalMeshCount << std::endl;
+        lastMeshInstanceCount = totalMeshCountAfterCulling;
+        std::cout << "MeshInstances: " << totalMeshCountAfterCulling << "/" << totalMeshCount << std::endl;
     }
 #endif
 
@@ -1475,7 +1473,6 @@ VkExtent2D VulkanCore::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabili
         return capabilities.currentExtent;
     } else {
         int width, height;
-
 
         m_pApp->info.window->GetWindowSize(width, height);
 

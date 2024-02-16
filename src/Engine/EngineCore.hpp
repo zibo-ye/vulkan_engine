@@ -1,7 +1,7 @@
 #pragma once
 
-#include "pch.hpp"
 #include "IO/IOInput.hpp"
+#include "pch.hpp"
 class IWindow;
 
 namespace EngineCore {
@@ -26,9 +26,9 @@ public:
     // Official rendering pass
     virtual void RenderScene(void) = 0;
 
-    virtual std::pair<int,int> GetWindowSize() = 0;
+    virtual std::pair<int, int> GetWindowSize() = 0;
 
-    void bindWindow(std::shared_ptr <IWindow> window)
+    void bindWindow(std::shared_ptr<IWindow> window)
     {
         info.window = window;
     }

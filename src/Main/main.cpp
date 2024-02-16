@@ -16,11 +16,11 @@ void MainApplication::ParseArguments(const Utility::ArgsParser& argsParser)
         exit(0);
     }
 
-    //#TODO : Implement these
-    //if (argsParser.GetArg("list-device-extensions")) {
-    //    printAllAvailableDeviceExtensions();
-    //    exit(0);
-    //}
+    // #TODO : Implement these
+    // if (argsParser.GetArg("list-device-extensions")) {
+    //     printAllAvailableDeviceExtensions();
+    //     exit(0);
+    // }
 
     // if (argsParser.GetArg("get-device-info")) {
     //    exit(0);
@@ -35,29 +35,29 @@ void MainApplication::ParseArguments(const Utility::ArgsParser& argsParser)
 
     auto cameraArg = argsParser.GetArg("camera");
     if (cameraArg.has_value()) {
-		args.cameraName = cameraArg.value()[0];
-	}
+        args.cameraName = cameraArg.value()[0];
+    }
 
-	auto physicalDeviceArg = argsParser.GetArg("physical-device");
+    auto physicalDeviceArg = argsParser.GetArg("physical-device");
     if (physicalDeviceArg.has_value()) {
-		args.physicalDeviceName = physicalDeviceArg.value()[0];
-	}
+        args.physicalDeviceName = physicalDeviceArg.value()[0];
+    }
 
-	auto windowSizeArg = argsParser.GetArg("drawing-size");
+    auto windowSizeArg = argsParser.GetArg("drawing-size");
     if (windowSizeArg.has_value()) {
-		args.windowSize.first = std::stoi(windowSizeArg.value()[0]);
-		args.windowSize.second = std::stoi(windowSizeArg.value()[1]);
-	}
+        args.windowSize.first = std::stoi(windowSizeArg.value()[0]);
+        args.windowSize.second = std::stoi(windowSizeArg.value()[1]);
+    }
 
-	auto cullingTypeArg = argsParser.GetArg("culling");
+    auto cullingTypeArg = argsParser.GetArg("culling");
     if (cullingTypeArg.has_value()) {
-		args.cullingType = cullingTypeArg.value()[0];
-	}
+        args.cullingType = cullingTypeArg.value()[0];
+    }
 
-	auto headlessEventsPathArg = argsParser.GetArg("headless");
+    auto headlessEventsPathArg = argsParser.GetArg("headless");
     if (headlessEventsPathArg.has_value()) {
-		args.headlessEventsPath = headlessEventsPathArg.value()[0];
-	}
+        args.headlessEventsPath = headlessEventsPathArg.value()[0];
+    }
 }
 
 void MainApplication::Startup(void)

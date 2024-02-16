@@ -66,7 +66,6 @@ std::vector<VkPhysicalDevice> getAllPhysicalDevices(VkInstance instance)
     return devices;
 }
 
-
 std::vector<VkQueueFamilyProperties> getAllQueueFamilies(VkPhysicalDevice device)
 {
     uint32_t queueFamilyCount = 0;
@@ -78,7 +77,6 @@ std::vector<VkQueueFamilyProperties> getAllQueueFamilies(VkPhysicalDevice device
     return queueFamilies;
 }
 
-
 VkPhysicalDeviceMemoryProperties getAllMemoryProperties(VkPhysicalDevice device)
 {
     VkPhysicalDeviceMemoryProperties memProperties;
@@ -86,7 +84,6 @@ VkPhysicalDeviceMemoryProperties getAllMemoryProperties(VkPhysicalDevice device)
 
     return memProperties;
 }
-
 
 VkFormat findSupportedFormat(VkPhysicalDevice device, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
 {
@@ -155,7 +152,6 @@ void printAllAvailableDeviceExtensions(VkPhysicalDevice device)
     }
 }
 
-
 void printAllQueueFamilies(VkPhysicalDevice device, std::vector<VkQueueFamilyProperties> queueFamilies)
 {
     VkPhysicalDeviceProperties properties {};
@@ -183,7 +179,6 @@ void printAllQueueFamilies(VkPhysicalDevice device, std::vector<VkQueueFamilyPro
         std::cout << "\ttimestampValidBits:\t" << queueFamily.timestampValidBits << "\n\n";
     }
 }
-
 
 void printMemoryTypeProperties(VkMemoryPropertyFlags flags)
 {
