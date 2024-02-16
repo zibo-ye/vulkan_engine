@@ -1,3 +1,4 @@
+#if USE_NATIVE_WINDOWS_API
 #include "Win32Window.hpp"
 #include "EngineCore.hpp"
 #include <stdexcept>
@@ -211,3 +212,4 @@ LRESULT CALLBACK Win32Window::WindowProc(HWND hWnd, UINT message, WPARAM wParam,
 
     return DefWindowProc(hWnd, message, wParam, lParam);
 }
+#endif

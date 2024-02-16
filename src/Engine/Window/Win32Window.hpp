@@ -1,4 +1,5 @@
 #pragma once
+#if USE_NATIVE_WINDOWS_API
 #include "IWindow.hpp"
 #include "pch.hpp"
 #include <Windows.h>
@@ -24,3 +25,4 @@ private:
 
     static LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 };
+#endif
