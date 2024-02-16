@@ -15,8 +15,14 @@ void MainApplication::ParseArguments(const Utility::ArgsParser& argsParser)
         printAllAvailableInstanceExtensions();
         exit(0);
     }
+
+    //#TODO : Implement these
     //if (argsParser.GetArg("list-device-extensions")) {
     //    printAllAvailableDeviceExtensions();
+    //    exit(0);
+    //}
+
+    // if (argsParser.GetArg("get-device-info")) {
     //    exit(0);
     //}
 

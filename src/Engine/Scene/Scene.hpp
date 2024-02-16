@@ -72,6 +72,7 @@ public:
     float m_minDriverLoopTime = std::numeric_limits<float>::min();
 
 private:
+    EngineCore::IApp *m_pApp = nullptr;
     float m_elapsedTime = 0.0f;
     bool m_isLooping = true;
     bool m_isPlaying = true;

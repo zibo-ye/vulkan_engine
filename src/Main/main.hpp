@@ -24,14 +24,4 @@ private:
 private:
     VulkanCore m_VulkanCore;
     std::shared_ptr<Scene> m_Scene;
-
-public:
-    struct MainApplicationArgs {
-        std::string scenePath;
-        std::optional<std::string> cameraName;
-        std::optional<std::string> physicalDeviceName;
-        std::pair<int, int> windowSize = { 800, 600 };
-        std::optional<std::string> cullingType;
-        std::optional<std::string> headlessEventsPath;
-    } args;
 };

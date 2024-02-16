@@ -8,12 +8,22 @@ void CameraManager::Init(EngineCore::IApp* pApp)
     // Add a default user camera
     std::string name = "UserCamera";
     auto userCamera = std::make_shared<UserCamera>(name);
+    userCamera->UpdateCameraParameters({ .aspect = float(pApp->args.windowSize.first) / float(pApp->args.windowSize.second) });
     CameraManager::GetInstance().AddCamera(name, userCamera);
-    activeCamera = userCamera;
 
 #ifndef NDEBUG
     debugCamera = std::make_shared<UserCamera>("DebugCamera");
+    debugCamera->UpdateCameraParameters({ .aspect = float(pApp->args.windowSize.first) / float(pApp->args.windowSize.second) });
 #endif
+
+    if (pApp->args.cameraName)
+    {
+        CameraManager::GetInstance().SetActiveCamera(pApp->args.cameraName.value());
+    }
+    else
+    {
+        CameraManager::GetInstance().SetActiveCamera(userCamera->name);
+	}
 
     // Register event handlers
     // #TODO: Support allocating different keys

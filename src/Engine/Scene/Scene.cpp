@@ -184,9 +184,7 @@ void Node::Traverse(glm::mat4 transform, std::vector<MeshInstance>& meshInst)
 
     if (meshIdx) {
         auto pMesh = pScene.lock()->meshes[*meshIdx];
-        // Frustum Culling
-        if (CameraManager::GetInstance().GetActiveCamera()->FrustumCulling(pMesh, worldTransform))
-            meshInst.push_back({ pMesh, worldTransform });
+        meshInst.push_back({ pMesh, worldTransform });
     }
 
     for (auto& child : childrenIdx) {

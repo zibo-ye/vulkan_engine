@@ -77,6 +77,16 @@ public:
     void RemoveEventHandler(int eventType, int handlerId);
 
     void RemoveAllEventHandlersForType(int eventType);
+
+public:
+    struct ApplicationArgs {
+        std::string scenePath;
+        std::optional<std::string> cameraName;
+        std::optional<std::string> physicalDeviceName;
+        std::pair<int, int> windowSize = { 800, 600 };
+        std::optional<std::string> cullingType;
+        std::optional<std::string> headlessEventsPath;
+    } args;
 };
 }
 

@@ -1,6 +1,7 @@
 #pragma once
 #include "Camera.hpp"
 #include "pch.hpp"
+#include "../Main/main.hpp"
 
 namespace EngineCore {
 class IApp;
