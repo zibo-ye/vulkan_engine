@@ -34,8 +34,8 @@ struct IOInput {
     EIOInputType type;
     std::optional<double> x, y;
     std::optional<EMouseButton> button;
-    std::optional<EKeyboardKeys> key;
-    std::optional<int> scancode;
+    std::optional<EKeyboardKeys> key; 
+    std::optional<int> scancode; // platform-specific scancode
     std::optional<EKeyAction> action;
-    std::optional<int> mods;
+    std::optional<int> mods; // bitfield
 };

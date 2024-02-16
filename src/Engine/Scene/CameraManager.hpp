@@ -96,7 +96,7 @@ private:
 #endif
 
     std::unordered_map<EKeyboardKeys, bool> keysActivated;
-    float keyboardMovingSpeed = 0.1f;
+    float keyboardMovingSpeed = 10.0f;
 
     float mouseSensitivity = glm::radians(1.0f);
     glm::vec2 lastMousePos;

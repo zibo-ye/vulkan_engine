@@ -87,6 +87,47 @@ VkSurfaceKHR Win32Window::CreateSurface(VkInstance instance)
     return surface;
 }
 
+EKeyboardKeys TranslateKey(int key)
+{
+    switch (key) {
+        case 'W':
+		return EKeyboardKeys::W;
+        case 'S':
+        return EKeyboardKeys::S;
+        case 'A':
+        return EKeyboardKeys::A;
+        case 'D':
+        return EKeyboardKeys::D;
+        case 'Q':
+        return EKeyboardKeys::Q;
+        case 'E':
+        return EKeyboardKeys::E;
+        case 'R':
+        return EKeyboardKeys::R;
+        case 'X':
+        return EKeyboardKeys::X;
+        case 'L':
+        return EKeyboardKeys::L;
+        case VK_UP:
+        return EKeyboardKeys::UP;
+        case VK_DOWN:
+        return EKeyboardKeys::DOWN;
+        case VK_LEFT:
+        return EKeyboardKeys::LEFT;
+        case VK_RIGHT:
+        return EKeyboardKeys::RIGHT;
+        case VK_SPACE:
+        return EKeyboardKeys::SPACE;
+        case VK_TAB:
+        return EKeyboardKeys::TAB;
+        case VK_F5:
+        return EKeyboardKeys::F5;
+        default:
+        return EKeyboardKeys::UNKNOWN;
+    }
+    return EKeyboardKeys::UNKNOWN;
+}
+
 LRESULT CALLBACK Win32Window::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     if (message == WM_NCCREATE) {
@@ -98,71 +139,66 @@ LRESULT CALLBACK Win32Window::WindowProc(HWND hWnd, UINT message, WPARAM wParam,
     Win32Window* window = reinterpret_cast<Win32Window*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 
     switch (message) {
-    //case WM_SIZE: {
-    //    int width = LOWORD(lParam);
-    //    int height = HIWORD(lParam);
+    case WM_SIZE: {
+        int width = LOWORD(lParam);
+        int height = HIWORD(lParam);
 
-    //    m_pApp->events.windowResized = true;
+        window->m_pApp->events.windowResized = true;
 
-    //    // Handling minimization (width and height become 0)
-    //    if (width == 0 || height == 0) {
-    //        // Optionally, handle minimization or pausing of rendering here
-    //    }
-    //} break;
-    //case WM_KEYDOWN:
-    //case WM_KEYUP: {
-    //    int key = wParam; // Virtual-Key Code
-    //    int action = (message == WM_KEYDOWN) ? 1 : 0; // 1 for press, 0 for release
+        // Handling minimization (width and height become 0)
+        if (width == 0 || height == 0) {
+            // Optionally, handle minimization or pausing of rendering here
+        }
+    } break;
+    case WM_KEYDOWN:
+    case WM_KEYUP: {
+        int key = static_cast<int>(wParam); // Virtual-Key Code
+        EKeyAction action = (message == WM_KEYDOWN) ? EKeyAction::PRESS : EKeyAction::RELEASE;
 
-    //     m_pApp->events.IOInputs.push(IOInput {
-    //        .type = EIOInputType::KEYBOARD,
-    //        .key = key,
-    //        .action = action,
-    //    });
-    //} break;
-    //case WM_MOUSEMOVE: {
-    //    double xpos = LOWORD(lParam);
-    //    double ypos = HIWORD(lParam);
+         window->m_pApp->events.IOInputs.push(IOInput {
+            .type = EIOInputType::KEYBOARD,
+            .key = TranslateKey(key),
+            .action = action,
+        });
+    } break;
+    case WM_MOUSEMOVE: {
+        double xpos = LOWORD(lParam);
+        double ypos = HIWORD(lParam);
 
-    //    m_pApp->events.IOInputs.push(IOInput {
-    //        .type = EIOInputType::MOUSE_MOVE,
-    //        .x = xpos,
-    //        .y = ypos,
-    //    });
-    //} break;
-    //case WM_LBUTTONDOWN:
-    //case WM_LBUTTONUP:
-    //case WM_RBUTTONDOWN:
-    //case WM_RBUTTONUP:
-    //    // Add cases for other buttons as needed
-    //    {
-    //        int button = (message == WM_LBUTTONDOWN || message == WM_LBUTTONUP) ? 0 : 1; // Example for left (0) and right (1) buttons
-    //        int action = (message == WM_LBUTTONDOWN || message == WM_RBUTTONDOWN) ? 1 : 0; // 1 for press, 0 for release
-    //        // Getting cursor position
-    //        POINTS pt = MAKEPOINTS(lParam);
-    //        double xpos = pt.x;
-    //        double ypos = pt.y;
+        window->m_pApp->events.IOInputs.push(IOInput {
+            .type = EIOInputType::MOUSE_MOVE,
+            .x = xpos,
+            .y = ypos,
+        });
+    } break;
+    case WM_LBUTTONDOWN:
+    case WM_LBUTTONUP:
+    case WM_RBUTTONDOWN:
+    case WM_RBUTTONUP:
+        {
+            EMouseButton button = (message == WM_LBUTTONDOWN || message == WM_LBUTTONUP) ? EMouseButton::LEFT : EMouseButton::RIGHT;
+            EKeyAction action = (message == WM_LBUTTONDOWN || message == WM_RBUTTONDOWN) ? EKeyAction::PRESS : EKeyAction::RELEASE;
+            // Getting cursor position
+            WORD xpos = LOWORD(lParam);
+            WORD ypos = HIWORD(lParam);
+            window->m_pApp->events.IOInputs.push(IOInput {
+                .type = EIOInputType::MOUSE_BUTTON,
+                .x = static_cast<double>(xpos),
+                .y = static_cast<double>(ypos),
+                .button = button,
+                .action = action,
+            });
+        }
+        break;
+    case WM_MOUSEWHEEL: {
+        auto zDelta = GET_WHEEL_DELTA_WPARAM(wParam); // Wheel rotation
+        double yoffset = zDelta / WHEEL_DELTA; // Wheel delta is defined as 120
 
-    //        m_pApp->events.IOInputs.push(IOInput {
-    //            .type = EIOInputType::MOUSE_BUTTON,
-    //            .x = xpos,
-    //            .y = ypos,
-    //            .button = button,
-    //            .action = action,
-    //            // 'mods' handling might need additional logic
-    //        });
-    //    }
-    //    break;
-    //case WM_MOUSEWHEEL: {
-    //    auto zDelta = GET_WHEEL_DELTA_WPARAM(wParam); // Wheel rotation
-    //    double yoffset = zDelta / WHEEL_DELTA; // Wheel delta is defined as 120
-
-    //    m_pApp->events.IOInputs.push(IOInput {
-    //        .type = EIOInputType::MOUSE_SCROLL,
-    //        // xoffset is typically 0 for vertical scroll, yoffset for the scroll amount
-    //        .y = yoffset,
-    //    });
-    //} break;
+        window->m_pApp->events.IOInputs.push(IOInput {
+            .type = EIOInputType::MOUSE_SCROLL,
+            .y = yoffset,
+        });
+    } break;
 
 
     case WM_DESTROY:

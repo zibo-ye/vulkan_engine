@@ -18,11 +18,11 @@ static void framebufferResizeCallback(GLFWwindow* window, int width, int height)
 EKeyAction GLFWKeyAction(int action)
 {
     switch (action) {
-	case EKeyAction::PRESS:
+	case GLFW_PRESS:
 		return EKeyAction::PRESS;
-	case EKeyAction::RELEASE:
+        case GLFW_RELEASE:
 		return EKeyAction::RELEASE;
-	case EKeyAction::REPEAT:
+        case GLFW_REPEAT:
 		return EKeyAction::REPEAT;
 	default:
 		return EKeyAction::UNKNOWN;
