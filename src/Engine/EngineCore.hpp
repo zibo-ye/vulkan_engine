@@ -1,26 +1,11 @@
 #pragma once
 
 #include "pch.hpp"
+#include "IO/IOInput.hpp"
+class IWindow;
 
 namespace EngineCore {
 extern bool gIsSupending;
-
-enum EIOInputType {
-    KEYBOARD,
-    MOUSE_BUTTON,
-    MOUSE_MOVE,
-    MOUSE_SCROLL,
-};
-
-struct IOInput {
-    EIOInputType type;
-    std::optional<double> x, y;
-    std::optional<int> button;
-    std::optional<int> key;
-    std::optional<int> scancode;
-    std::optional<int> action;
-    std::optional<int> mods;
-};
 
 class IApp {
 public:
@@ -43,23 +28,14 @@ public:
 
     virtual std::pair<int,int> GetWindowSize() = 0;
 
-#if USE_NATIVE_WINDOWS_API
-public:
-    void bindHWND(HWND hwnd) { info.m_hwnd = hwnd; }
-#endif
-#if USE_GLFW
-public:
-    void bindGLFWWindow(GLFWwindow* window) { info.m_pGLFWWindow = window; }
-#endif
+    void bindWindow(std::shared_ptr <IWindow> window)
+    {
+        info.window = window;
+    }
 
 public:
     struct IAppInfo {
-#if USE_NATIVE_WINDOWS_API
-        HWND m_hwnd;
-#endif
-#if USE_GLFW
-        GLFWwindow* m_pGLFWWindow = nullptr;
-#endif
+        std::shared_ptr<IWindow> window;
     } info;
 
     struct IAppEvent {
@@ -68,15 +44,15 @@ public:
     } events;
 
 protected:
-    std::unordered_map<int, std::vector<std::pair<int, std::function<void(EngineCore::IOInput)>>>> eventHandlers;
+    std::unordered_map<EIOInputType, std::vector<std::pair<int, std::function<void(IOInput)>>>> eventHandlers;
 
 public:
     // Returns the handler ID
-    int RegisterEventHandler(EIOInputType eventType, std::function<void(EngineCore::IOInput)> handler);
+    int RegisterEventHandler(EIOInputType eventType, std::function<void(IOInput)> handler);
 
-    void RemoveEventHandler(int eventType, int handlerId);
+    void RemoveEventHandler(EIOInputType eventType, int handlerId);
 
-    void RemoveAllEventHandlersForType(int eventType);
+    void RemoveAllEventHandlersForType(EIOInputType eventType);
 
 public:
     struct ApplicationArgs {

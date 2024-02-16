@@ -2,6 +2,7 @@
 #include "CameraManager.hpp"
 #include "EngineCore.hpp"
 #include "Scene.hpp"
+#include "IO/IOInput.hpp"
 
 void CameraManager::Init(EngineCore::IApp* pApp)
 {
@@ -29,18 +30,18 @@ void CameraManager::Init(EngineCore::IApp* pApp)
     // #TODO: Support allocating different keys
 
     // Tab: Switch between cameras
-    pApp->RegisterEventHandler(EngineCore::KEYBOARD, [this](EngineCore::IOInput input) {
-        if (input.key == GLFW_KEY_TAB && input.action == GLFW_PRESS)
+    pApp->RegisterEventHandler(EIOInputType::KEYBOARD, [this](IOInput input) {
+        if (input.key == EKeyboardKeys::TAB && input.action == EKeyAction::PRESS)
             this->SwitchToNextCamera();
     });
 
     // W, A, S, D, Q, E, R: Move the user camera
-    pApp->RegisterEventHandler(EngineCore::KEYBOARD, [this](EngineCore::IOInput input) {
-        // GLFW_REPEAT only works after a delay, so event won't be triggered immediately, see CameraManager::UpdateCamera()
-        keysActivated[input.key.value()] = (input.action == GLFW_PRESS || input.action == GLFW_REPEAT); // no GLFW_RELEASE means activated.
+    pApp->RegisterEventHandler(EIOInputType::KEYBOARD, [this](IOInput input) {
+        // EKeyAction::REPEAT only works after a delay, so event won't be triggered immediately, see CameraManager::UpdateCamera()
+        keysActivated[input.key.value()] = (input.action == EKeyAction::PRESS || input.action == EKeyAction::REPEAT); // no EKeyAction::RELEASE means activated.
 
 #ifndef NDEBUG
-        if (input.key == GLFW_KEY_F5 && input.action == GLFW_PRESS) {
+        if (input.key == EKeyboardKeys::F5 && input.action == EKeyAction::PRESS) {
             isDebugCameraActive = !isDebugCameraActive;
             std::cout << "Debug Camera: " << (isDebugCameraActive ? "Active" : "Inactive") << "\n";
         }
@@ -48,18 +49,18 @@ void CameraManager::Init(EngineCore::IApp* pApp)
     });
 
     // Mouse drag: Rotate the user camera
-    pApp->RegisterEventHandler(EngineCore::MOUSE_BUTTON, [this](EngineCore::IOInput input) {
+    pApp->RegisterEventHandler(EIOInputType::MOUSE_BUTTON, [this](IOInput input) {
         auto camera = activeCamera;
 #ifndef NDEBUG
         if (IsDebugModeActive())
             camera = GetDebugCamera();
 #endif
-        if (camera->getType() == ECameraType::EUser && input.button == GLFW_MOUSE_BUTTON_LEFT) {
-            if (input.action == GLFW_PRESS) {
+        if (camera->getType() == ECameraType::EUser && input.button == EMouseButton::LEFT) {
+            if (input.action == EKeyAction::PRESS) {
                 // When the left mouse button is pressed, record the current mouse position
                 lastMousePos = glm::vec2(input.x.value(), input.y.value());
                 isMouseLeftButtonDown = true;
-            } else if (input.action == GLFW_RELEASE) {
+            } else if (input.action == EKeyAction::RELEASE) {
                 // Reset the last mouse position when the button is released
                 lastMousePos = glm::vec2(-1, -1);
                 isMouseLeftButtonDown = false;
@@ -67,7 +68,7 @@ void CameraManager::Init(EngineCore::IApp* pApp)
         }
     });
 
-    pApp->RegisterEventHandler(EngineCore::MOUSE_MOVE, [this](EngineCore::IOInput input) {
+    pApp->RegisterEventHandler(EIOInputType::MOUSE_MOVE, [this](IOInput input) {
         auto camera = activeCamera;
 #ifndef NDEBUG
         if (IsDebugModeActive())
@@ -118,7 +119,7 @@ void CameraManager::Init(EngineCore::IApp* pApp)
     });
 
     // Mouse Scroll: Zoom in/out the user camera
-    pApp->RegisterEventHandler(EngineCore::MOUSE_SCROLL, [this](EngineCore::IOInput input) {
+    pApp->RegisterEventHandler(EIOInputType::MOUSE_SCROLL, [this](IOInput input) {
         auto camera = activeCamera;
 #ifndef NDEBUG
         if (IsDebugModeActive())
@@ -155,33 +156,33 @@ void CameraManager::UpdateCamera(float deltaTime)
 
         float movingSpeed = keyboardMovingSpeed * deltaTime;
 
-        if (keysActivated[GLFW_KEY_W]) {
+        if (keysActivated[EKeyboardKeys::W]) {
             auto right = glm::cross(lookAtDir, upDir);
             auto screenUp = glm::cross(right, lookAtDir);
             userCamera->fromPos += screenUp * movingSpeed;
             userCamera->lookAtPos += screenUp * movingSpeed;
-        } else if (keysActivated[GLFW_KEY_S]) {
+        } else if (keysActivated[EKeyboardKeys::S]) {
             auto right = glm::cross(lookAtDir, upDir);
             auto screenUp = glm::cross(right, lookAtDir);
             userCamera->fromPos -= screenUp * movingSpeed;
             userCamera->lookAtPos -= screenUp * movingSpeed;
-        } else if (keysActivated[GLFW_KEY_A]) {
+        } else if (keysActivated[EKeyboardKeys::A]) {
             auto right = glm::cross(lookAtDir, upDir);
             right = glm::normalize(right);
             userCamera->fromPos -= right * movingSpeed;
             userCamera->lookAtPos -= right * movingSpeed;
-        } else if (keysActivated[GLFW_KEY_D]) {
+        } else if (keysActivated[EKeyboardKeys::D]) {
             auto right = glm::cross(lookAtDir, upDir);
             right = glm::normalize(right);
             userCamera->fromPos += right * movingSpeed;
             userCamera->lookAtPos += right * movingSpeed;
-        } else if (keysActivated[GLFW_KEY_Q]) {
+        } else if (keysActivated[EKeyboardKeys::Q]) {
             userCamera->fromPos += lookAtDir * movingSpeed;
             userCamera->lookAtPos += lookAtDir * movingSpeed;
-        } else if (keysActivated[GLFW_KEY_E]) {
+        } else if (keysActivated[EKeyboardKeys::E]) {
             userCamera->fromPos -= lookAtDir * movingSpeed;
             userCamera->lookAtPos -= lookAtDir * movingSpeed;
-        } else if (keysActivated[GLFW_KEY_X]) {
+        } else if (keysActivated[EKeyboardKeys::X]) {
             *userCamera = UserCamera(userCamera->name);
         }
     }

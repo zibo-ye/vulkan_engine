@@ -95,7 +95,7 @@ private:
     bool isDebugCameraActive = false;
 #endif
 
-    std::unordered_map<int, bool> keysActivated;
+    std::unordered_map<EKeyboardKeys, bool> keysActivated;
     float keyboardMovingSpeed = 0.1f;
 
     float mouseSensitivity = glm::radians(1.0f);

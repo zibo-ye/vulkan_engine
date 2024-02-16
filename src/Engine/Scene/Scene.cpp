@@ -62,14 +62,14 @@ void Scene::PrintStatistics() const
 
 void Scene::RegisterEventHandlers(EngineCore::IApp* pApp)
 {
-    pApp->RegisterEventHandler(EngineCore::KEYBOARD, [this](EngineCore::IOInput input) {
-        if (input.key == GLFW_KEY_SPACE && input.action == GLFW_PRESS) {
+    pApp->RegisterEventHandler(EIOInputType::KEYBOARD, [this](IOInput input) {
+        if (input.key == EKeyboardKeys::SPACE && input.action == EKeyAction::PRESS) {
             m_isPlaying = !m_isPlaying;
         }
-        if (input.key == GLFW_KEY_L && input.action == GLFW_PRESS) {
+        if (input.key == EKeyboardKeys::L && input.action == EKeyAction::PRESS) {
             m_isLooping = !m_isLooping;
         }
-        if (input.key == GLFW_KEY_R && input.action == GLFW_PRESS) {
+        if (input.key == EKeyboardKeys::R && input.action == EKeyAction::PRESS) {
             m_elapsedTime = 0.0f;
         }
     });

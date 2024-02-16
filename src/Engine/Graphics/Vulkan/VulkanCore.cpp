@@ -108,15 +108,6 @@ void VulkanCore::Shutdown()
 
 void VulkanCore::recreateSwapChain()
 {
-#if USE_GLFW
-    int width = 0, height = 0;
-    glfwGetFramebufferSize(m_pApp->info.m_pGLFWWindow, &width, &height);
-    while (width == 0 || height == 0) {
-        glfwGetFramebufferSize(m_pApp->info.m_pGLFWWindow, &width, &height);
-        glfwWaitEvents();
-    }
-#endif
-
     vkDeviceWaitIdle(device);
 
     cleanupSwapChain();
@@ -197,25 +188,9 @@ void VulkanCore::setupDebugMessenger()
     }
 }
 
-// instance + hwnd/glfwWindow -> surface
 void VulkanCore::createSurface()
 {
-#if USE_NATIVE_WINDOWS_API
-    VkWin32SurfaceCreateInfoKHR createInfo {
-        .sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
-        .hinstance = GetModuleHandle(nullptr),
-        .hwnd = m_pApp->info.m_hwnd
-    };
-    if (vkCreateWin32SurfaceKHR(instance, &createInfo, nullptr, &surface) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create window surface!");
-    }
-#endif // USE_NATIVE_WINDOWS_API
-
-#if USE_GLFW
-    if (glfwCreateWindowSurface(instance, m_pApp->info.m_pGLFWWindow, nullptr, &surface) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create window surface!");
-    }
-#endif // USE_GLFW
+    surface = m_pApp->info.window->CreateSurface(instance);
 }
 
 void VulkanCore::pickPhysicalDevice()
@@ -1501,15 +1476,9 @@ VkExtent2D VulkanCore::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabili
     } else {
         int width, height;
 
-#if USE_NATIVE_WINDOWS_API
-        RECT rect;
-        GetClientRect(m_pApp->info.m_hwnd, &rect);
-        width = rect.right - rect.left;
-        height = rect.bottom - rect.top;
-#endif
-#if USE_GLFW
-        glfwGetFramebufferSize(m_pApp->info.m_pGLFWWindow, &width, &height);
-#endif
+
+        m_pApp->info.window->GetWindowSize(width, height);
+
         VkExtent2D actualExtent = {
             static_cast<uint32_t>(width),
             static_cast<uint32_t>(height)
