@@ -13,3 +13,5 @@ vsxmake2022
 .vscode/settings.json
 
 shader_build/**
+*.ppm
+data/
