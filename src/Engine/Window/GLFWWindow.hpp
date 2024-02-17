@@ -13,5 +13,10 @@ public:
     virtual bool ShouldClose() override;
     virtual void GetWindowSize(int& width, int& height) const override;
     virtual VkSurfaceKHR CreateSurface(VkInstance instance) override;
+
+    bool IsHeadless() const override
+    {
+        return false;
+    }
 };
 #endif

@@ -78,7 +78,7 @@ void Scene::RegisterEventHandlers(EngineCore::IApp* pApp)
 void Scene::Update(float deltaTime)
 {
     if (m_isPlaying)
-        m_elapsedTime += deltaTime;
+        m_elapsedTime += deltaTime * m_PlaybackSpeed;
 
     float inloopTime = m_elapsedTime;
     if (m_isLooping) {
@@ -121,6 +121,12 @@ void Scene::Traverse(std::vector<MeshInstance>& meshInsts)
     for (auto& root : roots) {
         nodes[root]->Traverse(glm::mat4(1.0f), meshInsts);
     }
+}
+
+void Scene::SetPlaybackTimeAndRate(float playbackTime, float playbackRate)
+{
+	m_elapsedTime = playbackTime;
+	m_PlaybackSpeed = playbackRate;
 }
 
 static std::shared_ptr<Scene> defaultScene()

@@ -18,6 +18,11 @@ public:
     void GetWindowSize(int& width, int& height) const override;
     VkSurfaceKHR CreateSurface(VkInstance instance) override;
 
+
+ bool IsHeadless() const override {
+		return false;
+	}
+    
 private:
     HWND hwnd = nullptr;
     bool shouldClose = false;

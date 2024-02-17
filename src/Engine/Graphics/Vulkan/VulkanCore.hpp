@@ -36,12 +36,6 @@ struct QueueFamilyIndices {
     }
 };
 
-struct SwapChainSupportDetails {
-    VkSurfaceCapabilitiesKHR capabilities;
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR> presentModes;
-};
-
 struct UniformBufferObject {
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
@@ -130,7 +124,7 @@ public:
 
     void createSwapChain();
 
-    void createImageViews();
+    void createSwapchainImageViews();
 
     void createRenderPass();
 
@@ -197,8 +191,8 @@ public:
 
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
-    SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
 
+    
     bool isDeviceSuitable(VkPhysicalDevice device);
 
     bool checkDeviceExtensionSupport(VkPhysicalDevice device);
@@ -217,4 +211,7 @@ public:
 public:
     VkDevice GetDevice() const { return device; }
     VkInstance GetInstance() const { return instance; }
+public:
+    void PresentImage();
+    void SaveFrame(std::string savePath);
 };

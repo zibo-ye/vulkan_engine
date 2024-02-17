@@ -19,7 +19,13 @@ public:
 
     std::pair<int, int> GetWindowSize() override { return args.windowSize; };
 
-private:
+    void PresentImage() override;
+
+    void SetPlaybackTimeAndRate(float playbackTime, float playbackRate) override;
+
+    void SaveFrame(std::string savePath) override;
+
+ private:
     void ProcessEvents();
 
 private:

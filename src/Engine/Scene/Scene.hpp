@@ -65,6 +65,7 @@ public:
     void Update(float deltaTime);
     // #TODO: don't have to traverse and update all meshInstances every frame, only the ones that have changed, the rest can be cached
     void Traverse(std::vector<MeshInstance>& meshInsts);
+    void SetPlaybackTimeAndRate(float playbackTime, float playbackRate);
 
 public:
     std::unordered_map<size_t, std::vector<size_t>> nodeParents;
@@ -74,6 +75,7 @@ public:
 private:
     EngineCore::IApp* m_pApp = nullptr;
     float m_elapsedTime = 0.0f;
+    float m_PlaybackSpeed = 1.0f;
     bool m_isLooping = true;
     bool m_isPlaying = true;
 };

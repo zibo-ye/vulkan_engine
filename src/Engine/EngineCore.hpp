@@ -33,6 +33,10 @@ public:
         info.window = window;
     }
 
+    virtual void PresentImage() = 0;
+    virtual void SetPlaybackTimeAndRate(float playbackTime, float playbackRate) = 0;
+    virtual void SaveFrame(std::string savePath) = 0;
+
 public:
     struct IAppInfo {
         std::shared_ptr<IWindow> window;

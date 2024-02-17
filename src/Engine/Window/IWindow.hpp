@@ -12,4 +12,5 @@ public:
     virtual void GetWindowSize(int& width, int& height) const = 0;
     virtual VkSurfaceKHR CreateSurface(VkInstance instance) = 0; // For Vulkan surface creation
     virtual ~IWindow() = default;
+    virtual bool IsHeadless() const = 0;
 };

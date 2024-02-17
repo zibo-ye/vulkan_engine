@@ -26,7 +26,7 @@ void VulkanCore::Init(EngineCore::IApp* pApp)
     pickPhysicalDevice();
     createLogicalDevice();
     createSwapChain();
-    createImageViews();
+    createSwapchainImageViews();
     createRenderPass();
     createDescriptorSetLayout();
     createGraphicsPipeline();
@@ -113,7 +113,7 @@ void VulkanCore::recreateSwapChain()
     cleanupSwapChain();
 
     createSwapChain();
-    createImageViews();
+    createSwapchainImageViews();
     createColorResources();
     createDepthResources();
     createFramebuffers();
@@ -302,7 +302,7 @@ void VulkanCore::createLogicalDevice()
 
 void VulkanCore::createSwapChain()
 {
-    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
+    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice, surface);
 
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
     VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
@@ -351,7 +351,7 @@ void VulkanCore::createSwapChain()
     swapChainExtent = extent;
 }
 
-void VulkanCore::createImageViews()
+void VulkanCore::createSwapchainImageViews()
 {
     swapChainImageViews.resize(swapChainImages.size());
 
@@ -1488,31 +1488,6 @@ VkExtent2D VulkanCore::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabili
     }
 }
 
-SwapChainSupportDetails VulkanCore::querySwapChainSupport(VkPhysicalDevice device)
-{
-    SwapChainSupportDetails details;
-
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
-
-    uint32_t formatCount;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
-
-    if (formatCount != 0) {
-        details.formats.resize(formatCount);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
-    }
-
-    uint32_t presentModeCount;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
-
-    if (presentModeCount != 0) {
-        details.presentModes.resize(presentModeCount);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.presentModes.data());
-    }
-
-    return details;
-}
-
 bool VulkanCore::isDeviceSuitable(VkPhysicalDevice device)
 {
     QueueFamilyIndices indices = findQueueFamilies(device);
@@ -1521,7 +1496,7 @@ bool VulkanCore::isDeviceSuitable(VkPhysicalDevice device)
 
     bool swapChainAdequate = false;
     if (extensionsSupported) {
-        SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
+        SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device, surface);
         swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
     }
 
@@ -1574,17 +1549,21 @@ QueueFamilyIndices VulkanCore::findQueueFamilies(VkPhysicalDevice device)
 
 std::vector<const char*> VulkanCore::getRequiredExtensions()
 {
-
+    std::vector<const char*> extensions;
+    if (!m_pApp->info.window->IsHeadless())
+    {
 #if USE_GLFW
-    uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+        uint32_t glfwExtensionCount = 0;
+        const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 #else
-    // https://www.glfw.org/docs/3.3/group__vulkan.html#:~:text=glfwGetRequiredInstanceExtensions()&text=This%20function%20returns%20an%20array,Vulkan%20surfaces%20for%20GLFW%20windows.
-    uint32_t glfwExtensionCount = 2;
-    const char* glfwExtensions[] = { "VK_KHR_surface", "VK_KHR_win32_surface" };
+        // https://www.glfw.org/docs/3.3/group__vulkan.html#:~:text=glfwGetRequiredInstanceExtensions()&text=This%20function%20returns%20an%20array,Vulkan%20surfaces%20for%20GLFW%20windows.
+        uint32_t glfwExtensionCount = 2;
+        const char* glfwExtensions[] = { "VK_KHR_surface", "VK_KHR_win32_surface" };
 #endif // USE_GLFW
+        extensions = std::vector<const char*>(glfwExtensions, glfwExtensions + glfwExtensionCount);
+    }
 
-    std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+    //std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
 #if __APPLE__
     // Encountered VK_ERROR_INCOMPATIBLE_DRIVER on MacOS with MoltenVK
@@ -1666,4 +1645,12 @@ void VulkanCore::testvkm()
     v1 += v2;
 
     std::cout << v1.r() << std::endl;
+}
+
+void VulkanCore::PresentImage()
+{
+}
+
+void VulkanCore::SaveFrame(std::string savePath)
+{
 }

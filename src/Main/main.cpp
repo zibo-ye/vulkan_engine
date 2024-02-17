@@ -87,6 +87,21 @@ void MainApplication::RenderScene(void)
     m_VulkanCore.drawFrame(*m_Scene);
 }
 
+void MainApplication::PresentImage()
+{
+    m_VulkanCore.PresentImage();
+}
+
+void MainApplication::SetPlaybackTimeAndRate(float playbackTime, float playbackRate)
+{
+    m_Scene->SetPlaybackTimeAndRate(playbackTime, playbackRate);
+}
+
+void MainApplication::SaveFrame(std::string savePath)
+{
+    m_VulkanCore.SaveFrame(savePath);
+}
+
 void MainApplication::ProcessEvents()
 {
     while (!events.IOInputs.empty()) {

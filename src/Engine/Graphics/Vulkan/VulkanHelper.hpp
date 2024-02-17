@@ -17,10 +17,18 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 #define VK_CHECK_RESULT(FN) FN
 #endif
 
+
+struct SwapChainSupportDetails {
+    VkSurfaceCapabilitiesKHR capabilities;
+    std::vector<VkSurfaceFormatKHR> formats;
+    std::vector<VkPresentModeKHR> presentModes;
+};
+
 std::vector<VkExtensionProperties> getAllAvailableInstanceExtensions();
 std::vector<VkLayerProperties> getAllAvailableLayers();
 std::vector<VkExtensionProperties> getAllAvailableDeviceExtensions(VkPhysicalDevice device);
 std::vector<VkPhysicalDevice> getAllPhysicalDevices(VkInstance instance);
+SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);
 std::vector<VkQueueFamilyProperties> getAllQueueFamilies(VkPhysicalDevice device);
 VkPhysicalDeviceMemoryProperties getAllMemoryProperties(VkPhysicalDevice device);
 VkFormat findSupportedFormat(VkPhysicalDevice device, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);

@@ -14,6 +14,7 @@
 
 #include "Window/GLFWWindow.hpp"
 #include "Window/Win32Window.hpp"
+#include "Window/HeadlessWindow.hpp"
 
 #pragma comment(lib, "runtimeobject.lib")
 
@@ -110,8 +111,12 @@ void IApp::RemoveAllEventHandlersForType(EIOInputType eventType)
     eventHandlers.erase(eventType);
 }
 
-std::shared_ptr<IWindow> CreateIWindow()
+std::shared_ptr<IWindow> CreateIWindow(std::optional<std::string> headlessEventsPath)
 {
+    if (headlessEventsPath.has_value()) {
+        std::cout << "Creating headless window with events path: " << headlessEventsPath.value() << std::endl;
+		return std::make_shared<HeadlessWindow>(headlessEventsPath.value());
+	}
 #if USE_GLFW
     return std::make_shared<GLFWWindow>();
 #elif USE_NATIVE_WINDOWS_API
@@ -126,7 +131,7 @@ int RunApplication(IApp&& app, const char* className, const Utility::ArgsParser&
     app.ParseArguments(args);
 
     auto windowSize = app.GetWindowSize();
-    std::shared_ptr<IWindow> window = CreateIWindow();
+    std::shared_ptr<IWindow> window = CreateIWindow(app.args.headlessEventsPath);
     window->Create(className, windowSize.first, windowSize.second, app);
 
     app.bindWindow(window);
