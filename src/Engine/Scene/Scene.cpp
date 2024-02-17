@@ -75,6 +75,14 @@ void Scene::RegisterEventHandlers(EngineCore::IApp* pApp)
     });
 }
 
+void Scene::Cleanup() const
+{
+	for (auto& [_, pMesh] : meshes) {
+        if (pMesh->meshData)
+            pMesh->meshData->releaseModelFromGPU();
+	}
+}
+
 void Scene::Update(float deltaTime)
 {
     if (m_isPlaying)

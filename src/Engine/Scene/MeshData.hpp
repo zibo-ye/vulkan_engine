@@ -88,13 +88,17 @@ bool MeshData<VertexType, IndexType>::releaseModelFromGPU()
         return false;
     assert(m_pVulkanCore != nullptr);
 
-    if (indexBuffer.has_value())
-        vkDestroyBuffer(m_pVulkanCore->GetDevice(), indexBuffer.value(), nullptr);
-    if (indexBufferMemory.has_value())
-        vkFreeMemory(m_pVulkanCore->GetDevice(), indexBufferMemory.value(), nullptr);
+    auto device = m_pVulkanCore->GetDevice();
+    if (device != VK_NULL_HANDLE)
+    {
+        if (indexBuffer.has_value())
+            vkDestroyBuffer(device, indexBuffer.value(), nullptr);
+        if (indexBufferMemory.has_value())
+            vkFreeMemory(device, indexBufferMemory.value(), nullptr);
 
-    vkDestroyBuffer(m_pVulkanCore->GetDevice(), vertexBuffer, nullptr);
-    vkFreeMemory(m_pVulkanCore->GetDevice(), vertexBufferMemory, nullptr);
+        vkDestroyBuffer(device, vertexBuffer, nullptr);
+        vkFreeMemory(device, vertexBufferMemory, nullptr);
+    }
     return true;
 }
 

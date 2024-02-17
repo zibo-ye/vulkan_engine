@@ -78,9 +78,8 @@ private:
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
-    std::vector<VkFence> inFlightFences;
+    std::vector<VkFence> swapchainImageFences;
     uint32_t currentFrameInFlight = 0;
-    uint32_t nextImageIndex = 0;
 
     uint32_t mipLevels;
     VkImage textureImage;
@@ -101,6 +100,8 @@ public:
     void Init(EngineCore::IApp* pApp);
 
     void cleanupSwapChain();
+
+    void WaitIdle();
 
     void Shutdown();
 
@@ -182,7 +183,7 @@ public:
     void updateUniformBuffer(uint32_t currentImage);
 
     void drawFrame(Scene& scene);
-
+    void drawFrameHeadless(Scene& scene);
     VkShaderModule createShaderModule(const std::vector<char>& code);
 
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
@@ -208,4 +209,12 @@ public:
 public:
     void PresentImage();
     void SaveFrame(const std::string& savePath);
+
+private:
+    uint32_t AcquireNextImageIndex();
+    uint32_t AcquireLastImageIndex();
+
+    uint32_t nextImageIndex = 0;
+    uint32_t lastImageIndex = 0;
+    bool readyForNextImage = false;
 };

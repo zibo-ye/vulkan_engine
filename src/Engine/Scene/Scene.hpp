@@ -61,6 +61,8 @@ public:
 
     void RegisterEventHandlers(EngineCore::IApp* pApp);
 
+void Cleanup() const;
+
 public:
     void Update(float deltaTime);
     // #TODO: don't have to traverse and update all meshInstances every frame, only the ones that have changed, the rest can be cached

@@ -72,6 +72,8 @@ void MainApplication::Startup(void)
 
 void MainApplication::Cleanup(void)
 {
+    m_VulkanCore.WaitIdle();
+    m_Scene->Cleanup();
     m_VulkanCore.Shutdown();
 }
 
