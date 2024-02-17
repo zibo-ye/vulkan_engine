@@ -14,9 +14,12 @@ const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
 };
 
-const std::vector<const char*> deviceExtensions = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME
+const std::vector<const char*> deviceExtensionsWithoutSwapchain = {
 };
+const std::vector<const char*> deviceExtensions = {
+	VK_KHR_SWAPCHAIN_EXTENSION_NAME
+};
+
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -26,15 +29,7 @@ const bool enableValidationLayers = true;
 
 const std::string TEXTURE_PATH = "textures/viking_room.png";
 
-struct QueueFamilyIndices {
-    std::optional<uint32_t> graphicsFamily;
-    std::optional<uint32_t> presentFamily;
 
-    bool isComplete()
-    {
-        return graphicsFamily.has_value() && presentFamily.has_value();
-    }
-};
 
 struct UniformBufferObject {
     alignas(16) glm::mat4 view;
@@ -48,7 +43,7 @@ private:
 private:
     VkInstance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
-    VkSurfaceKHR surface;
+    std::optional<VkSurfaceKHR> surface;
 
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkDevice device;
@@ -57,6 +52,8 @@ private:
     VkQueue presentQueue;
 
     VkSwapchainKHR swapChain;
+
+    std::vector<VkDeviceMemory> swapChainImagesMemory;
     std::vector<VkImage> swapChainImages;
     VkFormat swapChainImageFormat;
     VkExtent2D swapChainExtent;
@@ -82,7 +79,8 @@ private:
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
-    uint32_t currentFrame = 0;
+    uint32_t currentFrameInFlight = 0;
+    uint32_t nextImageIndex = 0;
 
     uint32_t mipLevels;
     VkImage textureImage;
@@ -144,6 +142,8 @@ public:
 
     void createTextureImage();
 
+	std::unique_ptr<uint8_t[]> copyTextureToMemory(VkImage textureImage, uint32_t texWidth, uint32_t texHeight);
+
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
 
     void createTextureImageView();
@@ -164,7 +164,7 @@ public:
 
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) const;
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-
+	void copyImageToBuffer(VkImage image, VkBuffer buffer, uint32_t width, uint32_t height);
     VkCommandBuffer beginSingleTimeCommands() const;
 
     void endSingleTimeCommands(VkCommandBuffer commandBuffer) const;
@@ -190,15 +190,7 @@ public:
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
-
-
     
-    bool isDeviceSuitable(VkPhysicalDevice device);
-
-    bool checkDeviceExtensionSupport(VkPhysicalDevice device);
-
-    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
-
     std::vector<const char*> getRequiredExtensions();
 
     bool checkValidationLayerSupport();
@@ -211,7 +203,9 @@ public:
 public:
     VkDevice GetDevice() const { return device; }
     VkInstance GetInstance() const { return instance; }
+    bool IsHeadless() const { return (m_pApp && m_pApp->info.window->IsHeadless()); }
+
 public:
     void PresentImage();
-    void SaveFrame(std::string savePath);
+    void SaveFrame(const std::string& savePath);
 };

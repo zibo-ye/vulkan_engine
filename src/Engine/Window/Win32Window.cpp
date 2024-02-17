@@ -72,7 +72,7 @@ void Win32Window::GetWindowSize(int& width, int& height) const
     }
 }
 
-VkSurfaceKHR Win32Window::CreateSurface(VkInstance instance)
+std::optional<VkSurfaceKHR> Win32Window::CreateSurface(VkInstance instance)
 {
     VkSurfaceKHR surface;
 

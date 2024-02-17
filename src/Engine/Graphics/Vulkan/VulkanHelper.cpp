@@ -91,6 +91,80 @@ SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurface
     return details;
 }
 
+QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, std::optional<VkSurfaceKHR> surface)
+{
+    QueueFamilyIndices indices;
+    std::vector<VkQueueFamilyProperties> queueFamilies = getAllQueueFamilies(device);
+
+    int i = 0;
+    for (const auto& queueFamily : queueFamilies) {
+        if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+            indices.graphicsFamily = i;
+        }
+
+        if (surface.has_value())
+        {
+            VkBool32 presentSupport = false;
+            vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface.value(), &presentSupport);
+
+            if (presentSupport) {
+                indices.presentFamily = i;
+            }
+        }
+
+        if (indices.isComplete(!surface.has_value())) {
+            break;
+        }
+
+        i++;
+    }
+
+    return indices;
+}
+
+bool isDeviceSuitable(VkPhysicalDevice device, std::optional<VkSurfaceKHR> surface)
+{
+    QueueFamilyIndices indices = findQueueFamilies(device, surface);
+    VkPhysicalDeviceFeatures supportedFeatures;
+    vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
+
+    bool extensionsSupported = checkDeviceExtensionSupport(device, !surface.has_value());
+
+    if (!surface.has_value()) // Headless
+    {
+        return indices.isComplete(!surface.has_value()) && extensionsSupported && supportedFeatures.samplerAnisotropy;
+    }
+    else
+    {
+        bool swapChainAdequate = false;
+        if (extensionsSupported) {
+            SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device, surface.value());
+            swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+        }
+        return indices.isComplete(!surface.has_value()) && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
+    }
+}
+
+bool checkDeviceExtensionSupport(VkPhysicalDevice device, bool isHeadless)
+{
+    std::vector<VkExtensionProperties> availableExtensions = getAllAvailableDeviceExtensions(device);
+    std::set<std::string> requiredExtensions;
+    if (isHeadless)
+    {
+        requiredExtensions = std::set<std::string>(deviceExtensionsWithoutSwapchain.begin(), deviceExtensionsWithoutSwapchain.end());
+    }
+    else
+    {
+        requiredExtensions = std::set<std::string>(deviceExtensions.begin(), deviceExtensions.end());
+    }
+
+    for (const auto& extension : availableExtensions) {
+        requiredExtensions.erase(extension.extensionName);
+    }
+
+    return requiredExtensions.empty();
+}
+
 std::vector<VkQueueFamilyProperties> getAllQueueFamilies(VkPhysicalDevice device)
 {
     uint32_t queueFamilyCount = 0;

@@ -29,13 +29,16 @@ struct HeadlessEvent {
 class HeadlessWindow : public IWindow {
 public:
     HeadlessWindow(std::string eventsPath)
-        : m_eventsPath(eventsPath) {};
+        : m_eventsPath(eventsPath)
+    {
+                ParseEvents();
+    };
     virtual void Create(const std::string& title, int width, int height, EngineCore::IApp& app) override;
     virtual void Destroy() override;
     virtual void Update() override;
     virtual bool ShouldClose() override;
     virtual void GetWindowSize(int& width, int& height) const override;
-    virtual VkSurfaceKHR CreateSurface(VkInstance instance) override;
+    virtual std::optional<VkSurfaceKHR> CreateSurface(VkInstance instance) override;
     bool IsHeadless() const override;
 
 private:

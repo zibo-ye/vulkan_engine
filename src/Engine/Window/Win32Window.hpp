@@ -16,7 +16,7 @@ public:
     void Update() override;
     bool ShouldClose() override;
     void GetWindowSize(int& width, int& height) const override;
-    VkSurfaceKHR CreateSurface(VkInstance instance) override;
+    std::optional<VkSurfaceKHR> CreateSurface(VkInstance instance) override;
 
 
  bool IsHeadless() const override {

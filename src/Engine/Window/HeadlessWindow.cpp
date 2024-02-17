@@ -38,9 +38,9 @@ void HeadlessWindow::GetWindowSize(int& width, int& height) const
 	height = m_height;
 }
 
-VkSurfaceKHR HeadlessWindow::CreateSurface(VkInstance instance)
+std::optional<VkSurfaceKHR> HeadlessWindow::CreateSurface(VkInstance instance)
 {
-	return VK_NULL_HANDLE;
+    return std::nullopt;
 }
 
 bool HeadlessWindow::IsHeadless() const

@@ -24,11 +24,50 @@ struct SwapChainSupportDetails {
     std::vector<VkPresentModeKHR> presentModes;
 };
 
+struct QueueFamilyIndices {
+    std::optional<uint32_t> graphicsFamily;
+    std::optional<uint32_t> presentFamily;
+
+    bool isComplete(bool headless)
+    {
+        if (headless) {
+			return graphicsFamily.has_value();
+		}
+        return graphicsFamily.has_value() && presentFamily.has_value();
+    }
+
+    std::vector<uint32_t> getAllIndices() {
+		std::vector<uint32_t> indices;
+		if (graphicsFamily.has_value()) {
+			indices.push_back(graphicsFamily.value());
+		}
+		if (presentFamily.has_value()) {
+			indices.push_back(presentFamily.value());
+		}
+		return indices;
+	}
+
+    std::set<uint32_t> getUniqueIndices()
+	{
+        std::set<uint32_t> indices;
+		if (graphicsFamily.has_value()) {
+			indices.insert(graphicsFamily.value());
+		}
+		if (presentFamily.has_value()) {
+            indices.insert(presentFamily.value());
+		}
+		return indices;
+	}
+};
+
 std::vector<VkExtensionProperties> getAllAvailableInstanceExtensions();
 std::vector<VkLayerProperties> getAllAvailableLayers();
 std::vector<VkExtensionProperties> getAllAvailableDeviceExtensions(VkPhysicalDevice device);
 std::vector<VkPhysicalDevice> getAllPhysicalDevices(VkInstance instance);
 SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);
+QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, std::optional<VkSurfaceKHR> surface);
+bool isDeviceSuitable(VkPhysicalDevice device, std::optional<VkSurfaceKHR> surface);
+bool checkDeviceExtensionSupport(VkPhysicalDevice device, bool isHeadless);
 std::vector<VkQueueFamilyProperties> getAllQueueFamilies(VkPhysicalDevice device);
 VkPhysicalDeviceMemoryProperties getAllMemoryProperties(VkPhysicalDevice device);
 VkFormat findSupportedFormat(VkPhysicalDevice device, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);

@@ -12,7 +12,7 @@ public:
     virtual void Update() override;
     virtual bool ShouldClose() override;
     virtual void GetWindowSize(int& width, int& height) const override;
-    virtual VkSurfaceKHR CreateSurface(VkInstance instance) override;
+    virtual std::optional<VkSurfaceKHR> CreateSurface(VkInstance instance) override;
 
     bool IsHeadless() const override
     {

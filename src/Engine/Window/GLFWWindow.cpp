@@ -171,7 +171,7 @@ void GLFWWindow::GetWindowSize(int& width, int& height) const
     glfwGetWindowSize(window, &width, &height);
 }
 
-VkSurfaceKHR GLFWWindow::CreateSurface(VkInstance instance)
+std::optional<VkSurfaceKHR> GLFWWindow::CreateSurface(VkInstance instance)
 {
     VkSurfaceKHR surface;
     if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
