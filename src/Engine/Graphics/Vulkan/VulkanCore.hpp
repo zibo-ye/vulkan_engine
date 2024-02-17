@@ -27,10 +27,6 @@ const bool enableValidationLayers = false;
 const bool enableValidationLayers = true;
 #endif
 
-const std::string TEXTURE_PATH = "textures/viking_room.png";
-
-
-
 struct UniformBufferObject {
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
@@ -80,12 +76,6 @@ private:
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> swapchainImageFences;
     uint32_t currentFrameInFlight = 0;
-
-    uint32_t mipLevels;
-    VkImage textureImage;
-    VkDeviceMemory textureImageMemory;
-    VkImageView textureImageView;
-    VkSampler textureSampler;
 
     VkImage depthImage;
     VkDeviceMemory depthImageMemory;
@@ -141,20 +131,15 @@ public:
 
     VkFormat findDepthFormat();
 
-    void createTextureImage();
-
 	std::unique_ptr<uint8_t[]> copyTextureToMemory(VkImage textureImage, uint32_t texWidth, uint32_t texHeight);
 
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
 
-    void createTextureImageView();
 
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
 
     void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
-
-    void createTextureSampler();
-
+    
     void createUniformBuffers();
 
     void createDescriptorPool();
