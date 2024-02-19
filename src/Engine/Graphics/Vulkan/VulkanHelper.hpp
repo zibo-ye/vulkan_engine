@@ -17,7 +17,6 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 #define VK_CHECK_RESULT(FN) FN
 #endif
 
-
 struct SwapChainSupportDetails {
     VkSurfaceCapabilitiesKHR capabilities;
     std::vector<VkSurfaceFormatKHR> formats;
@@ -31,33 +30,34 @@ struct QueueFamilyIndices {
     bool isComplete(bool headless)
     {
         if (headless) {
-			return graphicsFamily.has_value();
-		}
+            return graphicsFamily.has_value();
+        }
         return graphicsFamily.has_value() && presentFamily.has_value();
     }
 
-    std::vector<uint32_t> getAllIndices() {
-		std::vector<uint32_t> indices;
-		if (graphicsFamily.has_value()) {
-			indices.push_back(graphicsFamily.value());
-		}
-		if (presentFamily.has_value()) {
-			indices.push_back(presentFamily.value());
-		}
-		return indices;
-	}
+    std::vector<uint32_t> getAllIndices()
+    {
+        std::vector<uint32_t> indices;
+        if (graphicsFamily.has_value()) {
+            indices.push_back(graphicsFamily.value());
+        }
+        if (presentFamily.has_value()) {
+            indices.push_back(presentFamily.value());
+        }
+        return indices;
+    }
 
     std::set<uint32_t> getUniqueIndices()
-	{
+    {
         std::set<uint32_t> indices;
-		if (graphicsFamily.has_value()) {
-			indices.insert(graphicsFamily.value());
-		}
-		if (presentFamily.has_value()) {
+        if (graphicsFamily.has_value()) {
+            indices.insert(graphicsFamily.value());
+        }
+        if (presentFamily.has_value()) {
             indices.insert(presentFamily.value());
-		}
-		return indices;
-	}
+        }
+        return indices;
+    }
 };
 
 std::vector<VkExtensionProperties> getAllAvailableInstanceExtensions();

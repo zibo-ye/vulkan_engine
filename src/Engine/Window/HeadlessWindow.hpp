@@ -3,9 +3,9 @@
 #include "pch.hpp"
 
 enum class HeadlessEventType {
-	AVAILABLE,
-	PLAY,
-	SAVE,
+    AVAILABLE,
+    PLAY,
+    SAVE,
     MARK
 };
 
@@ -20,10 +20,10 @@ struct HeadlessEvent {
         : ts(ts)
         , type(type)
         , params(std::move(params)) {};
-    bool operator <(const HeadlessEvent& other) const
-	{
-		return ts < other.ts;
-	}
+    bool operator<(const HeadlessEvent& other) const
+    {
+        return ts < other.ts;
+    }
 };
 
 class HeadlessWindow : public IWindow {
@@ -31,7 +31,7 @@ public:
     HeadlessWindow(std::string eventsPath)
         : m_eventsPath(eventsPath)
     {
-                ParseEvents();
+        ParseEvents();
     };
     virtual void Create(const std::string& title, int width, int height, EngineCore::IApp& app) override;
     virtual void Destroy() override;
@@ -45,15 +45,14 @@ private:
     void ParseEvents();
     std::vector<HeadlessEvent> events;
 
-
-void ProcessEvent(const HeadlessEvent& param1);
+    void ProcessEvent(const HeadlessEvent& param1);
 
 private:
     std::string m_eventsPath;
-	bool m_shouldClose = false;
-	int m_width = 0;
-	int m_height = 0;
-	EngineCore::IApp* m_app = nullptr;
+    bool m_shouldClose = false;
+    int m_width = 0;
+    int m_height = 0;
+    EngineCore::IApp* m_app = nullptr;
 
 private:
     std::chrono::high_resolution_clock::time_point m_startTime;

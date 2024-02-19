@@ -61,7 +61,7 @@ public:
 
     void RegisterEventHandlers(EngineCore::IApp* pApp);
 
-void Cleanup() const;
+    void Cleanup() const;
 
 public:
     void Update(float deltaTime);

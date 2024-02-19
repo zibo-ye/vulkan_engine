@@ -77,10 +77,10 @@ void Scene::RegisterEventHandlers(EngineCore::IApp* pApp)
 
 void Scene::Cleanup() const
 {
-	for (auto& [_, pMesh] : meshes) {
+    for (auto& [_, pMesh] : meshes) {
         if (pMesh->meshData)
             pMesh->meshData->releaseModelFromGPU();
-	}
+    }
 }
 
 void Scene::Update(float deltaTime)
@@ -133,8 +133,8 @@ void Scene::Traverse(std::vector<MeshInstance>& meshInsts)
 
 void Scene::SetPlaybackTimeAndRate(float playbackTime, float playbackRate)
 {
-	m_elapsedTime = playbackTime;
-	m_PlaybackSpeed = playbackRate;
+    m_elapsedTime = playbackTime;
+    m_PlaybackSpeed = playbackRate;
 }
 
 static std::shared_ptr<Scene> defaultScene()

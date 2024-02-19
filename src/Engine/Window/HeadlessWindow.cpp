@@ -26,7 +26,6 @@ void HeadlessWindow::Update()
     m_lastUpdateTime = currentTime;
 }
 
-
 bool HeadlessWindow::ShouldClose()
 {
     return events.empty();
@@ -34,8 +33,8 @@ bool HeadlessWindow::ShouldClose()
 
 void HeadlessWindow::GetWindowSize(int& width, int& height) const
 {
-	width = m_width;
-	height = m_height;
+    width = m_width;
+    height = m_height;
 }
 
 std::optional<VkSurfaceKHR> HeadlessWindow::CreateSurface(VkInstance instance)
@@ -45,7 +44,7 @@ std::optional<VkSurfaceKHR> HeadlessWindow::CreateSurface(VkInstance instance)
 
 bool HeadlessWindow::IsHeadless() const
 {
-	return true;
+    return true;
 }
 
 void HeadlessWindow::ParseEvents()
@@ -72,45 +71,45 @@ void HeadlessWindow::ParseEvents()
         events.emplace_back(ts, eventType, params);
     }
 
-        std::sort(events.begin(), events.end());
+    std::sort(events.begin(), events.end());
 }
 
 void HeadlessWindow::ProcessEvent(const HeadlessEvent& event)
 {
-        switch (event.type) {
-        case HeadlessEventType::AVAILABLE: // Make a swap chain image available for rendering
+    switch (event.type) {
+    case HeadlessEventType::AVAILABLE: // Make a swap chain image available for rendering
         m_app->PresentImage();
         break;
-        case HeadlessEventType::PLAY: // Set animation playback time and rate
-        {
+    case HeadlessEventType::PLAY: // Set animation playback time and rate
+    {
         float playbackTime = std::stof(event.params[0]);
         float playbackRate = std::stof(event.params[1]);
         m_app->SetPlaybackTimeAndRate(playbackTime, playbackRate);
         break;
-        }
-        case HeadlessEventType::SAVE: // Save the current frame as a PPM file
+    }
+    case HeadlessEventType::SAVE: // Save the current frame as a PPM file
         m_app->SaveFrame(event.params[0]);
         break;
-        case HeadlessEventType::MARK: // Output a debug mark
+    case HeadlessEventType::MARK: // Output a debug mark
         std::cout << "MARK ";
         for (auto& param : event.params) {
             std::cout << param << " ";
         }
         std::cout << std::endl;
         break;
-        }
+    }
 }
 
 HeadlessEventType StringToEventType(const std::string& eventStr)
 {
-        if (eventStr == "AVAILABLE")
+    if (eventStr == "AVAILABLE")
         return HeadlessEventType::AVAILABLE;
-        if (eventStr == "PLAY")
+    if (eventStr == "PLAY")
         return HeadlessEventType::PLAY;
-        if (eventStr == "SAVE")
+    if (eventStr == "SAVE")
         return HeadlessEventType::SAVE;
-        if (eventStr == "MARK")
+    if (eventStr == "MARK")
         return HeadlessEventType::MARK;
-        // Add more event types as needed
-        throw std::runtime_error("Unknown event type: " + eventStr);
+    // Add more event types as needed
+    throw std::runtime_error("Unknown event type: " + eventStr);
 }

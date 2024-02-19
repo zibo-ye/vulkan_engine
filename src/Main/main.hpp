@@ -25,7 +25,7 @@ public:
 
     void SaveFrame(std::string savePath) override;
 
- private:
+private:
     void ProcessEvents();
 
 private:

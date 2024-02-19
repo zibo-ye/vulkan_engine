@@ -13,8 +13,8 @@
 // #include <shellapi.h>
 
 #include "Window/GLFWWindow.hpp"
-#include "Window/Win32Window.hpp"
 #include "Window/HeadlessWindow.hpp"
+#include "Window/Win32Window.hpp"
 
 #pragma comment(lib, "runtimeobject.lib")
 
@@ -115,8 +115,8 @@ std::shared_ptr<IWindow> CreateIWindow(std::optional<std::string> headlessEvents
 {
     if (headlessEventsPath.has_value()) {
         std::cout << "Creating headless window with events path: " << headlessEventsPath.value() << std::endl;
-		return std::make_shared<HeadlessWindow>(headlessEventsPath.value());
-	}
+        return std::make_shared<HeadlessWindow>(headlessEventsPath.value());
+    }
 #if USE_GLFW
     return std::make_shared<GLFWWindow>();
 #elif USE_NATIVE_WINDOWS_API

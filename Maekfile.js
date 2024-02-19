@@ -2,8 +2,8 @@
 const maek = init_maek();
 
 // Setup for compiler and linker based on your provided paths
-const CXX = 'C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.38.33130\\bin\\HostX64\\x64\\cl.exe';
-const LD = 'C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.38.33130\\bin\\HostX64\\x64\\link.exe';
+const CXX = 'cl.exe';
+const LD = 'link.exe';
 
 // Global compiler and linker flags
 maek.options.CPP = [CXX, '-nologo', '-Zi', '-FS', '-W3', '-Od', '-std:c++20', '/EHsc'];

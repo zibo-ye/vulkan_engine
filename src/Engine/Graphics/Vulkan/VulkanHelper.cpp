@@ -102,8 +102,7 @@ QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, std::optional<VkSu
             indices.graphicsFamily = i;
         }
 
-        if (surface.has_value())
-        {
+        if (surface.has_value()) {
             VkBool32 presentSupport = false;
             vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface.value(), &presentSupport);
 
@@ -133,9 +132,7 @@ bool isDeviceSuitable(VkPhysicalDevice device, std::optional<VkSurfaceKHR> surfa
     if (!surface.has_value()) // Headless
     {
         return indices.isComplete(!surface.has_value()) && extensionsSupported && supportedFeatures.samplerAnisotropy;
-    }
-    else
-    {
+    } else {
         bool swapChainAdequate = false;
         if (extensionsSupported) {
             SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device, surface.value());
@@ -149,12 +146,9 @@ bool checkDeviceExtensionSupport(VkPhysicalDevice device, bool isHeadless)
 {
     std::vector<VkExtensionProperties> availableExtensions = getAllAvailableDeviceExtensions(device);
     std::set<std::string> requiredExtensions;
-    if (isHeadless)
-    {
+    if (isHeadless) {
         requiredExtensions = std::set<std::string>(deviceExtensionsWithoutSwapchain.begin(), deviceExtensionsWithoutSwapchain.end());
-    }
-    else
-    {
+    } else {
         requiredExtensions = std::set<std::string>(deviceExtensions.begin(), deviceExtensions.end());
     }
 
