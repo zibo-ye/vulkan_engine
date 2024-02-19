@@ -14,12 +14,10 @@ const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
 };
 
-const std::vector<const char*> deviceExtensionsWithoutSwapchain = {
-};
+const std::vector<const char*> deviceExtensionsWithoutSwapchain = {};
 const std::vector<const char*> deviceExtensions = {
-	VK_KHR_SWAPCHAIN_EXTENSION_NAME
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
-
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -131,15 +129,14 @@ public:
 
     VkFormat findDepthFormat();
 
-	std::unique_ptr<uint8_t[]> copyTextureToMemory(VkImage textureImage, uint32_t texWidth, uint32_t texHeight);
+    std::unique_ptr<uint8_t[]> copyTextureToMemory(VkImage textureImage, uint32_t texWidth, uint32_t texHeight);
 
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
-
 
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
 
     void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
-    
+
     void createUniformBuffers();
 
     void createDescriptorPool();
@@ -150,7 +147,7 @@ public:
 
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) const;
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-	void copyImageToBuffer(VkImage image, VkBuffer buffer, uint32_t width, uint32_t height);
+    void copyImageToBuffer(VkImage image, VkBuffer buffer, uint32_t width, uint32_t height);
     VkCommandBuffer beginSingleTimeCommands() const;
 
     void endSingleTimeCommands(VkCommandBuffer commandBuffer) const;
@@ -176,7 +173,7 @@ public:
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
-    
+
     std::vector<const char*> getRequiredExtensions();
 
     bool checkValidationLayerSupport();
@@ -185,6 +182,10 @@ public:
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
     void testvkm();
+
+    void test_vkm_quat();
+    void test_vkm_vec();
+    void test_vkm_mat();
 
 public:
     VkDevice GetDevice() const { return device; }
