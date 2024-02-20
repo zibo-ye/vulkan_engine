@@ -25,9 +25,9 @@ void UserCamera::UpdateCameraParameters(UserCameraUpdateParameters params)
     }
 }
 
-glm::mat4 SceneCamera::getViewMatrix() const
+vkm::mat4 SceneCamera::getViewMatrix() const
 {
-    glm::mat4 InvViewMatrix = glm::mat4(1.0f);
+    vkm::mat4 InvViewMatrix = vkm::mat4();
 
     size_t childIdx = index;
     while (true) {
@@ -43,26 +43,27 @@ glm::mat4 SceneCamera::getViewMatrix() const
         childIdx = parentIdxs[0];
     }
 
-    return glm::inverse(InvViewMatrix);
+    return vkm::inverse(InvViewMatrix);
 }
 
-bool ICamera::FrustumCulling(std::shared_ptr<Mesh> pMesh, glm::mat4& worldTransform)
+bool ICamera::FrustumCulling(std::shared_ptr<Mesh> pMesh, vkm::mat4& worldTransform)
 {
-    glm::mat4 viewMatrix = getViewMatrix();
-    glm::mat4 projMatrix = getProjectionMatrix();
+    vkm::mat4 viewMatrix = getViewMatrix();
+    vkm::mat4 projMatrix = getProjectionMatrix();
+    projMatrix[1][1] *= -1; // Flip the y-axis
 
-    glm::mat4 mvp = projMatrix * viewMatrix * worldTransform;
+    vkm::mat4 mvp = projMatrix * viewMatrix * worldTransform;
 
     // Define the 8 corners of the AABB
-    std::vector<glm::vec3> corners = {
-        { pMesh->min.x, pMesh->min.y, pMesh->min.z },
-        { pMesh->max.x, pMesh->min.y, pMesh->min.z },
-        { pMesh->min.x, pMesh->max.y, pMesh->min.z },
-        { pMesh->max.x, pMesh->max.y, pMesh->min.z },
-        { pMesh->min.x, pMesh->min.y, pMesh->max.z },
-        { pMesh->max.x, pMesh->min.y, pMesh->max.z },
-        { pMesh->min.x, pMesh->max.y, pMesh->max.z },
-        { pMesh->max.x, pMesh->max.y, pMesh->max.z }
+    std::vector<vkm::vec3> corners = {
+        { pMesh->min.x(), pMesh->min.y(), pMesh->min.z() },
+        { pMesh->max.x(), pMesh->min.y(), pMesh->min.z() },
+        { pMesh->min.x(), pMesh->max.y(), pMesh->min.z() },
+        { pMesh->max.x(), pMesh->max.y(), pMesh->min.z() },
+        { pMesh->min.x(), pMesh->min.y(), pMesh->max.z() },
+        { pMesh->max.x(), pMesh->min.y(), pMesh->max.z() },
+        { pMesh->min.x(), pMesh->max.y(), pMesh->max.z() },
+        { pMesh->max.x(), pMesh->max.y(), pMesh->max.z() }
     };
 
     // Transform each corner to clip space and perform culling check
@@ -71,29 +72,29 @@ bool ICamera::FrustumCulling(std::shared_ptr<Mesh> pMesh, glm::mat4& worldTransf
         allOutsideOnePlane = true;
 
         for (const auto& corner : corners) {
-            glm::vec4 transformedCorner = mvp * glm::vec4(corner, 1.0f);
+            vkm::vec4 transformedCorner = mvp * vkm::vec4({ corner.x(), corner.y(), corner.z(), 1.0f });
 
             // Perspective division
-            transformedCorner /= transformedCorner.w;
+            transformedCorner /= transformedCorner.w();
 
             switch (i) {
             case 0:
-                allOutsideOnePlane &= (transformedCorner.x < -1.0f);
+                allOutsideOnePlane &= (transformedCorner.x() < -1.0f);
                 break; // Left
             case 1:
-                allOutsideOnePlane &= (transformedCorner.x > 1.0f);
+                allOutsideOnePlane &= (transformedCorner.x() > 1.0f);
                 break; // Right
             case 2:
-                allOutsideOnePlane &= (transformedCorner.y < -1.0f);
+                allOutsideOnePlane &= (transformedCorner.y() < -1.0f);
                 break; // Bottom
             case 3:
-                allOutsideOnePlane &= (transformedCorner.y > 1.0f);
+                allOutsideOnePlane &= (transformedCorner.y() > 1.0f);
                 break; // Top
             case 4:
-                allOutsideOnePlane &= (transformedCorner.z < -1.0f);
+                allOutsideOnePlane &= (transformedCorner.z() < -1.0f);
                 break; // Near
             case 5:
-                allOutsideOnePlane &= (transformedCorner.z > 1.0f);
+                allOutsideOnePlane &= (transformedCorner.z() > 1.0f);
                 break; // Far
             }
 

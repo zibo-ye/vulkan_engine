@@ -1,8 +1,10 @@
 #pragma once
+#include "pch.hpp"
 #include <array>
 #include <cmath>
 #include <cstdlib>
 #include <limits>
+#include <cassert>
 
 namespace vkm {
 using std::size_t;
@@ -28,6 +30,13 @@ struct vec_base {
         std::copy(init.begin(), init.end(), data.begin());
     }
 
+    vec_base(T value)
+    {
+        for (std::size_t i = 0; i < L; ++i) {
+            data[i] = value;
+        }
+    }
+
     vec_base(const vec_base<L, T>& other)
         : data(other.data)
     {
@@ -46,6 +55,15 @@ struct vec_base {
     operator vec<L, T>() const
     {
         return vec<L, T>(*this);
+    }
+
+    vec_base operator-() const
+    {
+        vec_base result;
+        for (std::size_t i = 0; i < L; ++i) {
+			result[i] = -data[i];
+		}
+		return result;
     }
 
     vec_base<L, T>& operator+=(const vec_base<L, T>& other)
@@ -175,6 +193,7 @@ struct vec : public vec_base<L, T> {
         : vec_base<L, T>()
     {
     }
+
 };
 
 // Specialization for L=1
@@ -287,6 +306,8 @@ typedef vec<1, float> vec1;
 typedef vec<2, float> vec2;
 typedef vec<3, float> vec3;
 typedef vec<4, float> vec4;
+typedef vec<4, uint8_t> u8vec4;
+
 
 template <std::size_t N, typename T>
 vec<N, T> cross(const vec<N, T>& v1, const vec<N, T>& v2)
@@ -485,6 +506,17 @@ struct mat {
     {
     }
 
+    // Copy from matrix of different size
+    template <std::size_t C2, std::size_t R2>
+    mat(const mat<C2, R2, T>& other)
+    {
+        for (std::size_t col = 0; col < C && col < C2; ++col) {
+            for (std::size_t row = 0; row < R && row < R2; ++row) {
+				data[col][row] = other[col][row];
+			}
+		}
+	}
+
     // Move constructor
     mat(mat&& other) noexcept
         : data(std::move(other.data))
@@ -589,10 +621,23 @@ mat<C, R, T> operator/(const mat<C, R, T>& matrix, const T& scalar)
 typedef mat<4, 4, float> mat4;
 typedef mat<3, 3, float> mat3;
 
+constexpr float PI = 3.14159265358979323846f;
+constexpr float DEG2RAD = PI / 180.0f;
+
+inline constexpr float radians(float degrees)
+{
+    return degrees * DEG2RAD;
+}
+
 mat4 perspective(float fovY, float aspect, float zNear, float zFar);
 mat4 lookAt(const vec3& eye, const vec3& center, const vec3& up);
 mat4 rotate(const mat4& m, float angle, const vec3& axis);
 mat4 scale(const mat4& m, const vec3& v);
 mat4 translate(const vec3& v);
+mat4 translate(const mat4& m, const vec3& v);
+vkm::mat3 mat3_cast(const quat& q);
+mat4 mat4_cast(const quat& q);
+
+mat4 inverse(const mat4& m);
 
 } // namespace vkm

@@ -98,7 +98,7 @@ private:
     std::unordered_map<EKeyboardKeys, bool> keysActivated;
     float keyboardMovingSpeed = 10.0f;
 
-    float mouseSensitivity = glm::radians(1.0f);
-    glm::vec2 lastMousePos;
+    float mouseSensitivity = vkm::radians(1.0f);
+    vkm::vec2 lastMousePos;
     bool isMouseLeftButtonDown = false;
 };

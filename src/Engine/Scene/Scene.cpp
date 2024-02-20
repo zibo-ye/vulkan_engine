@@ -102,17 +102,17 @@ void Scene::Update(float deltaTime)
                 // std::cout<< "Updating Node " << pNode->name << " with Driver " << pDriver->name << " at time " << m_elapsedTime << "\n";
                 switch (pDriver->channel) {
                 case EDriverChannelType::TRANSLATION: {
-                    pNode->translation = glm::vec3(value.value()[0], value.value()[1], value.value()[2]);
+                    pNode->translation = vkm::vec3(value.value()[0], value.value()[1], value.value()[2]);
                     // std::cout << "Translation: " << value.value()[0] << " " << value.value()[1] << " " << value.value()[2] << "\n";
                     break;
                 }
                 case EDriverChannelType::ROTATION: {
-                    pNode->rotation = glm::quat(value.value()[3], value.value()[0], value.value()[1], value.value()[2]);
+                    pNode->rotation = vkm::quat(value.value()[3], value.value()[0], value.value()[1], value.value()[2]);
                     // std::cout <<  "Rotation: " << value.value()[0] << " " << value.value()[1] << " " << value.value()[2] << " " << value.value()[3] << "\n";
                     break;
                 }
                 case EDriverChannelType::SCALE: {
-                    pNode->scale = glm::vec3(value.value()[0], value.value()[1], value.value()[2]);
+                    pNode->scale = vkm::vec3(value.value()[0], value.value()[1], value.value()[2]);
                     // std::cout <<  "Scale: " << value.value()[0] << " " << value.value()[1] << " " << value.value()[2] << "\n";
                     break;
                 }
@@ -127,7 +127,7 @@ void Scene::Update(float deltaTime)
 void Scene::Traverse(std::vector<MeshInstance>& meshInsts)
 {
     for (auto& root : roots) {
-        nodes[root]->Traverse(glm::mat4(1.0f), meshInsts);
+        nodes[root]->Traverse(vkm::mat4(), meshInsts);
     }
 }
 
@@ -150,15 +150,15 @@ Node::Node(std::weak_ptr<Scene> pScene, size_t index, const Utility::json::JsonV
 
     if (jsonObj.getObject().find("translation") != jsonObj.getObject().end()) {
         auto vec = jsonObj["translation"].getVecFloat();
-        translation = glm::vec3(vec[0], vec[1], vec[2]);
+        translation = vkm::vec3(vec[0], vec[1], vec[2]);
     }
     if (jsonObj.getObject().find("rotation") != jsonObj.getObject().end()) {
         auto vec = jsonObj["rotation"].getVecFloat();
-        rotation = glm::quat(vec[3], vec[0], vec[1], vec[2]);
+        rotation = vkm::quat(vec[3], vec[0], vec[1], vec[2]);
     }
     if (jsonObj.getObject().find("scale") != jsonObj.getObject().end()) {
         auto vec = jsonObj["scale"].getVecFloat();
-        scale = glm::vec3(vec[0], vec[1], vec[2]);
+        scale = vkm::vec3(vec[0], vec[1], vec[2]);
     }
 
     if (jsonObj.getObject().find("children") != jsonObj.getObject().end()) {
@@ -179,16 +179,16 @@ Node::Node(std::weak_ptr<Scene> pScene, size_t index, const Utility::json::JsonV
     }
 }
 
-glm::mat4 Node::GetTransform() const
+vkm::mat4 Node::GetTransform() const
 {
-    glm::mat4 mat = glm::mat4(1.0f);
-    mat = glm::translate(mat, translation);
-    mat = mat * glm::mat4_cast(rotation);
-    mat = glm::scale(mat, scale);
+    vkm::mat4 mat = vkm::mat4();
+    mat = vkm::translate(mat, translation);
+    mat = mat * vkm::mat4_cast(rotation);
+    mat = vkm::scale(mat, scale);
     return mat;
 }
 
-void Node::Traverse(glm::mat4 transform, std::vector<MeshInstance>& meshInst)
+void Node::Traverse(vkm::mat4 transform, std::vector<MeshInstance>& meshInst)
 {
     if (!meshIdx && childrenIdx.empty()) {
         return;
@@ -255,9 +255,9 @@ std::optional<std::vector<float>> Driver::GetValue(float time) const
                 return result;
             } else if (interpolation == EDriverInterpolationType::SLERP) {
                 assert(resultSize == 4);
-                glm::quat q1 = glm::quat(value1[3], value1[0], value1[1], value1[2]);
-                glm::quat q2 = glm::quat(value2[3], value2[0], value2[1], value2[2]);
-                glm::quat result = glm::slerp(q1, q2, t);
+                vkm::quat q1 = vkm::quat(value1[3], value1[0], value1[1], value1[2]);
+                vkm::quat q2 = vkm::quat(value2[3], value2[0], value2[1], value2[2]);
+                vkm::quat result = vkm::slerp(q1, q2, t);
                 return std::vector<float> { result.x, result.y, result.z, result.w };
             }
             break;

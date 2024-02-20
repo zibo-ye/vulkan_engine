@@ -630,7 +630,7 @@ void VulkanCore::createGraphicsPipeline()
     VkPushConstantRange push_constant {
         .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
         .offset = 0,
-        .size = sizeof(glm::mat4),
+        .size = sizeof(vkm::mat4),
     };
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo {
@@ -1355,10 +1355,10 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t ima
         VkDeviceSize offsets[] = { 0 };
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-        glm::mat4 matWorld = MeshInst.matWorld;
+        vkm::mat4 matWorld = MeshInst.matWorld;
 
         // upload the matrix to the GPU via push constants
-        vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &matWorld);
+        vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vkm::mat4), &matWorld);
 
         if (meshData->indices.has_value()) // Has indices
         {
@@ -1421,7 +1421,7 @@ void VulkanCore::updateUniformBuffer(uint32_t currentImage)
         .view = camera->getViewMatrix(),
         .proj = camera->getProjectionMatrix(),
     };
-    ubo.proj[1][1] *= -1;
+    //ubo.proj[1][1] *= -1;
 
     memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
 }

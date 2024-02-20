@@ -55,11 +55,11 @@ void CameraManager::Init(EngineCore::IApp* pApp)
         if (camera->getType() == ECameraType::EUser && input.button == EMouseButton::LEFT) {
             if (input.action == EKeyAction::PRESS) {
                 // When the left mouse button is pressed, record the current mouse position
-                lastMousePos = glm::vec2(input.x.value(), input.y.value());
+                lastMousePos = vkm::vec2(static_cast<float>(input.x.value()), static_cast<float>(input.y.value()));
                 isMouseLeftButtonDown = true;
             } else if (input.action == EKeyAction::RELEASE) {
                 // Reset the last mouse position when the button is released
-                lastMousePos = glm::vec2(-1, -1);
+                lastMousePos = vkm::vec2(-1, -1);
                 isMouseLeftButtonDown = false;
             }
         }
@@ -72,45 +72,46 @@ void CameraManager::Init(EngineCore::IApp* pApp)
             camera = GetDebugCamera();
 #endif
         if (camera->getType() == ECameraType::EUser && isMouseLeftButtonDown) {
-            if (lastMousePos.x >= 0 && lastMousePos.y >= 0) {
+            if (lastMousePos.x() >= 0 && lastMousePos.y() >= 0) {
                 UserCamera* userCamera = static_cast<UserCamera*>(camera.get());
-                glm::vec2 currentMousePos = glm::vec2(input.x.value(), input.y.value());
-                glm::vec2 mouseDelta = currentMousePos - lastMousePos;
+                vkm::vec2 currentMousePos = vkm::vec2(static_cast<float>(input.x.value()), static_cast<float>(input.y.value()));
+                vkm::vec2 mouseDelta = currentMousePos - lastMousePos;
                 // std::cout << "Mouse Delta: " << mouseDelta.x << ", " << mouseDelta.y << "\n";
                 lastMousePos = currentMousePos;
 
-                constexpr float vertical_angle_limit = glm::radians(80.0f); //+-80 degrees
-                constexpr float vertical_angle_limit_max = glm::radians(90.0f) + vertical_angle_limit;
-                constexpr float vertical_angle_limit_min = glm::radians(90.0f) - vertical_angle_limit;
-                constexpr float vertical_delta_limit = glm::radians(90.0f) - vertical_angle_limit;
+                constexpr float vertical_angle_limit = vkm::radians(80.0f); //+-80 degrees
+                constexpr float vertical_angle_limit_max = vkm::radians(90.0f) + vertical_angle_limit;
+                constexpr float vertical_angle_limit_min = vkm::radians(90.0f) - vertical_angle_limit;
+                constexpr float vertical_delta_limit = vkm::radians(90.0f) - vertical_angle_limit;
 
-                float horizAngle = mouseSensitivity * mouseDelta.x * -1;
-                float vertAngle = mouseSensitivity * mouseDelta.y * -1;
+                float horizAngle = mouseSensitivity * mouseDelta.x() * -1;
+                float vertAngle = mouseSensitivity * mouseDelta.y() * -1;
                 vertAngle = std::clamp(vertAngle, -vertical_delta_limit, vertical_delta_limit);
 
-                glm::vec3 upDir = glm::vec3(0.0f, 0.0f, 1.0f);
-                glm::vec3 lookAtDir = glm::normalize(userCamera->lookAtPos - userCamera->fromPos);
-                glm::vec3 right = glm::normalize(glm::cross(lookAtDir, upDir));
+                vkm::vec3 upDir = vkm::vec3(0.0f, 0.0f, 1.0f);
+                vkm::vec3 lookAtDir = userCamera->lookAtPos - userCamera->fromPos;
+                lookAtDir = vkm::normalize(lookAtDir);
+                vkm::vec3 right = vkm::normalize(vkm::cross(lookAtDir, upDir));
 
                 // Horizontal rotation
-                glm::mat4 horizRot = glm::rotate(glm::mat4(1.0f), horizAngle, upDir);
-                glm::vec3 horizontalDirection = glm::mat3(horizRot) * lookAtDir;
+                vkm::mat4 horizRot = vkm::rotate(vkm::mat4(1.0f), horizAngle, upDir);
+                vkm::vec3 horizontalDirection = vkm::mat3(horizRot) * lookAtDir;
 
                 // Vertical rotation
-                glm::mat4 vertRot = glm::rotate(glm::mat4(1.0f), vertAngle, right);
-                glm::vec3 tentativeDirection = glm::mat3(vertRot) * horizontalDirection;
+                vkm::mat4 vertRot = vkm::rotate(vkm::mat4(1.0f), vertAngle, right);
+                vkm::vec3 tentativeDirection = vkm::mat3(vertRot) * horizontalDirection;
 
                 // Calculate the angle between the tentative direction and the up vector
-                float currentAngle = std::acos(glm::dot(glm::normalize(tentativeDirection), upDir));
+                float currentAngle = std::acos(vkm::dot(vkm::normalize(tentativeDirection), upDir));
 
                 // If the angle exceeds the limit, adjust vertical angle to meet the limit
                 if (currentAngle > vertical_angle_limit_max || currentAngle < vertical_angle_limit_min) {
                     vertAngle = 0.0f; // remove the vertical rotation
                 }
-                vertRot = glm::rotate(glm::mat4(1.0f), vertAngle, right);
-                glm::vec3 finalDirection = glm::mat3(vertRot) * horizontalDirection;
+                vertRot = vkm::rotate(vkm::mat4(1.0f), vertAngle, right);
+                vkm::vec3 finalDirection = vkm::mat3(vertRot) * horizontalDirection;
 
-                userCamera->fromPos = userCamera->lookAtPos - finalDirection * glm::distance(userCamera->lookAtPos, userCamera->fromPos);
+                userCamera->fromPos = userCamera->lookAtPos - finalDirection * vkm::distance(userCamera->lookAtPos, userCamera->fromPos);
             }
         }
     });
@@ -127,7 +128,7 @@ void CameraManager::Init(EngineCore::IApp* pApp)
             float zoomSpeed = 0.1f;
             // userCamera->fov -= input.yoffset * zoomSpeed; //TODO: clamp
 
-            glm::vec3 lookAtDir = userCamera->lookAtPos - userCamera->fromPos;
+            vkm::vec3 lookAtDir = userCamera->lookAtPos - userCamera->fromPos;
             auto yoffset = input.y.value();
             userCamera->fromPos += lookAtDir * static_cast<float>(yoffset) * zoomSpeed;
         }
@@ -145,32 +146,32 @@ void CameraManager::UpdateCamera(float deltaTime)
     if (camera->getType() == ECameraType::EUser) {
         UserCamera* userCamera = static_cast<UserCamera*>(camera.get());
 
-        auto lookAtDir = userCamera->lookAtPos - userCamera->fromPos;
-        lookAtDir = glm::normalize(lookAtDir);
+        vkm::vec3 lookAtDir = userCamera->lookAtPos - userCamera->fromPos;
+        lookAtDir = vkm::normalize(lookAtDir);
 
-        auto upDir = glm::vec3(0.0f, 0.0f, 1.0f);
-        auto right = glm::cross(lookAtDir, upDir);
+        auto upDir = vkm::vec3(0.0f, 0.0f, 1.0f);
+        auto right = vkm::cross(lookAtDir, upDir);
 
         float movingSpeed = keyboardMovingSpeed * deltaTime;
 
         if (keysActivated[EKeyboardKeys::W]) {
-            auto right = glm::cross(lookAtDir, upDir);
-            auto screenUp = glm::cross(right, lookAtDir);
+            auto right = vkm::cross(lookAtDir, upDir);
+            auto screenUp = vkm::cross(right, lookAtDir);
             userCamera->fromPos += screenUp * movingSpeed;
             userCamera->lookAtPos += screenUp * movingSpeed;
         } else if (keysActivated[EKeyboardKeys::S]) {
-            auto right = glm::cross(lookAtDir, upDir);
-            auto screenUp = glm::cross(right, lookAtDir);
+            auto right = vkm::cross(lookAtDir, upDir);
+            auto screenUp = vkm::cross(right, lookAtDir);
             userCamera->fromPos -= screenUp * movingSpeed;
             userCamera->lookAtPos -= screenUp * movingSpeed;
         } else if (keysActivated[EKeyboardKeys::A]) {
-            auto right = glm::cross(lookAtDir, upDir);
-            right = glm::normalize(right);
+            auto right = vkm::cross(lookAtDir, upDir);
+            right = vkm::normalize(right);
             userCamera->fromPos -= right * movingSpeed;
             userCamera->lookAtPos -= right * movingSpeed;
         } else if (keysActivated[EKeyboardKeys::D]) {
-            auto right = glm::cross(lookAtDir, upDir);
-            right = glm::normalize(right);
+            auto right = vkm::cross(lookAtDir, upDir);
+            right = vkm::normalize(right);
             userCamera->fromPos += right * movingSpeed;
             userCamera->lookAtPos += right * movingSpeed;
         } else if (keysActivated[EKeyboardKeys::Q]) {

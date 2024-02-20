@@ -38,9 +38,9 @@ enum class MeshAttributeType {
 };
 
 struct NewVertex {
-    glm::vec3 position;
-    glm::vec3 normal;
-    glm::u8vec4 color;
+    vkm::vec3 position;
+    vkm::vec3 normal;
+    vkm::u8vec4 color;
 
     static VkVertexInputBindingDescription getBindingDescription()
     {
@@ -120,8 +120,8 @@ public:
     void LoadMeshData();
 
 public:
-    glm::vec3 min = glm::vec3(std::numeric_limits<float>::max());
-    glm::vec3 max = -min;
+    vkm::vec3 min = vkm::vec3(std::numeric_limits<float>::max());
+    vkm::vec3 max = -min;
 
 private:
     void UpdateBounds(const NewVertex& vertex);
@@ -146,5 +146,5 @@ inline static VkPipelineVertexInputStateCreateInfo getVertexInputInfo()
 
 struct MeshInstance {
     std::shared_ptr<Mesh> pMesh;
-    glm::mat4 matWorld;
+    vkm::mat4 matWorld;
 };

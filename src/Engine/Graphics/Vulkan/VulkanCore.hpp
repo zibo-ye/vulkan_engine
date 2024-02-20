@@ -26,8 +26,8 @@ const bool enableValidationLayers = true;
 #endif
 
 struct UniformBufferObject {
-    alignas(16) glm::mat4 view;
-    alignas(16) glm::mat4 proj;
+    alignas(16) vkm::mat4 view;
+    alignas(16) vkm::mat4 proj;
 };
 
 class VulkanCore {
