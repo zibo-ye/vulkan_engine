@@ -346,7 +346,7 @@ void VulkanCore::createSwapChain()
         };
         swapChainImageFormat = VK_FORMAT_B8G8R8A8_SRGB;
 
-        uint32_t imageCount = 2;
+        uint32_t imageCount = 3;
         swapChainImages.resize(imageCount);
         swapChainImagesMemory.resize(imageCount);
         for (uint32_t i = 0; i < imageCount; i++) {
@@ -1325,7 +1325,13 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t ima
 
     std::vector<MeshInstance> meshInstances;
     scene.Traverse(meshInstances);
-    auto totalMeshCount = meshInstances.size();
+#if VERBOSE
+    static size_t totalMeshCount = 0;
+    if (totalMeshCount != meshInstances.size()) {
+        totalMeshCount = meshInstances.size();
+        std::cout << "MeshInstances: " << totalMeshCount << std::endl;
+    }
+#endif
     if (m_pApp->args.cullingType == "frustum") {
         std::vector<MeshInstance> meshInstancesCulled;
         for (auto& MeshInst : meshInstances) {
@@ -1335,9 +1341,9 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t ima
         }
         meshInstances = std::move(meshInstancesCulled);
     }
-    auto totalMeshCountAfterCulling = meshInstances.size();
 
 #if VERBOSE
+    auto totalMeshCountAfterCulling = meshInstances.size();
     static size_t lastMeshInstanceCount = totalMeshCountAfterCulling;
     if (lastMeshInstanceCount != totalMeshCountAfterCulling) {
         lastMeshInstanceCount = totalMeshCountAfterCulling;
@@ -1490,6 +1496,7 @@ void VulkanCore::drawFrame(Scene& scene)
 
 void VulkanCore::drawFrameHeadless(Scene& scene)
 {
+    if (!m_pApp->args.limitFPS) readyForNextImage = true;
     if (!readyForNextImage)
         return;
 

@@ -82,12 +82,14 @@ void HeadlessWindow::ProcessEvent(const HeadlessEvent& event)
         break;
     case HeadlessEventType::PLAY: // Set animation playback time and rate
     {
+        //std::cout<< "PLAY " << event.params[0] << " " << event.params[1] << std::endl;
         float playbackTime = std::stof(event.params[0]);
         float playbackRate = std::stof(event.params[1]);
         m_app->SetPlaybackTimeAndRate(playbackTime, playbackRate);
         break;
     }
     case HeadlessEventType::SAVE: // Save the current frame as a PPM file
+        //std::cout << "SAVE " << event.params[0] << std::endl;
         m_app->SaveFrame(event.params[0]);
         break;
     case HeadlessEventType::MARK: // Output a debug mark

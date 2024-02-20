@@ -190,6 +190,7 @@ public:
 public:
     void PresentImage();
     void SaveFrame(const std::string& savePath);
+    bool readyForNextImage = false;
 
 private:
     uint32_t AcquireNextImageIndex();
@@ -197,5 +198,4 @@ private:
 
     uint32_t nextImageIndex = 0;
     uint32_t lastImageIndex = 0;
-    bool readyForNextImage = false;
 };

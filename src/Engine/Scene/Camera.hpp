@@ -100,7 +100,8 @@ public:
     void UpdateCameraParameters(UserCameraUpdateParameters params);
 
     std::string name;
-    vkm::vec3 fromPos = vkm::vec3(4.0f, 4.0f, 4.0f);
+    vkm::vec3 fromPos = vkm::vec3(2.0f, 2.0f, 2.0f);
+    // vkm::vec3 fromPos = vkm::vec3(4.0f, 4.0f, 4.0f);
     vkm::vec3 lookAtPos = vkm::vec3(0.0f, 0.0f, 0.0f);
     Perspective perspective;
 };

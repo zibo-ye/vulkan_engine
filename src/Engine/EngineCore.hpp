@@ -67,6 +67,8 @@ public:
         std::optional<std::string> cullingType;
         std::optional<std::string> headlessEventsPath;
         bool measureFPS = false;
+        bool limitFPS = false;
+        bool profiling = false;
     } args;
 };
 }
