@@ -25,7 +25,7 @@ struct Perspective {
     float aspect = 800.f / 600.f;
     float vfov = vkm::radians(45.f);
     float near_plane = 0.1f;
-    float far_plane = 10.f;
+    float far_plane = 100.f;
     vkm::mat4 getProjectionMatrix() const
     {
         return vkm::perspective(vfov, aspect, near_plane, far_plane);

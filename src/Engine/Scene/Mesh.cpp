@@ -54,6 +54,22 @@ void Mesh::LoadMeshData()
         }
     }
 
+    // vertices -> indexed vertices
+    std::unordered_map<NewVertex, uint32_t> uniqueVertices;
+    std::vector<NewVertex> uniqueVertexList;
+    meshData->indices = std::vector<uint32_t>();
+    meshData->indices->reserve(count);
+
+    for (const auto& vertex : meshData->vertices) {
+        if (uniqueVertices.count(vertex) == 0) {
+            uniqueVertices[vertex] = static_cast<uint32_t>(uniqueVertexList.size());
+            uniqueVertexList.push_back(vertex);
+        }
+        meshData->indices->push_back(uniqueVertices[vertex]);
+    }
+
+    meshData->vertices = std::move(uniqueVertexList);
+
     // Update bounds
     for (auto& vertex : meshData->vertices) {
         UpdateBounds(vertex);

@@ -42,6 +42,11 @@ struct NewVertex {
     vkm::vec3 normal;
     vkm::u8vec4 color;
 
+    bool operator==(const NewVertex& other) const
+    {
+        return position == other.position && normal == other.normal && color == other.color;
+    }
+
     static VkVertexInputBindingDescription getBindingDescription()
     {
         VkVertexInputBindingDescription bindingDescription {
@@ -105,6 +110,21 @@ struct NewVertex {
             return -1;
     }
 };
+
+namespace std {
+template <>
+struct hash<NewVertex> {
+    size_t operator()(const NewVertex& vertex) const
+    {
+        size_t h1 = hash<vkm::vec3>()(vertex.position);
+        size_t h2 = hash<vkm::vec3>()(vertex.normal);
+        size_t h3 = hash<vkm::u8vec4>()(vertex.color);
+
+        // Combine the hash values
+        return ((h1 ^ (h2 << 1)) >> 1) ^ h3;
+    }
+};
+}
 
 class Mesh : public SceneObj {
 public:

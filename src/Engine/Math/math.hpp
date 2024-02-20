@@ -114,6 +114,16 @@ struct vec_base {
         }
         return *this;
     }
+
+    bool operator==(const vec_base<L, T>& other) const
+    {
+        for (std::size_t i = 0; i < L; ++i) {
+            if (data[i] != other.data[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
 };
 
 template <std::size_t L, typename T>
@@ -639,3 +649,17 @@ mat4 mat4_cast(const quat& q);
 mat4 inverse(const mat4& m);
 
 } // namespace vkm
+
+namespace std {
+template <std::size_t L, typename T>
+struct hash<vkm::vec<L, T>> {
+    size_t operator()(const vkm::vec<L, T>& v) const
+    {
+        size_t hash = 0;
+        for (size_t i = 0; i < L; ++i) {
+            hash ^= std::hash<T>()(v.data[i]) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+        }
+        return hash;
+    }
+};
+} // namespace std

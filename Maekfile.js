@@ -45,7 +45,6 @@ function compileSource(file, basePath) {
             '-DGLFW_INCLUDE_NONE',
             '-IE:\\Learn\\VulkanSDK-1.3.268.0\\include',
             '-IC:\\Users\\Immmortal\\AppData\\Local\\.xmake\\packages\\g\\glfw\\3.3.8\\d12e591897c9472fb7d3725fa5811388\\include',
-            '-IC:\\Users\\Immmortal\\AppData\\Local\\.xmake\\packages\\g\\glm\\0.9.9+8\\8335bab7c0314ab9921440de58961aac\\include'
         ]
     });
 }
