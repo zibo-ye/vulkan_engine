@@ -490,15 +490,15 @@ struct mat {
         }
     }
 
-    // Initialize to a scalar value
-    mat(T value)
-    {
-        for (std::size_t col = 0; col < C; ++col) {
-            for (std::size_t row = 0; row < R; ++row) {
-                data[col][row] = value;
-            }
-        }
-    }
+    //// Initialize to a scalar value
+    //mat(T value)
+    //{
+    //    for (std::size_t col = 0; col < C; ++col) {
+    //        for (std::size_t row = 0; row < R; ++row) {
+    //            data[col][row] = value;
+    //        }
+    //    }
+    //}
 
     // Copy constructor
     mat(const mat& other)
@@ -510,9 +510,10 @@ struct mat {
     template <std::size_t C2, std::size_t R2>
     mat(const mat<C2, R2, T>& other)
     {
+        *this = mat();
         for (std::size_t col = 0; col < C && col < C2; ++col) {
             for (std::size_t row = 0; row < R && row < R2; ++row) {
-				data[col][row] = other[col][row];
+                data[col][row] = other[col][row];
 			}
 		}
 	}

@@ -5,7 +5,7 @@
 vkm::mat4 vkm::perspective(float fovY, float aspect, float zNear, float zFar)
 {
     assert(abs(aspect - std::numeric_limits<float>::epsilon()) > 0);
-    mat4 result(0.0f); // Initialize to zero
+    mat4 result; // Initialize to zero
     const float tanHalfFovy = tan(fovY / 2.0f);
 
     result[0][0] = 1.0f / (aspect * tanHalfFovy);
@@ -13,6 +13,7 @@ vkm::mat4 vkm::perspective(float fovY, float aspect, float zNear, float zFar)
     result[2][2] = zFar / (zNear - zFar);
     result[3][2] = -(zFar * zNear) / (zFar - zNear);
     result[2][3] = -1.0f;
+    result[3][3] = 0.0f;
     return result;
 }
 

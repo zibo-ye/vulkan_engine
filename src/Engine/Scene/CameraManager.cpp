@@ -94,11 +94,11 @@ void CameraManager::Init(EngineCore::IApp* pApp)
                 vkm::vec3 right = vkm::normalize(vkm::cross(lookAtDir, upDir));
 
                 // Horizontal rotation
-                vkm::mat4 horizRot = vkm::rotate(vkm::mat4(1.0f), horizAngle, upDir);
+                vkm::mat4 horizRot = vkm::rotate(vkm::mat4(), horizAngle, upDir);
                 vkm::vec3 horizontalDirection = vkm::mat3(horizRot) * lookAtDir;
 
                 // Vertical rotation
-                vkm::mat4 vertRot = vkm::rotate(vkm::mat4(1.0f), vertAngle, right);
+                vkm::mat4 vertRot = vkm::rotate(vkm::mat4(), vertAngle, right);
                 vkm::vec3 tentativeDirection = vkm::mat3(vertRot) * horizontalDirection;
 
                 // Calculate the angle between the tentative direction and the up vector
@@ -108,7 +108,7 @@ void CameraManager::Init(EngineCore::IApp* pApp)
                 if (currentAngle > vertical_angle_limit_max || currentAngle < vertical_angle_limit_min) {
                     vertAngle = 0.0f; // remove the vertical rotation
                 }
-                vertRot = vkm::rotate(vkm::mat4(1.0f), vertAngle, right);
+                vertRot = vkm::rotate(vkm::mat4(), vertAngle, right);
                 vkm::vec3 finalDirection = vkm::mat3(vertRot) * horizontalDirection;
 
                 userCamera->fromPos = userCamera->lookAtPos - finalDirection * vkm::distance(userCamera->lookAtPos, userCamera->fromPos);

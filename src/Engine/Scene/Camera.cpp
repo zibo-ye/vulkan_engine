@@ -27,7 +27,7 @@ void UserCamera::UpdateCameraParameters(UserCameraUpdateParameters params)
 
 vkm::mat4 SceneCamera::getViewMatrix() const
 {
-    vkm::mat4 InvViewMatrix = vkm::mat4();
+    vkm::mat4 InvViewMatrix;
 
     size_t childIdx = index;
     while (true) {

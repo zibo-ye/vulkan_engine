@@ -234,7 +234,7 @@ void testScale()
     glm::mat4 m = glm::mat4(1.0f);
     glm::vec3 v(2.0f, 3.0f, 4.0f);
     vkm::vec3 vkm_v(2.0f, 3.0f, 4.0f);
-    vkm::mat4 vkmMat = vkm::mat4();
+    vkm::mat4 vkmMat;
 
     auto glmMat = glm::scale(m, v);
     vkmMat = vkm::scale(vkmMat, vkm_v);

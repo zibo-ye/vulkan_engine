@@ -107,7 +107,7 @@ void Scene::Update(float deltaTime)
                     break;
                 }
                 case EDriverChannelType::ROTATION: {
-                    pNode->rotation = vkm::quat(value.value()[3], value.value()[0], value.value()[1], value.value()[2]);
+                    pNode->rotation = vkm::quat(value.value()[0], value.value()[1], value.value()[2], value.value()[3]);
                     // std::cout <<  "Rotation: " << value.value()[0] << " " << value.value()[1] << " " << value.value()[2] << " " << value.value()[3] << "\n";
                     break;
                 }
@@ -154,7 +154,7 @@ Node::Node(std::weak_ptr<Scene> pScene, size_t index, const Utility::json::JsonV
     }
     if (jsonObj.getObject().find("rotation") != jsonObj.getObject().end()) {
         auto vec = jsonObj["rotation"].getVecFloat();
-        rotation = vkm::quat(vec[3], vec[0], vec[1], vec[2]);
+        rotation = vkm::quat(vec[0], vec[1], vec[2], vec[3]);
     }
     if (jsonObj.getObject().find("scale") != jsonObj.getObject().end()) {
         auto vec = jsonObj["scale"].getVecFloat();
@@ -181,7 +181,7 @@ Node::Node(std::weak_ptr<Scene> pScene, size_t index, const Utility::json::JsonV
 
 vkm::mat4 Node::GetTransform() const
 {
-    vkm::mat4 mat = vkm::mat4();
+    vkm::mat4 mat;
     mat = vkm::translate(mat, translation);
     mat = mat * vkm::mat4_cast(rotation);
     mat = vkm::scale(mat, scale);
@@ -255,8 +255,8 @@ std::optional<std::vector<float>> Driver::GetValue(float time) const
                 return result;
             } else if (interpolation == EDriverInterpolationType::SLERP) {
                 assert(resultSize == 4);
-                vkm::quat q1 = vkm::quat(value1[3], value1[0], value1[1], value1[2]);
-                vkm::quat q2 = vkm::quat(value2[3], value2[0], value2[1], value2[2]);
+                vkm::quat q1 = vkm::quat(value1[0], value1[1], value1[2], value1[3]);
+                vkm::quat q2 = vkm::quat(value2[0], value2[1], value2[2], value2[3]);
                 vkm::quat result = vkm::slerp(q1, q2, t);
                 return std::vector<float> { result.x, result.y, result.z, result.w };
             }
