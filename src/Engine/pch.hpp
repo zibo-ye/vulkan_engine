@@ -13,7 +13,6 @@
 #pragma warning(disable : 4239) // A non-const reference may only be bound to an lvalue; assignment operator takes a reference to non-const
 #pragma warning(disable : 4324) // structure was padded due to __declspec(align())
 
-
 // Use the C++ standard templated min/max
 #define NOMINMAX
 
@@ -95,6 +94,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cassert>
 #include <chrono>
 #include <cstdint>
 #include <cstdlib>
@@ -107,7 +107,6 @@
 #include <set>
 #include <stdexcept>
 #include <vector>
-#include <cassert>
 
 #include "Utility.hpp"
 // #include "VectorMath.hpp"

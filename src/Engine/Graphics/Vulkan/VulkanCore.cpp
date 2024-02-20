@@ -12,7 +12,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "ThirdParty/stb_image.h"
 
-
 #if USE_GLM
 namespace vkm {
 void test_vkm_glm_compatibility();
@@ -28,9 +27,9 @@ void VulkanCore::Init(EngineCore::IApp* pApp)
     }
     m_pApp = pApp;
 
-    #if USE_GLM
+#if USE_GLM
     vkm::test_vkm_glm_compatibility();
-    #endif
+#endif
 
     createInstance();
     setupDebugMessenger();
@@ -1421,7 +1420,7 @@ void VulkanCore::updateUniformBuffer(uint32_t currentImage)
         .view = camera->getViewMatrix(),
         .proj = camera->getProjectionMatrix(),
     };
-    //ubo.proj[1][1] *= -1;
+    // ubo.proj[1][1] *= -1;
 
     memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
 }
@@ -1685,8 +1684,6 @@ VKAPI_ATTR VkBool32 VKAPI_CALL VulkanCore::debugCallback(VkDebugUtilsMessageSeve
 
     return VK_FALSE;
 }
-
-
 
 void VulkanCore::PresentImage()
 {

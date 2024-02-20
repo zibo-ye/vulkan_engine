@@ -50,7 +50,6 @@ bool ICamera::FrustumCulling(std::shared_ptr<Mesh> pMesh, vkm::mat4& worldTransf
 {
     vkm::mat4 viewMatrix = getViewMatrix();
     vkm::mat4 projMatrix = getProjectionMatrix();
-    projMatrix[1][1] *= -1; // Flip the y-axis
 
     vkm::mat4 mvp = projMatrix * viewMatrix * worldTransform;
 

@@ -181,7 +181,9 @@ void CameraManager::UpdateCamera(float deltaTime)
             userCamera->fromPos -= lookAtDir * movingSpeed;
             userCamera->lookAtPos -= lookAtDir * movingSpeed;
         } else if (keysActivated[EKeyboardKeys::X]) {
+            Perspective perspective = userCamera->perspective;
             *userCamera = UserCamera(userCamera->name);
+            userCamera->perspective = perspective;
         }
     }
 }

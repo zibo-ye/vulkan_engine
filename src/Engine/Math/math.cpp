@@ -93,11 +93,11 @@ vkm::mat4 vkm::translate(const mat4& m, const vec3& v)
 {
     mat4 result(m); // Start with the original matrix
 
-	// Apply translation
+    // Apply translation
     for (std::size_t i = 0; i < 3; ++i) {
-		result[3][i] += v[i];
-	}
-	return result;
+        result[3][i] += v[i];
+    }
+    return result;
 }
 
 vkm::mat3 vkm::mat3_cast(const quat& q)
@@ -113,21 +113,21 @@ vkm::mat3 vkm::mat3_cast(const quat& q)
     float qwy(q.w * q.y);
     float qwz(q.w * q.z);
 
-	Result[0][0] = 1 - 2 * (qyy + qzz);
-	Result[1][0] = 2 * (qxy - qwz);
-	Result[2][0] = 2 * (qxz + qwy);
-	Result[0][1] = 2 * (qxy + qwz);
-	Result[1][1] = 1 - 2 * (qxx + qzz);
-	Result[2][1] = 2 * (qyz - qwx);
-	Result[0][2] = 2 * (qxz - qwy);
-	Result[1][2] = 2 * (qyz + qwx);
-	Result[2][2] = 1 - 2 * (qxx + qyy);
-	return Result;  
+    Result[0][0] = 1 - 2 * (qyy + qzz);
+    Result[1][0] = 2 * (qxy - qwz);
+    Result[2][0] = 2 * (qxz + qwy);
+    Result[0][1] = 2 * (qxy + qwz);
+    Result[1][1] = 1 - 2 * (qxx + qzz);
+    Result[2][1] = 2 * (qyz - qwx);
+    Result[0][2] = 2 * (qxz - qwy);
+    Result[1][2] = 2 * (qyz + qwx);
+    Result[2][2] = 1 - 2 * (qxx + qyy);
+    return Result;
 }
 
 vkm::mat4 vkm::mat4_cast(const quat& q)
 {
-	return mat4(mat3_cast(q));
+    return mat4(mat3_cast(q));
 }
 
 vkm::mat4 vkm::inverse(const mat4& m)
@@ -162,17 +162,17 @@ vkm::mat4 vkm::inverse(const mat4& m)
     vec4 Fac3(Coef12, Coef12, Coef14, Coef15);
     vec4 Fac4(Coef16, Coef16, Coef18, Coef19);
     vec4 Fac5(Coef20, Coef20, Coef22, Coef23);
-        
+
     vec4 Vec0(m[1][0], m[0][0], m[0][0], m[0][0]);
     vec4 Vec1(m[1][1], m[0][1], m[0][1], m[0][1]);
     vec4 Vec2(m[1][2], m[0][2], m[0][2], m[0][2]);
     vec4 Vec3(m[1][3], m[0][3], m[0][3], m[0][3]);
-        
+
     vec4 Inv0(Vec1 * Fac0 - Vec2 * Fac1 + Vec3 * Fac2);
     vec4 Inv1(Vec0 * Fac0 - Vec2 * Fac3 + Vec3 * Fac4);
     vec4 Inv2(Vec0 * Fac1 - Vec1 * Fac3 + Vec3 * Fac5);
     vec4 Inv3(Vec0 * Fac2 - Vec1 * Fac4 + Vec2 * Fac5);
-        
+
     vec4 SignA(+1, -1, +1, -1);
     vec4 SignB(-1, +1, -1, +1);
     mat4 Inverse = mat4();

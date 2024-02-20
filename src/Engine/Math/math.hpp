@@ -1,10 +1,10 @@
 #pragma once
 #include "pch.hpp"
 #include <array>
+#include <cassert>
 #include <cmath>
 #include <cstdlib>
 #include <limits>
-#include <cassert>
 
 namespace vkm {
 using std::size_t;
@@ -61,9 +61,9 @@ struct vec_base {
     {
         vec_base result;
         for (std::size_t i = 0; i < L; ++i) {
-			result[i] = -data[i];
-		}
-		return result;
+            result[i] = -data[i];
+        }
+        return result;
     }
 
     vec_base<L, T>& operator+=(const vec_base<L, T>& other)
@@ -193,7 +193,6 @@ struct vec : public vec_base<L, T> {
         : vec_base<L, T>()
     {
     }
-
 };
 
 // Specialization for L=1
@@ -307,7 +306,6 @@ typedef vec<2, float> vec2;
 typedef vec<3, float> vec3;
 typedef vec<4, float> vec4;
 typedef vec<4, uint8_t> u8vec4;
-
 
 template <std::size_t N, typename T>
 vec<N, T> cross(const vec<N, T>& v1, const vec<N, T>& v2)
@@ -491,14 +489,14 @@ struct mat {
     }
 
     //// Initialize to a scalar value
-    //mat(T value)
+    // mat(T value)
     //{
-    //    for (std::size_t col = 0; col < C; ++col) {
-    //        for (std::size_t row = 0; row < R; ++row) {
-    //            data[col][row] = value;
-    //        }
-    //    }
-    //}
+    //     for (std::size_t col = 0; col < C; ++col) {
+    //         for (std::size_t row = 0; row < R; ++row) {
+    //             data[col][row] = value;
+    //         }
+    //     }
+    // }
 
     // Copy constructor
     mat(const mat& other)
@@ -514,9 +512,9 @@ struct mat {
         for (std::size_t col = 0; col < C && col < C2; ++col) {
             for (std::size_t row = 0; row < R && row < R2; ++row) {
                 data[col][row] = other[col][row];
-			}
-		}
-	}
+            }
+        }
+    }
 
     // Move constructor
     mat(mat&& other) noexcept
@@ -527,10 +525,9 @@ struct mat {
     // = operator
     mat& operator=(const mat& other)
     {
-		data = other.data;
-		return *this;
-	}
-
+        data = other.data;
+        return *this;
+    }
 
     // Access elements using (row, col) notation
     T& operator()(std::size_t row, std::size_t col)

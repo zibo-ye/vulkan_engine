@@ -1,5 +1,5 @@
-#include "pch.hpp"
 #include "math.hpp"
+#include "pch.hpp"
 
 #if USE_GLM
 
@@ -34,7 +34,7 @@ bool compare_matrices(const glm::mat<C, R, T>& glmMat, const vkm::mat<C, R, T>& 
     }
     return true;
 }
-    
+
 void test_vkm_glm_quat()
 {
     std ::cout << "Running VKM quaternion tests..." << std::endl;
@@ -262,7 +262,6 @@ void test_vkm_glm_ops()
     testTranslate();
     std::cout << "All tests completed." << std::endl;
 }
-
 
 void test_vkm_glm_compatibility()
 {
