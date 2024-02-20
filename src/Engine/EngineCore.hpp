@@ -66,6 +66,7 @@ public:
         std::pair<int, int> windowSize = { 800, 600 };
         std::optional<std::string> cullingType;
         std::optional<std::string> headlessEventsPath;
+        bool measureFPS = false;
     } args;
 };
 }

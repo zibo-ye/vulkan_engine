@@ -1,41 +1,97 @@
 
 const maek = init_maek();
 
-// Setup for compiler and linker based on your provided paths
-const CXX = 'cl.exe';
-const LD = 'link.exe';
+let VULKAN_SDK;
+let GLFW = "C:\\Users\\Immmortal\\AppData\\Local\\.xmake\\packages\\g\\glfw\\3.3.8\\d12e591897c9472fb7d3725fa5811388\\"
+
+// const PROFILE = 'debug';
+const PROFILE = 'release';
+
+if (maek.OS === 'linux') {
+	VULKAN_SDK = process.env.VULKAN_SDK || `${process.env.HOME}/VulkanSDK/1.3.268.0/x86_64`;
+	console.log(`Using VULKAN_SDK='${VULKAN_SDK}'; set VULKAN_SDK environment variable to override.`);
+
+	maek.options.CPP = ['g++', '-std=c++20', '-Wall', '-Werror', '-g'];
+	maek.options.LINK = ['g++', '-std=c++20', '-Wall', '-Werror', '-g'];
+
+	maek.options.CPPFlags = [
+		'-O2',
+		`-I${VULKAN_SDK}/include`
+	];
+
+	maek.options.LINKLibs = [
+		'-O2',
+		`-L${VULKAN_SDK}/lib`,
+		'-lX11',
+		`-lvulkan`,
+		
+	];
+} else if (maek.OS === 'windows') {
+	VULKAN_SDK = process.env.VULKAN_SDK || `${process.env.USERPROFILE}/VulkanSDK/1.3.268.0`;
+	console.log(`Using VULKAN_SDK='${VULKAN_SDK}'; set VULKAN_SDK environment variable to override.`);
+
+	maek.options.CPP = [
+		'cl.exe', '/nologo', '/EHsc', '/Z7', '/std:c++20', '/W4', '/WX', '/MD', '/O2',
+		'/wd4100', //unused formal parameter
+		'/wd4201', //nameless struct/union
+		'/wd4146', //-1U is unsigned
+	];
+	maek.options.LINK = [
+		'link.exe', '/nologo',
+		'/SUBSYSTEM:CONSOLE', //yes, you don't need WinMain to use the win32 API (!)
+		'/DEBUG:FASTLINK', '/INCREMENTAL:NO'
+	];
+	maek.options.LINKLibs = [
+		'User32.lib',
+		`/LIBPATH:${VULKAN_SDK}/Lib`,
+        `/LIBPATH:${GLFW}lib`,
+        'vulkan-1.lib',
+        'glfw3.lib',
+        'shell32.lib',
+        'gdi32.lib'
+    ];
+	// maek.options.CPPFlags = [
+	// 	`/I${VULKAN_SDK}/Include`,
+	// 	'/O2'
+    // ];
+    // if (maek.OS === 'windows') {
+    //     if (PROFILE === 'debug') {
+    //         maek.options.CPP = [CXX, '-nologo', '-Zi', '-FS', '-W3', '-Od', '-std:c++20', '/EHsc'];
+    //         maek.options.LINK = [LD, '-nologo', '-dynamicbase', '-nxcompat', '-machine:x64'];
+    //     } else {
+    //         maek.options.CPP = [CXX, '-nologo', '-W3', '-std:c++20', '/EHsc', '/O2', '/DNDEBUG', '/fp:fast', '-external:W0'];
+    //         maek.options.LINK = [LD, '-nologo', '-dynamicbase', '-nxcompat', '-machine:x64', '/OPT:REF', '/OPT:ICF', '/LTCG'];
+    //     }
+    // }
+} else if (maek.OS === 'macos') {
+	const fs = require('fs');
+	VULKAN_SDK = process.env.VULKAN_SDK || `${process.env.HOME}/VulkanSDK/1.3.268.0/macOS`;
+	console.log(`Using VULKAN_SDK='${VULKAN_SDK}'; set VULKAN_SDK environment variable to override.`);
+
+	maek.options.CPP = ['clang++', '-std=c++20', '-Wall', '-Werror', '-g'];
+	maek.options.LINK = ['clang++', '-std=c++20', '-Wall', '-Werror', '-g'];
+
+	maek.options.CPPFlags = [
+		'-O2',
+		`-I${VULKAN_SDK}/include`
+	];
+
+	maek.options.LINKLibs = [
+		`-L${VULKAN_SDK}/lib`,
+		`-lvulkan`,
+		'-framework', 'AppKit',
+		'-framework', 'QuartzCore',
+		
+	];
+} else {
+	console.error(`Unsupported OS: ${maek.OS}.`);
+	process.exit(1);
+}
 
 // Global compiler and linker flags
-maek.options.CPP = [CXX, '-nologo', '-Zi', '-FS', '-W3', '-Od', '-std:c++20', '/EHsc'];
-maek.options.LINK = [LD, '-nologo', '-dynamicbase', '-nxcompat', '-machine:x64'];
 
 const fsPromises = require('fs').promises;
 const path = require('path');
-
-async function createEmptyFolders(srcDir, baseDestDir) {
-    // Read all items (files and directories) in the current directory
-    let items = await fsPromises.readdir(srcDir, { withFileTypes: true });
-
-    // Iterate over each item in the directory
-    for (let item of items) {
-        // Construct full paths for the source and adjusted destination
-        let srcPath = path.join(srcDir, item.name);
-        // Prepend the 'objs' directory to the destination path
-        let destPath = path.join(baseDestDir, srcDir, item.name);
-
-        if (item.isDirectory()) {
-            // If the item is a directory, create a corresponding directory in the destination
-            await fsPromises.mkdir(destPath, { recursive: true });
-
-            // Recursively call this function to handle subdirectories
-            await createEmptyFolders(srcPath, baseDestDir);
-        }
-    }
-}
-
-// Usage example: replicate the structure of 'src' into 'objs/src'
-createEmptyFolders('src', 'objs').catch(console.error);
-
 
 // Function to compile source files
 function compileSource(file, basePath) {
@@ -43,8 +99,8 @@ function compileSource(file, basePath) {
         CPPFlags: [
             '-Isrc\\Engine',
             '-DGLFW_INCLUDE_NONE',
-            '-IE:\\Learn\\VulkanSDK-1.3.268.0\\include',
-            '-IC:\\Users\\Immmortal\\AppData\\Local\\.xmake\\packages\\g\\glfw\\3.3.8\\d12e591897c9472fb7d3725fa5811388\\include',
+            `-I${VULKAN_SDK}/Include`,
+            `-I${GLFW}include`,
         ]
     });
 }
@@ -71,22 +127,74 @@ async function compileEngineSources(dir) {
 }
 maek.TARGETS = [];
 
+
+maek.DEFAULT_OPTIONS.GLSLC = [`${VULKAN_SDK}/bin/glslc` + (maek.OS === 'windows' ? '.exe' : ''), '-Werror', '-g', '-mfmt=c', '--target-env=vulkan1.2'];
+maek.DEFAULT_OPTIONS.GLSLCFlags = [];
+maek.DEFAULT_OPTIONS.spirvSuffix = '.inl';
+maek.DEFAULT_OPTIONS.spirvPrefix = 'spv/';
+
+
+//maek.GLSLC is a rule to run google's "glslc" compiler:
+// glslFile is the source file name (if it has a generic extension, make sure to add '-fshader-stage=...' option)
+// spirvFileBase (optional) is the output file (including any subdirectories, but not the extension)
+maek.GLSLC = (glslFile, spirvFileBase, localOptions = {}) => {
+	const path = require('path').posix; //NOTE: expect posix-style paths even on windows
+	const fsPromises = require('fs').promises;
+
+	//combine options:
+	const options = maek.combineOptions(localOptions);
+
+	//if objFileBase isn't given, compute by adding spirvSuffix to glslFile:
+	if (typeof spirvFileBase === 'undefined') {
+		spirvFileBase = path.relative('', options.spirvPrefix + glslFile, '');
+	}
+
+	//object file gets os-dependent suffix:
+	const spirvFile = spirvFileBase + options.spirvSuffix;
+
+	const glslc = [...options.GLSLC, ...options.GLSLCFlags];
+	const command = [...glslc, '-o', spirvFile, glslFile];
+
+	//The actual build task:
+	const task = async () => {
+		//make object file:
+		await fsPromises.mkdir(path.dirname(spirvFile), { recursive: true });
+		await maek.run(command, `${task.label}: compile`,
+			async () => {
+				return {
+					read:[glslFile],
+					written:[spirvFile]
+				};
+			}
+		);
+	};
+
+	task.depends = [glslFile, ...options.depends];
+
+	task.label = `GLSLC ${spirvFile}`;
+
+	if (spirvFile in maek.tasks) {
+		throw new Error(`Task ${task.label} purports to create ${spirvFile}, but ${maek.tasks[spirvFile].label} already creates that file.`);
+	}
+	maek.tasks[spirvFile] = task;
+
+	return spirvFile;
+};
+
+const shaders = [
+	maek.GLSLC('src\\Main\\shader\\s72.vert'),
+	maek.GLSLC('src\\Main\\shader\\s72.frag'),
+];
+
+// #TODO: compile shaders
+// const shaders_obj = maek.CPP('shaders.cpp', undefined, { depends:[...shaders] } );
+
 async function main() {
     let AllSources = await compileEngineSources('src\\Engine');
     AllSources.push(compileSource('main.cpp', 'src\\Main'));
+    // AllSources.push(shaders_obj);
 
-    const Main_exe = maek.LINK(AllSources, 'build\\windows\\x64\\debug\\Main', {
-        LINKLibs: [
-            '-libpath:E:\\Learn\\VulkanSDK-1.3.268.0\\lib',
-            '-libpath:C:\\Users\\Immmortal\\AppData\\Local\\.xmake\\packages\\g\\glfw\\3.3.8\\d12e591897c9472fb7d3725fa5811388\\lib',
-            'vulkan-1.lib',
-            'glfw3.lib',
-            'opengl32.lib',
-            'user32.lib',
-            'shell32.lib',
-            'gdi32.lib'
-        ]
-    });
+    const Main_exe = maek.LINK(AllSources, `build\\${PROFILE}\\Main`);
 
     maek.TARGETS = [Main_exe];
 
@@ -94,6 +202,7 @@ async function main() {
 }
 
 main().catch(console.error);
+
 
 
 //======================================================================
@@ -163,7 +272,7 @@ function init_maek() {
 		CPP: [], //the c++ compiler and any flags to start with (set below, per-OS)
 		CPPFlags: [], //extra flags for c++ compiler
 		LINK: [], //the linker and any flags to start with (set below, per-OS)
-		LINKLibs: [], //extra -L and -l flags for linker
+        LINKLibs: [], //extra -L and -l flags for linker
 	}
 
 	if (maek.OS === 'windows') {
@@ -177,6 +286,7 @@ function init_maek() {
 		DEFAULT_OPTIONS.CPP = ['clang++', '-std=c++17', '-Wall', '-Werror', '-g'];
 		DEFAULT_OPTIONS.LINK = ['clang++', '-std=c++17', '-Wall', '-Werror', '-g'];
 	}
+	maek.DEFAULT_OPTIONS = DEFAULT_OPTIONS;
 
 	//any settings here override 'DEFAULT_OPTIONS':
 	maek.options = Object.assign({}, DEFAULT_OPTIONS); //shallow copy of DEFAULT_OPTIONS in case you want to console.log(maek.options) to check settings.
@@ -197,6 +307,7 @@ function init_maek() {
 		}
 		return combined;
 	}
+	maek.combineOptions = combineOptions;
 
 	//tasks is a map from targets -> tasks:
 	maek.tasks = {};
@@ -289,15 +400,13 @@ function init_maek() {
 		const task = async () => {
 			//make object file:
             try {
-                console.log(`Creating directory for object file: ${path.dirname(objFile)}`);
-                await fsPromises.mkdir(path.dirname(objFile), { recursive: true });
+                await fsPromises.mkdir(path.dirname(objFile.replace(/\\/g, '/')), { recursive: true });
             } catch (err) {
                 console.error(`Failed to create directory for object file: ${err}`);
             }
             
             try {
-                console.log(`Creating directory for dependencies file: ${path.dirname(depsFile)}`);
-                await fsPromises.mkdir(path.dirname(depsFile), { recursive: true });
+                await fsPromises.mkdir(path.dirname(depsFile.replace(/\\/g, '/')), { recursive: true });
             } catch (err) {
                 console.error(`Failed to create directory for dependencies file: ${err}`);
             }
@@ -326,10 +435,12 @@ function init_maek() {
 	//maek.LINK links an executable file from a collection of object files:
 	// objFiles is an array of object file names
 	// exeFileBase is the base name of the executable file ('.exe' will be added on windows)
-	maek.LINK = (objFiles, exeFileBase, localOptions = {}) => {
+    maek.LINK = (objFiles, exeFileBase, localOptions = {}) => {
+        console.log(`maek.LINK: objFiles: ${objFiles}, exeFileBase: ${exeFileBase}, localOptions: ${localOptions}`); //DEBUG
 		const options = combineOptions(localOptions);
 
-		const exeFile = exeFileBase + options.exeSuffix;
+        const exeFile = exeFileBase + options.exeSuffix;
+        console.log(`exeFile: ${exeFile}`); //DEBUG
 
 		let link, linkCommand;
 		link = [...options.LINK];
@@ -341,8 +452,8 @@ function init_maek() {
 			linkCommand = [...link, `/out:${exeFile}`, ...objFiles, ...options.LINKLibs];
 		}
 
-		const task = async () => {
-			await fsPromises.mkdir(path.dirname(exeFile), { recursive: true });
+        const task = async () => {
+			await fsPromises.mkdir(path.dirname(exeFile.replace(/\\/g, '/')), { recursive: true });
 			await run(linkCommand, `${task.label}: link`,
 				async () => {
 					return {

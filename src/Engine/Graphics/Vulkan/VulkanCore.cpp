@@ -222,27 +222,27 @@ void VulkanCore::createSurface()
 
 void VulkanCore::pickPhysicalDevice()
 {
-    std::vector<VkPhysicalDevice> devices = getAllPhysicalDevices(instance);
+    std::vector<VkPhysicalDevice> pdevices = getAllPhysicalDevices(instance);
 
     if (m_pApp->args.physicalDeviceName.has_value()) {
-        for (const auto& device : devices) {
+        for (const auto& pdevice : pdevices) {
             VkPhysicalDeviceProperties properties;
-            vkGetPhysicalDeviceProperties(device, &properties);
+            vkGetPhysicalDeviceProperties(pdevice, &properties);
             if (std::string(properties.deviceName) == m_pApp->args.physicalDeviceName.value()) {
-                if (!isDeviceSuitable(device, surface)) {
+                if (!isDeviceSuitable(pdevice, surface)) {
                     std::cout << "The device given in args is not suitable: " << properties.deviceName << std::endl;
                     throw std::runtime_error("The device given in args is not suitable");
                 }
-                physicalDevice = device;
+                physicalDevice = pdevice;
                 msaaSamples = getMaxUsableSampleCount();
                 break;
             }
         }
     }
 
-    for (const auto& device : devices) {
-        if (isDeviceSuitable(device, surface)) {
-            physicalDevice = device;
+    for (const auto& pdevice : pdevices) {
+        if (isDeviceSuitable(pdevice, surface)) {
+            physicalDevice = pdevice;
             msaaSamples = getMaxUsableSampleCount();
             break;
         }
@@ -1405,10 +1405,6 @@ void VulkanCore::createSyncObjects()
 
 void VulkanCore::updateUniformBuffer(uint32_t currentImage)
 {
-    static auto startTime = std::chrono::high_resolution_clock::now();
-    auto currentTime = std::chrono::high_resolution_clock::now();
-    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
     auto camera = CameraManager::GetInstance().GetActiveCamera();
 
 #ifndef NDEBUG
@@ -1696,7 +1692,6 @@ void VulkanCore::SaveFrame(const std::string& savePath)
 {
     vkWaitForFences(device, 1, &swapchainImageFences[currentFrameInFlight], VK_TRUE, UINT64_MAX);
 
-    // Assuming you have access to the width and height of the texture image
     uint32_t texWidth = static_cast<uint32_t>(m_pApp->args.windowSize.first);
     uint32_t texHeight = static_cast<uint32_t>(m_pApp->args.windowSize.second);
 
@@ -1713,9 +1708,11 @@ void VulkanCore::SaveFrame(const std::string& savePath)
          << texWidth << " " << texHeight << "\n255\n";
 
     // Write the pixel data
-    // PPM format expects pixels in binary RGB format, so we only need to write the RGB parts of each RGBA pixel
+    // PPM format expects pixels in binary RGB format, so we only need to write the RGB parts of each BGRA pixel
     for (uint32_t i = 0; i < texWidth * texHeight; ++i) {
-        file.write(reinterpret_cast<char*>(bufferData.get() + i * 4), 3); // Write 3 bytes (RGB) per pixel
+        char* pixel = reinterpret_cast<char*>(bufferData.get() + i * 4);
+        std::swap(pixel[0], pixel[2]); // Vulkan has BGRA format, PPM has RGB
+        file.write(pixel, 3);
     }
 
     file.close();

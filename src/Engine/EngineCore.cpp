@@ -23,10 +23,6 @@ bool gIsSupending = false;
 
 void InitializeApplication(IApp& app)
 {
-    int argc = 0;
-    // LPWSTR* argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-    // CommandLineArgs::Initialize(argc, argv);
-
     // Graphics::Initialize(game.RequiresRaytracingSupport());
     // SystemTime::Initialize();
     // GameInput::Initialize();
@@ -53,7 +49,7 @@ bool UpdateApplication(IApp& app)
     auto currentTime = std::chrono::high_resolution_clock::now();
     float DeltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
     lastTime = currentTime;
-    float ElapsedTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+    // float ElapsedTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
     // float DeltaTime = Graphics::GetFrameTime();
 

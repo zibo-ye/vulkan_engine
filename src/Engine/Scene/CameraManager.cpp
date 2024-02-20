@@ -151,27 +151,21 @@ void CameraManager::UpdateCamera(float deltaTime)
 
         auto upDir = vkm::vec3(0.0f, 0.0f, 1.0f);
         auto right = vkm::cross(lookAtDir, upDir);
-
+        right = vkm::normalize(right);
         float movingSpeed = keyboardMovingSpeed * deltaTime;
 
         if (keysActivated[EKeyboardKeys::W]) {
-            auto right = vkm::cross(lookAtDir, upDir);
             auto screenUp = vkm::cross(right, lookAtDir);
             userCamera->fromPos += screenUp * movingSpeed;
             userCamera->lookAtPos += screenUp * movingSpeed;
         } else if (keysActivated[EKeyboardKeys::S]) {
-            auto right = vkm::cross(lookAtDir, upDir);
             auto screenUp = vkm::cross(right, lookAtDir);
             userCamera->fromPos -= screenUp * movingSpeed;
             userCamera->lookAtPos -= screenUp * movingSpeed;
         } else if (keysActivated[EKeyboardKeys::A]) {
-            auto right = vkm::cross(lookAtDir, upDir);
-            right = vkm::normalize(right);
             userCamera->fromPos -= right * movingSpeed;
             userCamera->lookAtPos -= right * movingSpeed;
         } else if (keysActivated[EKeyboardKeys::D]) {
-            auto right = vkm::cross(lookAtDir, upDir);
-            right = vkm::normalize(right);
             userCamera->fromPos += right * movingSpeed;
             userCamera->lookAtPos += right * movingSpeed;
         } else if (keysActivated[EKeyboardKeys::Q]) {

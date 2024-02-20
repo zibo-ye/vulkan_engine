@@ -137,11 +137,11 @@ void Scene::SetPlaybackTimeAndRate(float playbackTime, float playbackRate)
     m_PlaybackSpeed = playbackRate;
 }
 
-static std::shared_ptr<Scene> defaultScene()
-{
-    static std::shared_ptr<Scene> defScene = std::make_shared<Scene>();
-    return defScene;
-}
+// static std::shared_ptr<Scene> defaultScene()
+// {
+//     static std::shared_ptr<Scene> defScene = std::make_shared<Scene>();
+//     return defScene;
+// }
 
 Node::Node(std::weak_ptr<Scene> pScene, size_t index, const Utility::json::JsonValue& jsonObj)
     : SceneObj(pScene, index, ESceneObjType::NODE)

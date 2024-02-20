@@ -58,6 +58,11 @@ void MainApplication::ParseArguments(const Utility::ArgsParser& argsParser)
     if (headlessEventsPathArg.has_value()) {
         args.headlessEventsPath = headlessEventsPathArg.value()[0];
     }
+
+    auto measureFPSArg = argsParser.GetArg("measure");
+    if (measureFPSArg.has_value()) {
+        args.measureFPS = true;
+    }
 }
 
 void MainApplication::Startup(void)
@@ -86,6 +91,19 @@ void MainApplication::Update(float deltaT)
 
 void MainApplication::RenderScene(void)
 {
+    if (args.measureFPS) {
+        static int frameCount = 0;
+        //static auto startTime = std::chrono::high_resolution_clock::now();
+        static auto lastOutputTime = std::chrono::high_resolution_clock::now();
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        float DeltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastOutputTime).count();
+        frameCount++;
+        if (DeltaTime >= 1.0f) {
+            std::cout << "FPS: " << frameCount << std::endl;
+            frameCount = 0;
+            lastOutputTime = currentTime;
+        }
+	}
     m_VulkanCore.drawFrame(*m_Scene);
 }
 

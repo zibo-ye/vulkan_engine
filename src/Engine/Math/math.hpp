@@ -362,7 +362,7 @@ T dot(const vec<N, T>& v1, const vec<N, T>& v2)
 template <std::size_t N, typename T>
 vec<N, T> normalize(const vec<N, T>& v)
 {
-    T len = length(v); // Assume length function computes the magnitude of v
+    T len = length(v);
     if (len == 0)
         return v; // Prevent division by zero
 
