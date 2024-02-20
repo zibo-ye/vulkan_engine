@@ -1,15 +1,18 @@
 #include "math.hpp"
+#include <cassert>
 
+// RH, 0-1, Y-down, Z-in
 vkm::mat4 vkm::perspective(float fovY, float aspect, float zNear, float zFar)
 {
+    assert(abs(aspect - std::numeric_limits<float>::epsilon()) > 0);
     mat4 result(0.0f); // Initialize to zero
     const float tanHalfFovy = tan(fovY / 2.0f);
 
-    result(0, 0) = 1.0f / (aspect * tanHalfFovy);
-    result(1, 1) = 1.0f / (tanHalfFovy);
-    result(2, 2) = zFar / (zNear - zFar);
-    result(2, 3) = -1.0f;
-    result(3, 2) = -(zFar * zNear) / (zFar - zNear);
+    result[0][0] = 1.0f / (aspect * tanHalfFovy);
+    result[1][1] = -1.0f / (tanHalfFovy);
+    result[2][2] = zFar / (zNear - zFar);
+    result[3][2] = -(zFar * zNear) / (zFar - zNear);
+    result[2][3] = -1.0f;
     return result;
 }
 
@@ -20,7 +23,7 @@ vkm::mat4 vkm::lookAt(const vec3& eye, const vec3& center, const vec3& up)
     vec3 s = normalize(cross(f, up));
     vec3 u = cross(s, f);
 
-    mat4 result(1.0f);
+    mat4 result;
     result[0][0] = s.x();
     result[1][0] = s.y();
     result[2][0] = s.z();

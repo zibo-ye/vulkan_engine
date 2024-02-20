@@ -181,11 +181,6 @@ public:
     static std::vector<char> readFile(const std::filesystem::path& filename);
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
-    void testvkm();
-
-    void test_vkm_quat();
-    void test_vkm_vec();
-    void test_vkm_mat();
 
 public:
     VkDevice GetDevice() const { return device; }

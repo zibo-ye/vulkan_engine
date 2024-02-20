@@ -491,6 +491,14 @@ struct mat {
     {
     }
 
+    // = operator
+    mat& operator=(const mat& other)
+    {
+		data = other.data;
+		return *this;
+	}
+
+
     // Access elements using (row, col) notation
     T& operator()(std::size_t row, std::size_t col)
     {
