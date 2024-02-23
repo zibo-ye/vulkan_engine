@@ -4,8 +4,6 @@
 #define USE_VULKAN 1
 
 #define USE_GLFW !USE_NATIVE_API
-#define USE_GLM 1
-// #define USE_GLM !USE_NATIVE_API
 #define USE_NATIVE_WINDOWS_API (_WIN32 && USE_NATIVE_API)
 
 #define VERBOSE 1
@@ -14,6 +12,9 @@
 #pragma warning(disable : 4238) // nonstandard extension used : class rvalue used as lvalue
 #pragma warning(disable : 4239) // A non-const reference may only be bound to an lvalue; assignment operator takes a reference to non-const
 #pragma warning(disable : 4324) // structure was padded due to __declspec(align())
+
+// Use the C++ standard templated min/max
+#define NOMINMAX
 
 #if USE_GLFW
 
@@ -36,9 +37,6 @@
 #define _WIN32_WINNT 0x0A00
 #include <sdkddkver.h>
 
-// Use the C++ standard templated min/max
-#define NOMINMAX
-
 // DirectX apps don't need GDI
 #define NODRAWTEXT
 #define NOGDI
@@ -58,15 +56,6 @@
 #include <Windows.h>
 #include <wrl/client.h>
 #include <wrl/event.h>
-#endif
-
-#if USE_GLM
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/hash.hpp>
 #endif
 
 #include "Math/math.hpp"
@@ -105,6 +94,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cassert>
 #include <chrono>
 #include <cstdint>
 #include <cstdlib>

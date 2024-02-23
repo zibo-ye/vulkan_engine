@@ -13,8 +13,8 @@
 // #include <shellapi.h>
 
 #include "Window/GLFWWindow.hpp"
-#include "Window/Win32Window.hpp"
 #include "Window/HeadlessWindow.hpp"
+#include "Window/Win32Window.hpp"
 
 #pragma comment(lib, "runtimeobject.lib")
 
@@ -23,10 +23,6 @@ bool gIsSupending = false;
 
 void InitializeApplication(IApp& app)
 {
-    int argc = 0;
-    // LPWSTR* argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-    // CommandLineArgs::Initialize(argc, argv);
-
     // Graphics::Initialize(game.RequiresRaytracingSupport());
     // SystemTime::Initialize();
     // GameInput::Initialize();
@@ -53,7 +49,7 @@ bool UpdateApplication(IApp& app)
     auto currentTime = std::chrono::high_resolution_clock::now();
     float DeltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
     lastTime = currentTime;
-    float ElapsedTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+    // float ElapsedTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
     // float DeltaTime = Graphics::GetFrameTime();
 
@@ -115,8 +111,8 @@ std::shared_ptr<IWindow> CreateIWindow(std::optional<std::string> headlessEvents
 {
     if (headlessEventsPath.has_value()) {
         std::cout << "Creating headless window with events path: " << headlessEventsPath.value() << std::endl;
-		return std::make_shared<HeadlessWindow>(headlessEventsPath.value());
-	}
+        return std::make_shared<HeadlessWindow>(headlessEventsPath.value());
+    }
 #if USE_GLFW
     return std::make_shared<GLFWWindow>();
 #elif USE_NATIVE_WINDOWS_API

@@ -58,6 +58,20 @@ void MainApplication::ParseArguments(const Utility::ArgsParser& argsParser)
     if (headlessEventsPathArg.has_value()) {
         args.headlessEventsPath = headlessEventsPathArg.value()[0];
     }
+
+    auto measureFPSArg = argsParser.GetArg("measure");
+    if (measureFPSArg.has_value()) {
+        args.measureFPS = true;
+    }
+
+    auto limitFPSArg = argsParser.GetArg("limitfps");
+    if (limitFPSArg.has_value()) {
+        args.limitFPS = true;
+    }
+    auto profilingArg = argsParser.GetArg("profiling");
+    if (profilingArg.has_value()) {
+        args.profiling = true;
+    }
 }
 
 void MainApplication::Startup(void)
@@ -86,6 +100,25 @@ void MainApplication::Update(float deltaT)
 
 void MainApplication::RenderScene(void)
 {
+    if (args.measureFPS) {
+        static int frameCount = 0;
+        //static auto startTime = std::chrono::high_resolution_clock::now();
+        static auto lastOutputTime = std::chrono::high_resolution_clock::now();
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        float DeltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastOutputTime).count();
+        if (args.headlessEventsPath) {
+            if (m_VulkanCore.readyForNextImage || !args.limitFPS) {
+                frameCount++;
+            }
+        } else {
+            frameCount++;
+        }
+        if (DeltaTime >= 1.0f) {
+            std::cout << "FPS: " << frameCount << std::endl;
+            frameCount = 0;
+            lastOutputTime = currentTime;
+        }
+	}
     m_VulkanCore.drawFrame(*m_Scene);
 }
 
@@ -101,6 +134,10 @@ void MainApplication::SetPlaybackTimeAndRate(float playbackTime, float playbackR
 
 void MainApplication::SaveFrame(std::string savePath)
 {
+    if (args.profiling) {
+		//std::cerr << "Profiling is enabled. Ignoring save frame request." << std::endl;
+		return;
+	}
     m_VulkanCore.SaveFrame(savePath);
 }
 

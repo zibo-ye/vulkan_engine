@@ -12,6 +12,14 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "ThirdParty/stb_image.h"
 
+#if USE_GLM
+namespace vkm {
+void test_vkm_glm_compatibility();
+}
+#else
+namespace glm = vkm;
+#endif
+
 void VulkanCore::Init(EngineCore::IApp* pApp)
 {
     if (!pApp) {
@@ -19,7 +27,10 @@ void VulkanCore::Init(EngineCore::IApp* pApp)
     }
     m_pApp = pApp;
 
-    testvkm();
+#if USE_GLM
+    vkm::test_vkm_glm_compatibility();
+#endif
+
     createInstance();
     setupDebugMessenger();
     createSurface();
@@ -34,9 +45,9 @@ void VulkanCore::Init(EngineCore::IApp* pApp)
     createColorResources();
     createDepthResources();
     createFramebuffers();
-    createTextureImage();
-    createTextureImageView();
-    createTextureSampler();
+    // createTextureImage();
+    // createTextureImageView();
+    // createTextureSampler();
     createUniformBuffers();
     createDescriptorPool();
     createDescriptorSets();
@@ -62,17 +73,17 @@ void VulkanCore::cleanupSwapChain()
         vkDestroyImageView(device, imageView, nullptr);
     }
 
-    for (auto swapChainImage : swapChainImages) {
-        vkDestroyImage(device, swapChainImage, nullptr);
-    }
-
-    for (auto swapChainImageMemory : swapChainImagesMemory)
-    {
-        vkFreeMemory(device, swapChainImageMemory, nullptr);
-    }
-
     if (swapChain != VK_NULL_HANDLE)
         vkDestroySwapchainKHR(device, swapChain, nullptr);
+    else {
+        for (auto swapChainImage : swapChainImages) {
+            vkDestroyImage(device, swapChainImage, nullptr);
+        }
+
+        for (auto swapChainImageMemory : swapChainImagesMemory) {
+            vkFreeMemory(device, swapChainImageMemory, nullptr);
+        }
+    }
 }
 
 void VulkanCore::WaitIdle()
@@ -94,15 +105,9 @@ void VulkanCore::Shutdown()
         vkFreeMemory(device, uniformBuffersMemory[i], nullptr);
     }
 
-
     vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 
     vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
-
-    vkDestroySampler(device, textureSampler, nullptr);
-    vkDestroyImageView(device, textureImageView, nullptr);
-    vkDestroyImage(device, textureImage, nullptr);
-    vkFreeMemory(device, textureImageMemory, nullptr);
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
@@ -217,27 +222,27 @@ void VulkanCore::createSurface()
 
 void VulkanCore::pickPhysicalDevice()
 {
-    std::vector<VkPhysicalDevice> devices = getAllPhysicalDevices(instance);
+    std::vector<VkPhysicalDevice> pdevices = getAllPhysicalDevices(instance);
 
     if (m_pApp->args.physicalDeviceName.has_value()) {
-        for (const auto& device : devices) {
+        for (const auto& pdevice : pdevices) {
             VkPhysicalDeviceProperties properties;
-            vkGetPhysicalDeviceProperties(device, &properties);
+            vkGetPhysicalDeviceProperties(pdevice, &properties);
             if (std::string(properties.deviceName) == m_pApp->args.physicalDeviceName.value()) {
-                if (!isDeviceSuitable(device, surface)) {
+                if (!isDeviceSuitable(pdevice, surface)) {
                     std::cout << "The device given in args is not suitable: " << properties.deviceName << std::endl;
                     throw std::runtime_error("The device given in args is not suitable");
                 }
-                physicalDevice = device;
+                physicalDevice = pdevice;
                 msaaSamples = getMaxUsableSampleCount();
                 break;
             }
         }
     }
 
-    for (const auto& device : devices) {
-        if (isDeviceSuitable(device, surface)) {
-            physicalDevice = device;
+    for (const auto& pdevice : pdevices) {
+        if (isDeviceSuitable(pdevice, surface)) {
+            physicalDevice = pdevice;
             msaaSamples = getMaxUsableSampleCount();
             break;
         }
@@ -301,7 +306,7 @@ void VulkanCore::createLogicalDevice()
 
     if (IsHeadless()) {
         enabledDeviceExtensions = &deviceExtensionsWithoutSwapchain;
-    } 
+    }
 
     VkDeviceCreateInfo createInfo {
         .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
@@ -324,30 +329,29 @@ void VulkanCore::createLogicalDevice()
     }
 
     vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
-    if (indices.presentFamily)
-    {
+    if (indices.presentFamily) {
         vkGetDeviceQueue(device, *indices.presentFamily, 0, &presentQueue);
     }
 }
 
 void VulkanCore::createSwapChain()
 {
-    if (IsHeadless()) { 
+    if (IsHeadless()) {
         // Headless mode does not have a surface, make a fake swap chain
         int width, height;
         m_pApp->info.window->GetWindowSize(width, height);
-        swapChainExtent = { 
+        swapChainExtent = {
             static_cast<uint32_t>(width),
             static_cast<uint32_t>(height)
         };
         swapChainImageFormat = VK_FORMAT_B8G8R8A8_SRGB;
 
-        uint32_t imageCount = 2;
+        uint32_t imageCount = 3;
         swapChainImages.resize(imageCount);
         swapChainImagesMemory.resize(imageCount);
         for (uint32_t i = 0; i < imageCount; i++) {
             createImage(swapChainExtent.width, swapChainExtent.height, 1, VK_SAMPLE_COUNT_1_BIT, swapChainImageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, swapChainImages[i], swapChainImagesMemory[i]);
-		}
+        }
     } else {
         SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice, *surface);
         VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
@@ -395,7 +399,7 @@ void VulkanCore::createSwapChain()
 
         swapChainImageFormat = surfaceFormat.format;
         swapChainExtent = extent;
-	}
+    }
 }
 
 void VulkanCore::createSwapchainImageViews()
@@ -625,7 +629,7 @@ void VulkanCore::createGraphicsPipeline()
     VkPushConstantRange push_constant {
         .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
         .offset = 0,
-        .size = sizeof(glm::mat4),
+        .size = sizeof(vkm::mat4),
     };
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo {
@@ -771,46 +775,6 @@ void VulkanCore::createImage(uint32_t width, uint32_t height, uint32_t mipLevels
     vkBindImageMemory(device, image, imageMemory, 0);
 }
 
-void VulkanCore::createTextureImage()
-{
-    // load an image and upload it into a Vulkan image object
-
-    int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-    VkDeviceSize imageSize = texWidth * texHeight * 4;
-    mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
-
-    if (!pixels) {
-        throw std::runtime_error("failed to load texture image!");
-    }
-
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-
-    // temporary staging buffer
-    createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-    // copy from memory -> staging buffer
-    void* data;
-    vkMapMemory(device, stagingBufferMemory, 0, imageSize, 0, &data);
-    memcpy(data, pixels, static_cast<size_t>(imageSize));
-    vkUnmapMemory(device, stagingBufferMemory);
-
-    stbi_image_free(pixels);
-
-    // image memory
-    createImage(texWidth, texHeight, mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
-    transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
-
-    // copy staging -> image
-    copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-    // transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevels);
-    generateMipmaps(textureImage, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, mipLevels);
-
-    vkDestroyBuffer(device, stagingBuffer, nullptr);
-    vkFreeMemory(device, stagingBufferMemory, nullptr);
-}
-
 std::unique_ptr<uint8_t[]> VulkanCore::copyTextureToMemory(VkImage textureImage, uint32_t texWidth, uint32_t texHeight)
 {
     VkDeviceSize imageSize = texWidth * texHeight * 4; // Assuming 4 bytes per pixel (RGBA)
@@ -905,8 +869,7 @@ void VulkanCore::transitionImageLayout(VkImage image, VkFormat format, VkImageLa
 
         sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
         destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    } 
-    else {
+    } else {
         throw std::invalid_argument("unsupported layout transition!");
     }
 
@@ -918,11 +881,6 @@ void VulkanCore::transitionImageLayout(VkImage image, VkFormat format, VkImageLa
         0, nullptr,
         1, &barrier);
     endSingleTimeCommands(commandBuffer);
-}
-
-void VulkanCore::createTextureImageView()
-{
-    textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
 }
 
 VkImageView VulkanCore::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels)
@@ -1045,35 +1003,6 @@ void VulkanCore::generateMipmaps(VkImage image, VkFormat imageFormat, int32_t te
     endSingleTimeCommands(commandBuffer);
 }
 
-void VulkanCore::createTextureSampler()
-{
-    VkPhysicalDeviceProperties properties {};
-    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
-
-    VkSamplerCreateInfo samplerInfo {
-        .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-        .magFilter = VK_FILTER_LINEAR,
-        .minFilter = VK_FILTER_LINEAR,
-        .mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR,
-        .addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT,
-        .addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT,
-        .addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT,
-        .mipLodBias = 0.0f,
-        .anisotropyEnable = VK_TRUE,
-        .maxAnisotropy = properties.limits.maxSamplerAnisotropy,
-        .compareEnable = VK_FALSE,
-        .compareOp = VK_COMPARE_OP_ALWAYS,
-        .minLod = 0.0f,
-        .maxLod = static_cast<float>(mipLevels),
-        .borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
-        .unnormalizedCoordinates = VK_FALSE,
-    };
-
-    if (vkCreateSampler(device, &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create texture sampler!");
-    }
-}
-
 void VulkanCore::createUniformBuffers()
 {
     VkDeviceSize bufferSize = sizeof(UniformBufferObject);
@@ -1135,13 +1064,13 @@ void VulkanCore::createDescriptorSets()
             .range = sizeof(UniformBufferObject),
         };
 
-        VkDescriptorImageInfo imageInfo {
-            .sampler = textureSampler,
-            .imageView = textureImageView,
-            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-        };
+        // VkDescriptorImageInfo imageInfo {
+        //     .sampler = textureSampler,
+        //     .imageView = textureImageView,
+        //     .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        // };
 
-        std::array<VkWriteDescriptorSet, 2> descriptorWrites {
+        std::array<VkWriteDescriptorSet, 1> descriptorWrites {
             VkWriteDescriptorSet {
                 .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
                 .dstSet = descriptorSets[i],
@@ -1151,7 +1080,7 @@ void VulkanCore::createDescriptorSets()
                 .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                 .pBufferInfo = &bufferInfo,
             },
-            {
+            /*{
                 .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
                 .dstSet = descriptorSets[i],
                 .dstBinding = 1,
@@ -1159,7 +1088,7 @@ void VulkanCore::createDescriptorSets()
                 .descriptorCount = 1,
                 .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .pImageInfo = &imageInfo,
-            }
+            }*/
         };
 
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
@@ -1272,7 +1201,6 @@ void VulkanCore::copyImageToBuffer(VkImage image, VkBuffer buffer, uint32_t widt
 
     endSingleTimeCommands(commandBuffer);
 }
-
 
 VkCommandBuffer VulkanCore::beginSingleTimeCommands() const
 {
@@ -1397,7 +1325,13 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t ima
 
     std::vector<MeshInstance> meshInstances;
     scene.Traverse(meshInstances);
-    auto totalMeshCount = meshInstances.size();
+#if VERBOSE
+    static size_t totalMeshCount = 0;
+    if (totalMeshCount != meshInstances.size()) {
+        totalMeshCount = meshInstances.size();
+        std::cout << "MeshInstances: " << totalMeshCount << std::endl;
+    }
+#endif
     if (m_pApp->args.cullingType == "frustum") {
         std::vector<MeshInstance> meshInstancesCulled;
         for (auto& MeshInst : meshInstances) {
@@ -1407,9 +1341,9 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t ima
         }
         meshInstances = std::move(meshInstancesCulled);
     }
-    auto totalMeshCountAfterCulling = meshInstances.size();
 
 #if VERBOSE
+    auto totalMeshCountAfterCulling = meshInstances.size();
     static size_t lastMeshInstanceCount = totalMeshCountAfterCulling;
     if (lastMeshInstanceCount != totalMeshCountAfterCulling) {
         lastMeshInstanceCount = totalMeshCountAfterCulling;
@@ -1426,10 +1360,10 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t ima
         VkDeviceSize offsets[] = { 0 };
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-        glm::mat4 matWorld = MeshInst.matWorld;
+        vkm::mat4 matWorld = MeshInst.matWorld;
 
         // upload the matrix to the GPU via push constants
-        vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &matWorld);
+        vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vkm::mat4), &matWorld);
 
         if (meshData->indices.has_value()) // Has indices
         {
@@ -1454,7 +1388,6 @@ void VulkanCore::createSyncObjects()
     renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     swapchainImageFences.resize(swapChainFramebuffers.size());
 
-
     VkSemaphoreCreateInfo semaphoreInfo {
         .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
     };
@@ -1478,10 +1411,6 @@ void VulkanCore::createSyncObjects()
 
 void VulkanCore::updateUniformBuffer(uint32_t currentImage)
 {
-    static auto startTime = std::chrono::high_resolution_clock::now();
-    auto currentTime = std::chrono::high_resolution_clock::now();
-    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
     auto camera = CameraManager::GetInstance().GetActiveCamera();
 
 #ifndef NDEBUG
@@ -1493,7 +1422,7 @@ void VulkanCore::updateUniformBuffer(uint32_t currentImage)
         .view = camera->getViewMatrix(),
         .proj = camera->getProjectionMatrix(),
     };
-    ubo.proj[1][1] *= -1;
+    // ubo.proj[1][1] *= -1;
 
     memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
 }
@@ -1501,9 +1430,9 @@ void VulkanCore::updateUniformBuffer(uint32_t currentImage)
 void VulkanCore::drawFrame(Scene& scene)
 {
     if (IsHeadless()) {
-		drawFrameHeadless(scene);
-		return;
-	}
+        drawFrameHeadless(scene);
+        return;
+    }
 
     currentFrameInFlight = (currentFrameInFlight + 1) % MAX_FRAMES_IN_FLIGHT;
     // wait for the frame needed to use to be finished (if still in flight)
@@ -1567,6 +1496,7 @@ void VulkanCore::drawFrame(Scene& scene)
 
 void VulkanCore::drawFrameHeadless(Scene& scene)
 {
+    if (!m_pApp->args.limitFPS) readyForNextImage = true;
     if (!readyForNextImage)
         return;
 
@@ -1576,7 +1506,7 @@ void VulkanCore::drawFrameHeadless(Scene& scene)
     vkResetFences(device, 1, &swapchainImageFences[currentFrameInFlight]);
 
     uint32_t imageIndex = std::numeric_limits<uint32_t>::max(); // index of the swap chain image that will be used for the current frame
-    
+
     imageIndex = AcquireNextImageIndex();
 
     if (m_pApp->events.windowResized) {
@@ -1674,8 +1604,7 @@ VkExtent2D VulkanCore::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabili
 std::vector<const char*> VulkanCore::getRequiredExtensions()
 {
     std::vector<const char*> extensions;
-    if (!IsHeadless())
-    {
+    if (!IsHeadless()) {
 #if USE_GLFW
         uint32_t glfwExtensionCount = 0;
         const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -1687,7 +1616,7 @@ std::vector<const char*> VulkanCore::getRequiredExtensions()
         extensions = std::vector<const char*>(glfwExtensions, glfwExtensions + glfwExtensionCount);
     }
 
-    //std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+    // std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
 #if __APPLE__
     // Encountered VK_ERROR_INCOMPATIBLE_DRIVER on MacOS with MoltenVK
@@ -1759,21 +1688,9 @@ VKAPI_ATTR VkBool32 VKAPI_CALL VulkanCore::debugCallback(VkDebugUtilsMessageSeve
     return VK_FALSE;
 }
 
-void VulkanCore::testvkm()
-{
-    std::cout << "Testing vkm math library" << std::endl;
-
-    vkm::vec3 v1 = { 1, 2, 3 };
-    vkm::vec3 v2 = { 4, 5, 6 };
-
-    v1 += v2;
-
-    std::cout << v1.r() << std::endl;
-}
-
 void VulkanCore::PresentImage()
 {
-    //make the least-recently-available image in the swap chain available to be rendered to (after waiting for any rendering pending on this image to complete). This, effectively, starts a frame rendering.
+    // make the least-recently-available image in the swap chain available to be rendered to (after waiting for any rendering pending on this image to complete). This, effectively, starts a frame rendering.
     nextImageIndex = (nextImageIndex + 1) % swapChainImages.size();
     readyForNextImage = true;
 }
@@ -1782,10 +1699,9 @@ void VulkanCore::SaveFrame(const std::string& savePath)
 {
     vkWaitForFences(device, 1, &swapchainImageFences[currentFrameInFlight], VK_TRUE, UINT64_MAX);
 
-    // Assuming you have access to the width and height of the texture image
     uint32_t texWidth = static_cast<uint32_t>(m_pApp->args.windowSize.first);
     uint32_t texHeight = static_cast<uint32_t>(m_pApp->args.windowSize.second);
-        
+
     auto bufferData = copyTextureToMemory(swapChainImages[currentFrameInFlight], texWidth, texHeight);
 
     // Open the file in binary mode
@@ -1799,9 +1715,11 @@ void VulkanCore::SaveFrame(const std::string& savePath)
          << texWidth << " " << texHeight << "\n255\n";
 
     // Write the pixel data
-    // PPM format expects pixels in binary RGB format, so we only need to write the RGB parts of each RGBA pixel
+    // PPM format expects pixels in binary RGB format, so we only need to write the RGB parts of each BGRA pixel
     for (uint32_t i = 0; i < texWidth * texHeight; ++i) {
-        file.write(reinterpret_cast<char*>(bufferData.get() + i * 4), 3); // Write 3 bytes (RGB) per pixel
+        char* pixel = reinterpret_cast<char*>(bufferData.get() + i * 4);
+        std::swap(pixel[0], pixel[2]); // Vulkan has BGRA format, PPM has RGB
+        file.write(pixel, 3);
     }
 
     file.close();

@@ -16,19 +16,19 @@ public:
     virtual ECameraType getType() const = 0;
     virtual std::string getName() const = 0;
     virtual void update(float deltaTime) = 0;
-    virtual glm::mat4 getViewMatrix() const = 0;
-    virtual glm::mat4 getProjectionMatrix() const = 0;
-    virtual bool FrustumCulling(std::shared_ptr<Mesh> pMesh, glm::mat4& worldTransform);
+    virtual vkm::mat4 getViewMatrix() const = 0;
+    virtual vkm::mat4 getProjectionMatrix() const = 0;
+    virtual bool FrustumCulling(std::shared_ptr<Mesh> pMesh, vkm::mat4& worldTransform);
 };
 
 struct Perspective {
     float aspect = 800.f / 600.f;
-    float vfov = glm::radians(45.f);
+    float vfov = vkm::radians(45.f);
     float near_plane = 0.1f;
-    float far_plane = 10.f;
-    glm::mat4 getProjectionMatrix() const
+    float far_plane = 100.f;
+    vkm::mat4 getProjectionMatrix() const
     {
-        return glm::perspective(vfov, aspect, near_plane, far_plane);
+        return vkm::perspective(vfov, aspect, near_plane, far_plane);
     }
 };
 
@@ -55,9 +55,9 @@ public:
 
     void update(float deltaTime) override { }
 
-    glm::mat4 getViewMatrix() const override;
+    vkm::mat4 getViewMatrix() const override;
 
-    glm::mat4 getProjectionMatrix() const override
+    vkm::mat4 getProjectionMatrix() const override
     {
         return perspective.getProjectionMatrix();
     }
@@ -68,8 +68,8 @@ public:
 };
 
 struct UserCameraUpdateParameters {
-    std::optional<glm::vec3> fromPos;
-    std::optional<glm::vec4> lookAtPos;
+    std::optional<vkm::vec3> fromPos;
+    std::optional<vkm::vec3> lookAtPos;
     std::optional<float> aspect;
     std::optional<float> vfov;
     std::optional<float> near_plane;
@@ -87,12 +87,12 @@ public:
     {
     }
 
-    glm::mat4 getViewMatrix() const override
+    vkm::mat4 getViewMatrix() const override
     {
-        return glm::lookAt(fromPos, lookAtPos, glm::vec3(0.0f, 0.0f, 1.0f));
+        return vkm::lookAt(fromPos, lookAtPos, vkm::vec3(0.0f, 0.0f, 1.0f));
     }
 
-    glm::mat4 getProjectionMatrix() const override
+    vkm::mat4 getProjectionMatrix() const override
     {
         return perspective.getProjectionMatrix();
     }
@@ -100,7 +100,8 @@ public:
     void UpdateCameraParameters(UserCameraUpdateParameters params);
 
     std::string name;
-    glm::vec3 fromPos = glm::vec3(2.0f, 2.0f, 2.0f);
-    glm::vec3 lookAtPos = glm::vec3(0.0f, 0.0f, 0.0f);
+    vkm::vec3 fromPos = vkm::vec3(2.0f, 2.0f, 2.0f);
+    // vkm::vec3 fromPos = vkm::vec3(4.0f, 4.0f, 4.0f);
+    vkm::vec3 lookAtPos = vkm::vec3(0.0f, 0.0f, 0.0f);
     Perspective perspective;
 };

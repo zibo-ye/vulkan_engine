@@ -89,8 +89,7 @@ bool MeshData<VertexType, IndexType>::releaseModelFromGPU()
     assert(m_pVulkanCore != nullptr);
 
     auto device = m_pVulkanCore->GetDevice();
-    if (device != VK_NULL_HANDLE)
-    {
+    if (device != VK_NULL_HANDLE) {
         if (indexBuffer.has_value())
             vkDestroyBuffer(device, indexBuffer.value(), nullptr);
         if (indexBufferMemory.has_value())

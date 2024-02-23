@@ -14,12 +14,10 @@ const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
 };
 
-const std::vector<const char*> deviceExtensionsWithoutSwapchain = {
-};
+const std::vector<const char*> deviceExtensionsWithoutSwapchain = {};
 const std::vector<const char*> deviceExtensions = {
-	VK_KHR_SWAPCHAIN_EXTENSION_NAME
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
-
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -27,13 +25,9 @@ const bool enableValidationLayers = false;
 const bool enableValidationLayers = true;
 #endif
 
-const std::string TEXTURE_PATH = "textures/viking_room.png";
-
-
-
 struct UniformBufferObject {
-    alignas(16) glm::mat4 view;
-    alignas(16) glm::mat4 proj;
+    alignas(16) vkm::mat4 view;
+    alignas(16) vkm::mat4 proj;
 };
 
 class VulkanCore {
@@ -80,12 +74,6 @@ private:
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> swapchainImageFences;
     uint32_t currentFrameInFlight = 0;
-
-    uint32_t mipLevels;
-    VkImage textureImage;
-    VkDeviceMemory textureImageMemory;
-    VkImageView textureImageView;
-    VkSampler textureSampler;
 
     VkImage depthImage;
     VkDeviceMemory depthImageMemory;
@@ -141,19 +129,13 @@ public:
 
     VkFormat findDepthFormat();
 
-    void createTextureImage();
-
-	std::unique_ptr<uint8_t[]> copyTextureToMemory(VkImage textureImage, uint32_t texWidth, uint32_t texHeight);
+    std::unique_ptr<uint8_t[]> copyTextureToMemory(VkImage textureImage, uint32_t texWidth, uint32_t texHeight);
 
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
-
-    void createTextureImageView();
 
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
 
     void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
-
-    void createTextureSampler();
 
     void createUniformBuffers();
 
@@ -165,7 +147,7 @@ public:
 
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) const;
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-	void copyImageToBuffer(VkImage image, VkBuffer buffer, uint32_t width, uint32_t height);
+    void copyImageToBuffer(VkImage image, VkBuffer buffer, uint32_t width, uint32_t height);
     VkCommandBuffer beginSingleTimeCommands() const;
 
     void endSingleTimeCommands(VkCommandBuffer commandBuffer) const;
@@ -191,7 +173,7 @@ public:
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
-    
+
     std::vector<const char*> getRequiredExtensions();
 
     bool checkValidationLayerSupport();
@@ -199,7 +181,6 @@ public:
     static std::vector<char> readFile(const std::filesystem::path& filename);
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
-    void testvkm();
 
 public:
     VkDevice GetDevice() const { return device; }
@@ -209,6 +190,7 @@ public:
 public:
     void PresentImage();
     void SaveFrame(const std::string& savePath);
+    bool readyForNextImage = false;
 
 private:
     uint32_t AcquireNextImageIndex();
@@ -216,5 +198,4 @@ private:
 
     uint32_t nextImageIndex = 0;
     uint32_t lastImageIndex = 0;
-    bool readyForNextImage = false;
 };

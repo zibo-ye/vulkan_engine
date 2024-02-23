@@ -38,9 +38,14 @@ enum class MeshAttributeType {
 };
 
 struct NewVertex {
-    glm::vec3 position;
-    glm::vec3 normal;
-    glm::u8vec4 color;
+    vkm::vec3 position;
+    vkm::vec3 normal;
+    vkm::u8vec4 color;
+
+    bool operator==(const NewVertex& other) const
+    {
+        return position == other.position && normal == other.normal && color == other.color;
+    }
 
     static VkVertexInputBindingDescription getBindingDescription()
     {
@@ -106,6 +111,21 @@ struct NewVertex {
     }
 };
 
+namespace std {
+template <>
+struct hash<NewVertex> {
+    size_t operator()(const NewVertex& vertex) const
+    {
+        size_t h1 = hash<vkm::vec3>()(vertex.position);
+        size_t h2 = hash<vkm::vec3>()(vertex.normal);
+        size_t h3 = hash<vkm::u8vec4>()(vertex.color);
+
+        // Combine the hash values
+        return ((h1 ^ (h2 << 1)) >> 1) ^ h3;
+    }
+};
+}
+
 class Mesh : public SceneObj {
 public:
     Mesh(std::weak_ptr<Scene> pScene, size_t index, const Utility::json::JsonValue& jsonObj);
@@ -120,8 +140,8 @@ public:
     void LoadMeshData();
 
 public:
-    glm::vec3 min = glm::vec3(std::numeric_limits<float>::max());
-    glm::vec3 max = -min;
+    vkm::vec3 min = vkm::vec3(std::numeric_limits<float>::max());
+    vkm::vec3 max = -min;
 
 private:
     void UpdateBounds(const NewVertex& vertex);
@@ -146,5 +166,5 @@ inline static VkPipelineVertexInputStateCreateInfo getVertexInputInfo()
 
 struct MeshInstance {
     std::shared_ptr<Mesh> pMesh;
-    glm::mat4 matWorld;
+    vkm::mat4 matWorld;
 };

@@ -16,15 +16,15 @@ public:
     Node(std::weak_ptr<Scene> pScene, size_t index, const Utility::json::JsonValue& jsonObj);
 
     std::string name;
-    glm::vec3 translation = { 0.0f, 0.0f, 0.0f };
-    glm::quat rotation = { 0.0f, 0.0f, 0.0f, 1.0f }; // Quaternion
-    glm::vec3 scale = { 1.0f, 1.0f, 1.0f };
+    vkm::vec3 translation = { 0.0f, 0.0f, 0.0f };
+    vkm::quat rotation = { 0.0f, 0.0f, 0.0f, 1.0f }; // Quaternion
+    vkm::vec3 scale = { 1.0f, 1.0f, 1.0f };
     std::optional<int> meshIdx;
     std::optional<int> cameraIdx;
     std::vector<int> childrenIdx;
 
-    glm::mat4 GetTransform() const;
-    void Traverse(glm::mat4 transform, std::vector<MeshInstance>& meshInsts);
+    vkm::mat4 GetTransform() const;
+    void Traverse(vkm::mat4 transform, std::vector<MeshInstance>& meshInsts);
 };
 
 class Driver : public SceneObj {
@@ -61,7 +61,7 @@ public:
 
     void RegisterEventHandlers(EngineCore::IApp* pApp);
 
-void Cleanup() const;
+    void Cleanup() const;
 
 public:
     void Update(float deltaTime);
