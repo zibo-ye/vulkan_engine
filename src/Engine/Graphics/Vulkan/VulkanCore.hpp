@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Image.hpp"
+#include "VulkanHelper.hpp"
 #include "Window/IWindow.hpp"
 #include "pch.hpp"
 
@@ -7,6 +9,8 @@ class Scene;
 namespace EngineCore {
 class IApp;
 }
+
+class Image;
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -36,6 +40,7 @@ struct FrameData {
     VkSemaphore imageAvailableSemaphore;
     VkSemaphore renderFinishedSemaphore;
     VkFence swapchainImageFence;
+    DeletionQueue deletionQueue;
 
     void Destroy(const VkDevice& device);
 };
@@ -88,6 +93,10 @@ private:
     VkImage colorImage;
     VkDeviceMemory colorImageMemory;
     VkImageView colorImageView;
+
+    DeletionQueue mainDeletionQueue;
+
+    Image drawImage;
 
 public:
     void Init(EngineCore::IApp* pApp);

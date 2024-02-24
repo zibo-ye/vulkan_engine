@@ -7,7 +7,6 @@
 #include "Scene/CameraManager.hpp"
 #include "Scene/Mesh.hpp"
 #include "Scene/Scene.hpp"
-#include "VulkanHelper.hpp"
 #include "VulkanInitializer.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -31,12 +30,13 @@ void VulkanCore::Init(EngineCore::IApp* pApp)
 #if USE_GLM
     vkm::test_vkm_glm_compatibility();
 #endif
-
+    // Some Global Initialization
     createInstance();
     setupDebugMessenger();
     createSurface();
     pickPhysicalDevice();
     createLogicalDevice();
+
     createSwapChain();
     createSwapchainImageViews();
     createRenderPass();
@@ -95,6 +95,8 @@ void VulkanCore::Shutdown()
 {
     WaitIdle();
     cleanupSwapChain();
+
+    mainDeletionQueue.flush();
 
     vkDestroyPipeline(device, graphicsPipeline, nullptr);
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
@@ -1408,6 +1410,7 @@ void VulkanCore::drawFrame(Scene& scene)
     // wait for the frame needed to use to be finished (if still in flight)
     vkWaitForFences(device, 1, &frames[currentFrameInFlight].swapchainImageFence, VK_TRUE, UINT64_MAX);
     vkResetFences(device, 1, &frames[currentFrameInFlight].swapchainImageFence);
+    frames[currentFrameInFlight].deletionQueue.flush(); // delete all temporary data
 
     uint32_t imageIndex = std::numeric_limits<uint32_t>::max(); // index of the swap chain image that will be used for the current frame
 

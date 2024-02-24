@@ -84,10 +84,12 @@
 #include <fstream>
 #include <stdexcept>
 
+#include <deque>
 #include <map>
 #include <queue>
 #include <ranges>
 #include <set>
+#include <stack>
 
 #include <functional>
 #include <optional>

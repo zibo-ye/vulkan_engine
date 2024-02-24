@@ -60,6 +60,24 @@ struct QueueFamilyIndices {
     }
 };
 
+// A easier way to handle resource destruction
+struct DeletionQueue {
+    std::stack<std::function<void()>> deletors;
+
+    void push(std::function<void()>&& func)
+    {
+        deletors.push(func);
+    }
+
+    void flush()
+    {
+        while (!deletors.empty()) {
+            deletors.top()();
+            deletors.pop();
+        }
+    }
+};
+
 std::vector<VkExtensionProperties> getAllAvailableInstanceExtensions();
 std::vector<VkLayerProperties> getAllAvailableLayers();
 std::vector<VkExtensionProperties> getAllAvailableDeviceExtensions(VkPhysicalDevice device);

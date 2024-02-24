@@ -4,16 +4,16 @@
 
 class VulkanCore;
 
-class Texture {
+class Image {
 
 public:
     VkImage image;
-    VkDeviceMemory imageMemory;
     VkImageView imageView;
+    VkDeviceMemory imageMemory;
+    VkFormat imageFormat;
     VkSampler sampler;
     uint32_t mipLevels;
-    uint32_t texWidth;
-    uint32_t texHeight;
+    VkExtent3D imageExtent;
 
     std::shared_ptr<VulkanCore> vulkanCore;
 };

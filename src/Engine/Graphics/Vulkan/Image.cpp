@@ -1,2 +1,2 @@
-#include "Texture.hpp"
+#include "Image.hpp"
 #include "VulkanCore.hpp"
