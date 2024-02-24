@@ -236,6 +236,24 @@ void printAllAvailableLayers()
     }
 }
 
+void printAllAvailableDeviceExtensions(std::string deviceName)
+{
+    VulkanCore core;
+    core.createInstance();
+
+    std::vector<VkPhysicalDevice> pdevices = getAllPhysicalDevices(core.GetInstance());
+
+    for (const auto& pdevice : pdevices) {
+        VkPhysicalDeviceProperties properties;
+        vkGetPhysicalDeviceProperties(pdevice, &properties);
+        if (std::string(properties.deviceName) == deviceName) {
+            printAllAvailableDeviceExtensions(pdevice);
+            return;
+        }
+    }
+    std::cout << "Can't find device with name: " << deviceName << std::endl;
+}
+
 void printAllAvailableDeviceExtensions(VkPhysicalDevice device)
 {
     std::vector<VkExtensionProperties> availableExtensions = getAllAvailableDeviceExtensions(device);

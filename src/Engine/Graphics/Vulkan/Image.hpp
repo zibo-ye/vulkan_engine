@@ -8,7 +8,7 @@ using ExtentVariant = std::variant<uint32_t, VkExtent2D, VkExtent3D>;
 
 class Image {
 public:
-    bool Init(VulkanCore* pVulkanCore, ExtentVariant extent, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties);
+    bool Init(VulkanCore* pVulkanCore, ExtentVariant extent, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED);
     void Destroy();
 
     void InitImageView(VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);

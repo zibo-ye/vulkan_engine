@@ -94,6 +94,7 @@ bool hasStencilComponent(VkFormat format);
 void printAllPhysicalDevices();
 void printAllAvailableInstanceExtensions();
 void printAllAvailableLayers();
+void printAllAvailableDeviceExtensions(std::string deviceName);
 void printAllAvailableDeviceExtensions(VkPhysicalDevice device);
 void printAllQueueFamilies(VkPhysicalDevice device, std::vector<VkQueueFamilyProperties> queueFamilies);
 void printMemoryTypeProperties(VkMemoryPropertyFlags flags);

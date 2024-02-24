@@ -92,6 +92,7 @@
 #include <stack>
 
 #include <functional>
+#include <numeric>
 #include <optional>
 
 #include <algorithm>

@@ -16,11 +16,18 @@ void MainApplication::ParseArguments(const Utility::ArgsParser& argsParser)
         exit(0);
     }
 
-    // #TODO : Implement these
-    // if (argsParser.GetArg("list-device-extensions")) {
-    //     printAllAvailableDeviceExtensions();
-    //     exit(0);
-    // }
+    auto physicalDeviceArg = argsParser.GetArg("physical-device");
+    if (physicalDeviceArg.has_value()) {
+        args.physicalDeviceName = physicalDeviceArg.value()[0];
+    }
+
+    if (argsParser.GetArg("list-device-extensions")) {
+        if (args.physicalDeviceName)
+            printAllAvailableDeviceExtensions(*args.physicalDeviceName);
+        else
+            throw std::runtime_error("No physical-device provided.");
+        exit(0);
+    }
 
     // if (argsParser.GetArg("get-device-info")) {
     //    exit(0);
@@ -36,11 +43,6 @@ void MainApplication::ParseArguments(const Utility::ArgsParser& argsParser)
     auto cameraArg = argsParser.GetArg("camera");
     if (cameraArg.has_value()) {
         args.cameraName = cameraArg.value()[0];
-    }
-
-    auto physicalDeviceArg = argsParser.GetArg("physical-device");
-    if (physicalDeviceArg.has_value()) {
-        args.physicalDeviceName = physicalDeviceArg.value()[0];
     }
 
     auto windowSizeArg = argsParser.GetArg("drawing-size");
@@ -59,18 +61,18 @@ void MainApplication::ParseArguments(const Utility::ArgsParser& argsParser)
         args.headlessEventsPath = headlessEventsPathArg.value()[0];
     }
 
-    auto measureFPSArg = argsParser.GetArg("measure");
-    if (measureFPSArg.has_value()) {
-        args.measureFPS = true;
+    auto measureArg = argsParser.GetArg("measure");
+    if (measureArg.has_value()) {
+        args.measure = true;
     }
 
     auto limitFPSArg = argsParser.GetArg("limitfps");
     if (limitFPSArg.has_value()) {
         args.limitFPS = true;
     }
-    auto profilingArg = argsParser.GetArg("profiling");
-    if (profilingArg.has_value()) {
-        args.profiling = true;
+    auto headlessIgnoreSaveFrameArg = argsParser.GetArg("headlessIgnoreSaveFrame");
+    if (headlessIgnoreSaveFrameArg.has_value()) {
+        args.headlessIgnoreSaveFrame = true;
     }
 }
 
@@ -100,26 +102,53 @@ void MainApplication::Update(float deltaT)
 
 void MainApplication::RenderScene(void)
 {
-    if (args.measureFPS) {
-        static int frameCount = 0;
-        // static auto startTime = std::chrono::high_resolution_clock::now();
-        static auto lastOutputTime = std::chrono::high_resolution_clock::now();
-        auto currentTime = std::chrono::high_resolution_clock::now();
-        float DeltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastOutputTime).count();
-        if (args.headlessEventsPath) {
-            if (m_VulkanCore.readyForNextImage || !args.limitFPS) {
-                frameCount++;
-            }
-        } else {
-            frameCount++;
-        }
-        if (DeltaTime >= 1.0f) {
-            std::cout << "FPS: " << frameCount << std::endl;
-            frameCount = 0;
-            lastOutputTime = currentTime;
-        }
-    }
+    if (args.measure)
+        Measure();
     m_VulkanCore.drawFrame(*m_Scene);
+}
+
+void MainApplication::Measure()
+{
+    static std::vector<float> frameTimes;
+    static auto lastFrameTime = std::chrono::high_resolution_clock::now();
+    static auto lastOutputTime = std::chrono::high_resolution_clock::now();
+    static float deltaOutputTime = 0.0f;
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    float frameTimeInMicrosec = std::chrono::duration<float, std::chrono::microseconds::period>(currentTime - lastFrameTime).count();
+    deltaOutputTime += frameTimeInMicrosec;
+
+    if (args.headlessEventsPath) {
+        if (m_VulkanCore.readyForNextImage || !args.limitFPS) {
+            frameTimes.push_back(frameTimeInMicrosec);
+        }
+    } else {
+        frameTimes.push_back(frameTimeInMicrosec);
+    }
+
+    // Calculate statistics every second or every N frames
+    if (deltaOutputTime >= 1000000.f) { // N is the number of frames after which you want to calculate statistics
+        float averageFrameTime = deltaOutputTime / frameTimes.size();
+        float fps = 1000000.0f / averageFrameTime;
+
+        // Sort frame times for percentile calculations
+        std::sort(frameTimes.begin(), frameTimes.end());
+        float p99 = frameTimes.at(std::lround(frameTimes.size() * 0.99) - 1);
+        float p95 = frameTimes.at(std::lround(frameTimes.size() * 0.95) - 1);
+        float p90 = frameTimes.at(std::lround(frameTimes.size() * 0.90) - 1);
+
+        // Calculate standard deviation
+        float sumOfSquaredDifferences = std::accumulate(frameTimes.begin(), frameTimes.end(), 0.0f,
+            [averageFrameTime](float acc, float ft) { return acc + (ft - averageFrameTime) * (ft - averageFrameTime); });
+        float std_dev = std::sqrt(sumOfSquaredDifferences / frameTimes.size());
+
+        std::cout << "FPS: " << fps << ", Avg Frame Time: " << averageFrameTime
+                  << "us , P99: " << p99 << "us , P95: " << p95 << "us , P90: " << p90
+                  << "us , Std Dev: " << std_dev << std::endl;
+
+        frameTimes.clear(); // Reset for next batch
+        deltaOutputTime = 0.0f;
+    }
+    lastFrameTime = std::chrono::high_resolution_clock::now(); // To eliminate the time taken to print statistics from the next batch
 }
 
 void MainApplication::PresentImage()
@@ -134,7 +163,7 @@ void MainApplication::SetPlaybackTimeAndRate(float playbackTime, float playbackR
 
 void MainApplication::SaveFrame(std::string savePath)
 {
-    if (args.profiling) {
+    if (args.headlessIgnoreSaveFrame) {
         // std::cerr << "Profiling is enabled. Ignoring save frame request." << std::endl;
         return;
     }

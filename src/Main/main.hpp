@@ -17,6 +17,8 @@ public:
 
     void RenderScene(void) override;
 
+    void Measure();
+
     std::pair<int, int> GetWindowSize() override { return args.windowSize; };
 
     void PresentImage() override;

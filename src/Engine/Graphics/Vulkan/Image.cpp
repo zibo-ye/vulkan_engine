@@ -1,7 +1,7 @@
 #include "Image.hpp"
 #include "VulkanCore.hpp"
 
-bool Image::Init(VulkanCore* pVulkanCore, ExtentVariant extent, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties)
+bool Image::Init(VulkanCore* pVulkanCore, ExtentVariant extent, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImageLayout initialLayout /* = VK_IMAGE_LAYOUT_UNDEFINED */)
 {
     if (!pVulkanCore)
         return false;
@@ -16,7 +16,7 @@ bool Image::Init(VulkanCore* pVulkanCore, ExtentVariant extent, uint32_t mipLeve
         .tiling = tiling,
         .usage = usage,
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+        .initialLayout = initialLayout,
     };
 
     // Determine the type of extent and set imageInfo fields accordingly
@@ -51,6 +51,7 @@ bool Image::Init(VulkanCore* pVulkanCore, ExtentVariant extent, uint32_t mipLeve
     VK(vkBindImageMemory(m_pVulkanCore->GetDevice(), image, imageMemory, 0));
 
     m_isValid = true;
+    m_currentLayout = initialLayout;
 
     // #MAYBE: m_pVulkanCore->AddResizeHandler(), m_pVulkanCore->AddShutdownHandler()
     return true;
@@ -63,6 +64,7 @@ void Image::Destroy()
     vkDestroyImage(m_pVulkanCore->GetDevice(), image, nullptr);
     vkFreeMemory(m_pVulkanCore->GetDevice(), imageMemory, nullptr);
     m_isValid = false;
+    m_currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 }
 
 void Image::InitImageView(VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels)
@@ -85,6 +87,35 @@ void Image::InitImageView(VkFormat format, VkImageAspectFlags aspectFlags, uint3
     VK(vkCreateImageView(m_pVulkanCore->GetDevice(), &viewInfo, nullptr, &imageView));
 }
 
+std::pair<VkAccessFlags, VkPipelineStageFlags> getMinimalAccessMaskAndStage(VkImageLayout layout)
+{
+    switch (layout) {
+    case VK_IMAGE_LAYOUT_UNDEFINED:
+        return { 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT };
+
+    case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+        return { VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT };
+
+    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+        return { VK_ACCESS_COLOR_ATTACHMENT_READ_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+
+    case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+        return { VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT };
+
+    case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR:
+        return { VK_ACCESS_MEMORY_READ_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT };
+
+    case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+        return { VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT };
+
+    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+        return { VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT };
+
+    default:
+        throw std::invalid_argument("Unsupported layout for access mask and stage retrieval!");
+    }
+}
+
 void Image::TransitionLayout(std::optional<VkCommandBuffer> commandBuffer, VkImageLayout newLayout, uint32_t mipLevels)
 {
     assert(m_isValid);
@@ -94,10 +125,14 @@ void Image::TransitionLayout(std::optional<VkCommandBuffer> commandBuffer, VkIma
     else
         cmd = *commandBuffer;
 
+    VkImageLayout oldLayout = m_currentLayout;
+    auto [srcAccessMask, sourceStage] = getMinimalAccessMaskAndStage(oldLayout);
+    auto [dstAccessMask, destinationStage] = getMinimalAccessMaskAndStage(newLayout);
+
     VkImageMemoryBarrier barrier {
         .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-        .srcAccessMask = 0,
-        .dstAccessMask = 0,
+        .srcAccessMask = srcAccessMask,
+        .dstAccessMask = dstAccessMask,
         .oldLayout = m_currentLayout,
         .newLayout = newLayout,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -112,9 +147,6 @@ void Image::TransitionLayout(std::optional<VkCommandBuffer> commandBuffer, VkIma
         },
     };
 
-    VkPipelineStageFlags sourceStage;
-    VkPipelineStageFlags destinationStage;
-
     if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
         barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 
@@ -123,42 +155,6 @@ void Image::TransitionLayout(std::optional<VkCommandBuffer> commandBuffer, VkIma
         }
     } else {
         barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    }
-
-    VkImageLayout oldLayout = m_currentLayout;
-
-    if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
-        barrier.srcAccessMask = 0;
-        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-        sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-    } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-        sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-        destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    } else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
-        barrier.srcAccessMask = 0;
-        barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-        sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    } else if (oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
-        barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-        barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-
-        sourceStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-    } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) {
-        barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-        barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-
-        sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-        destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    } else {
-        throw std::invalid_argument("unsupported layout transition!");
     }
 
     vkCmdPipelineBarrier(

@@ -18,8 +18,11 @@ const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
 };
 
-const std::vector<const char*> deviceExtensionsWithoutSwapchain = {};
+const std::vector<const char*> deviceExtensionsWithoutSwapchain = {
+    VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+};
 const std::vector<const char*> deviceExtensions = {
+    VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
@@ -82,13 +85,6 @@ private: // Swapchain
 
     VkSwapchainKHR swapChain;
     std::vector<Image> swapChainImages;
-
-private: // #MAYBE: Can be replaced by Dynamic Rendering, but still useful if targeting mobile (Tiling GPU)
-    void createFramebuffers();
-    void createRenderPass();
-
-    std::vector<VkFramebuffer> swapChainFramebuffers;
-    VkRenderPass renderPass;
 
 private:
     void createFrameData();
