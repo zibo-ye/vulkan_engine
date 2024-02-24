@@ -39,16 +39,16 @@ void VulkanCore::Init(EngineCore::IApp* pApp)
 
     createSwapChain();
     createSwapchainImageViews();
-    createRenderPass();
-    createDescriptorSetLayout();
-    createGraphicsPipeline();
+
     createCommandPool();
+    createRenderPass();
     createColorResources();
     createDepthResources();
     createFramebuffers();
-    // createTextureImage();
-    // createTextureImageView();
-    // createTextureSampler();
+
+    createDescriptorSetLayout();
+    createGraphicsPipeline();
+
     createUniformBuffers();
     createDescriptorPool();
     createFrameData();
@@ -57,20 +57,20 @@ void VulkanCore::Init(EngineCore::IApp* pApp)
 
 void VulkanCore::cleanupSwapChain()
 {
-    newColorImage.Destroy();
-    newDepthImage.Destroy();
+    colorImage.Destroy();
+    depthImage.Destroy();
 
     for (auto framebuffer : swapChainFramebuffers) {
         vkDestroyFramebuffer(device, framebuffer, nullptr);
     }
 
     if (swapChain != VK_NULL_HANDLE) {
-        for (auto swapChainImage : NewSwapChainImages) {
+        for (auto swapChainImage : swapChainImages) {
             vkDestroyImageView(device, swapChainImage.imageView, nullptr);
         }
         vkDestroySwapchainKHR(device, swapChain, nullptr);
     } else {
-        for (auto swapChainImage : NewSwapChainImages) {
+        for (auto swapChainImage : swapChainImages) {
             swapChainImage.Destroy();
         }
     }
@@ -333,9 +333,9 @@ void VulkanCore::createSwapChain()
         };
 
         uint32_t imageCount = 3;
-        NewSwapChainImages.resize(imageCount);
+        swapChainImages.resize(imageCount);
 
-        for (auto& NewSwapChainImage : NewSwapChainImages) {
+        for (auto& NewSwapChainImage : swapChainImages) {
             NewSwapChainImage.Init(this, extent, 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_B8G8R8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
         }
     } else {
@@ -349,7 +349,7 @@ void VulkanCore::createSwapChain()
             imageCount = swapChainSupport.capabilities.maxImageCount;
         }
 
-        NewSwapChainImages.resize(imageCount);
+        swapChainImages.resize(imageCount);
 
         VkSwapchainCreateInfoKHR createInfo {
             .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
@@ -382,24 +382,24 @@ void VulkanCore::createSwapChain()
         }
 
         vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
-        std::vector<VkImage> swapChainImages(imageCount);
-        vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImages.data());
+        std::vector<VkImage> swapChainImagesTemp(imageCount);
+        vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImagesTemp.data());
 
         // Borrow the Image class to save SwapchainImages
         for (size_t i = 0; i < imageCount; i++) {
-            NewSwapChainImages[i].m_isValid = true;
-            NewSwapChainImages[i].m_pVulkanCore = this;
-            NewSwapChainImages[i].image = swapChainImages[i];
-            NewSwapChainImages[i].m_imageInfo.format = surfaceFormat.format;
-            NewSwapChainImages[i].m_imageInfo.imageType = VK_IMAGE_TYPE_2D;
-            NewSwapChainImages[i].m_imageInfo.extent = { extent.width, extent.height, 1 };
+            swapChainImages[i].m_isValid = true;
+            swapChainImages[i].m_pVulkanCore = this;
+            swapChainImages[i].image = swapChainImagesTemp[i];
+            swapChainImages[i].m_imageInfo.format = surfaceFormat.format;
+            swapChainImages[i].m_imageInfo.imageType = VK_IMAGE_TYPE_2D;
+            swapChainImages[i].m_imageInfo.extent = { extent.width, extent.height, 1 };
         }
     }
 }
 
 void VulkanCore::createSwapchainImageViews()
 {
-    for (auto& swapChainImage : NewSwapChainImages) {
+    for (auto& swapChainImage : swapChainImages) {
         swapChainImage.InitImageView(swapChainImage.m_imageInfo.format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
     }
 }
@@ -407,7 +407,7 @@ void VulkanCore::createSwapchainImageViews()
 void VulkanCore::createRenderPass()
 {
     VkAttachmentDescription colorAttachment {
-        .format = NewSwapChainImages[0].m_imageInfo.format,
+        .format = swapChainImages[0].m_imageInfo.format,
         .samples = msaaSamples,
         .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
         .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -439,7 +439,7 @@ void VulkanCore::createRenderPass()
     };
 
     VkAttachmentDescription colorAttachmentResolve {
-        .format = NewSwapChainImages[0].m_imageInfo.format,
+        .format = swapChainImages[0].m_imageInfo.format,
         .samples = VK_SAMPLE_COUNT_1_BIT,
         .loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
         .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -664,13 +664,13 @@ void VulkanCore::createGraphicsPipeline()
 
 void VulkanCore::createFramebuffers()
 {
-    swapChainFramebuffers.resize(NewSwapChainImages.size());
+    swapChainFramebuffers.resize(swapChainImages.size());
 
-    for (size_t i = 0; i < NewSwapChainImages.size(); i++) {
+    for (size_t i = 0; i < swapChainImages.size(); i++) {
         std::array<VkImageView, 3> attachments = {
-            newColorImage.imageView,
-            newDepthImage.imageView,
-            NewSwapChainImages[i].imageView,
+            colorImage.imageView,
+            depthImage.imageView,
+            swapChainImages[i].imageView,
         };
 
         VkFramebufferCreateInfo framebufferInfo {
@@ -678,8 +678,8 @@ void VulkanCore::createFramebuffers()
             .renderPass = renderPass,
             .attachmentCount = static_cast<uint32_t>(attachments.size()),
             .pAttachments = attachments.data(),
-            .width = NewSwapChainImages[i].m_imageInfo.extent.width,
-            .height = NewSwapChainImages[i].m_imageInfo.extent.height,
+            .width = swapChainImages[i].m_imageInfo.extent.width,
+            .height = swapChainImages[i].m_imageInfo.extent.height,
             .layers = 1,
         };
 
@@ -704,18 +704,18 @@ void VulkanCore::createCommandPool()
 
 void VulkanCore::createColorResources()
 {
-    VkFormat colorFormat = NewSwapChainImages[0].m_imageInfo.format;
+    VkFormat colorFormat = swapChainImages[0].m_imageInfo.format;
 
-    newColorImage.Init(this, NewSwapChainImages[0].GetImageExtent(), 1, msaaSamples, colorFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    newColorImage.InitImageView(colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+    colorImage.Init(this, swapChainImages[0].GetImageExtent(), 1, msaaSamples, colorFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    colorImage.InitImageView(colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 }
 
 void VulkanCore::createDepthResources()
 {
     VkFormat depthFormat = findDepthFormat();
-    newDepthImage.Init(this, NewSwapChainImages[0].GetImageExtent(), 1, msaaSamples, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    newDepthImage.InitImageView(depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
-    newDepthImage.TransitionLayout(std::nullopt, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
+    depthImage.Init(this, swapChainImages[0].GetImageExtent(), 1, msaaSamples, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    depthImage.InitImageView(depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+    depthImage.TransitionLayout(std::nullopt, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
 }
 
 VkFormat VulkanCore::findDepthFormat()
@@ -1131,8 +1131,8 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer& commandBuffer, uint32_t im
         .renderArea {
             .offset = { 0, 0 },
             .extent = {
-                .width = NewSwapChainImages[0].m_imageInfo.extent.width,
-                .height = NewSwapChainImages[0].m_imageInfo.extent.height },
+                .width = swapChainImages[0].m_imageInfo.extent.width,
+                .height = swapChainImages[0].m_imageInfo.extent.height },
         }
     };
 
@@ -1155,8 +1155,8 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer& commandBuffer, uint32_t im
     VkViewport viewport {
         .x = 0.0f,
         .y = 0.0f,
-        .width = float(NewSwapChainImages[0].m_imageInfo.extent.width),
-        .height = float(NewSwapChainImages[0].m_imageInfo.extent.height),
+        .width = float(swapChainImages[0].m_imageInfo.extent.width),
+        .height = float(swapChainImages[0].m_imageInfo.extent.height),
         .minDepth = 0.0f,
         .maxDepth = 1.0f,
     };
@@ -1166,8 +1166,8 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer& commandBuffer, uint32_t im
     VkRect2D scissor {
         .offset = { 0, 0 },
         .extent = {
-            .width = NewSwapChainImages[0].m_imageInfo.extent.width,
-            .height = NewSwapChainImages[0].m_imageInfo.extent.height },
+            .width = swapChainImages[0].m_imageInfo.extent.width,
+            .height = swapChainImages[0].m_imageInfo.extent.height },
     };
 
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
@@ -1318,7 +1318,6 @@ void VulkanCore::drawFrame(Scene& scene)
             m_pApp->events.windowResized = false;
             recreateSwapChain();
         }
-        lastImageIndex = nextImageIndex;
         readyForNextImage = false;
     } else {
         VkResult result = vkQueuePresentKHR(presentQueue, &presentInfo);
@@ -1483,7 +1482,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL VulkanCore::debugCallback(VkDebugUtilsMessageSeve
 void VulkanCore::PresentImage()
 {
     // make the least-recently-available image in the swap chain available to be rendered to (after waiting for any rendering pending on this image to complete). This, effectively, starts a frame rendering.
-    nextImageIndex = (nextImageIndex + 1) % NewSwapChainImages.size();
+    nextImageIndex = (nextImageIndex + 1) % swapChainImages.size();
     readyForNextImage = true;
 }
 
@@ -1494,7 +1493,7 @@ void VulkanCore::SaveFrame(const std::string& savePath)
     uint32_t texWidth = static_cast<uint32_t>(m_pApp->args.windowSize.first);
     uint32_t texHeight = static_cast<uint32_t>(m_pApp->args.windowSize.second);
 
-    auto bufferData = copyTextureToMemory(NewSwapChainImages[currentFrameInFlight], texWidth, texHeight);
+    auto bufferData = copyTextureToMemory(swapChainImages[currentFrameInFlight], texWidth, texHeight);
 
     // Open the file in binary mode
     std::ofstream file(savePath, std::ios::out | std::ios::binary);

@@ -46,10 +46,22 @@ struct FrameData {
 };
 
 class VulkanCore {
+public:
+    void Init(EngineCore::IApp* pApp);
+    void Shutdown();
+    void drawFrame(Scene& scene);
+
 private:
     EngineCore::IApp* m_pApp = nullptr;
 
-private:
+public: // High level
+    void createInstance();
+    void setupDebugMessenger();
+    void createSurface();
+    void pickPhysicalDevice();
+    void createLogicalDevice();
+    void WaitIdle();
+
     VkInstance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
     std::optional<VkSurfaceKHR> surface;
@@ -62,12 +74,30 @@ private:
     VkQueue graphicsQueue;
     VkQueue presentQueue;
 
+private: // Swapchain
+    void createSwapChain();
+    void createSwapchainImageViews();
+    void cleanupSwapChain();
+    void recreateSwapChain();
+
     VkSwapchainKHR swapChain;
+    std::vector<Image> swapChainImages;
 
-    std::vector<Image> NewSwapChainImages;
+private: // #MAYBE: Can be replaced by Dynamic Rendering, but still useful if targeting mobile (Tiling GPU)
+    void createFramebuffers();
+    void createRenderPass();
+
     std::vector<VkFramebuffer> swapChainFramebuffers;
-
     VkRenderPass renderPass;
+
+private:
+    void createFrameData();
+    void createFrameSyncObjects(VkSemaphore& imageAvailableSemaphore, VkSemaphore& renderFinishedSemaphore, VkFence& swapchainImageFence);
+
+    std::vector<FrameData> frames;
+    uint32_t currentFrameInFlight = 0;
+
+private:
     VkDescriptorSetLayout descriptorSetLayout;
     VkPipelineLayout pipelineLayout;
     VkPipeline graphicsPipeline;
@@ -80,50 +110,16 @@ private:
 
     VkDescriptorPool descriptorPool;
 
-    std::vector<FrameData> frames;
-    uint32_t currentFrameInFlight = 0;
-
-    Image newDepthImage;
-    Image newColorImage;
+    Image depthImage;
+    Image colorImage;
 
     DeletionQueue mainDeletionQueue;
 
-public:
-    void Init(EngineCore::IApp* pApp);
-
-    void cleanupSwapChain();
-
-    void WaitIdle();
-
-    void Shutdown();
-
-    void recreateSwapChain();
-
-    void createInstance();
-
-    void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-
-    void setupDebugMessenger();
-
-    void createSurface();
-
-    void pickPhysicalDevice();
-
-    VkSampleCountFlagBits getMaxUsableSampleCount();
-
-    void createLogicalDevice();
-
-    void createSwapChain();
-
-    void createSwapchainImageViews();
-
-    void createRenderPass();
-
+private:
     void createDescriptorSetLayout();
+    void createDescriptorPool();
 
     void createGraphicsPipeline();
-
-    void createFramebuffers();
 
     void createCommandPool();
 
@@ -139,29 +135,27 @@ public:
 
     void createUniformBuffers();
 
-    void createDescriptorPool();
-
-    void createFrameData();
-    void createFrameSyncObjects(VkSemaphore& imageAvailableSemaphore, VkSemaphore& renderFinishedSemaphore, VkFence& swapchainImageFence);
-
     void InitializeDescriptorSets();
-
-    void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) const;
-
-    void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) const;
-    void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-    void copyImageToBuffer(Image image, VkBuffer buffer, uint32_t width, uint32_t height);
-    VkCommandBuffer beginSingleTimeCommands() const;
-
-    void endSingleTimeCommands(VkCommandBuffer commandBuffer) const;
-
-    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const;
-
     void recordCommandBuffer(VkCommandBuffer& commandBuffer, uint32_t imageIndex, Scene& scene);
 
     void updateUniformBuffer(uint32_t currentImage);
 
-    void drawFrame(Scene& scene);
+public:
+    // #TODO: Buffer abstraction
+    void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) const;
+    void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) const;
+    void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+    void copyImageToBuffer(Image image, VkBuffer buffer, uint32_t width, uint32_t height);
+
+public: // Helper
+    VkCommandBuffer beginSingleTimeCommands() const;
+    void endSingleTimeCommands(VkCommandBuffer commandBuffer) const;
+
+    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const;
+
+    void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
+
+    VkSampleCountFlagBits getMaxUsableSampleCount();
 
     VkShaderModule createShaderModule(const std::vector<char>& code);
 
@@ -191,8 +185,5 @@ public:
 
 private:
     uint32_t AcquireNextImageIndex();
-    uint32_t AcquireLastImageIndex();
-
     uint32_t nextImageIndex = 0;
-    uint32_t lastImageIndex = 0;
 };
