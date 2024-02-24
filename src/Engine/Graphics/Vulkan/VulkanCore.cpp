@@ -84,7 +84,6 @@ void VulkanCore::Shutdown()
 
     vkDestroyPipeline(device, graphicsPipeline, nullptr);
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-    // vkDestroyRenderPass(device, renderPass, nullptr);
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         vkDestroyBuffer(device, uniformBuffers[i], nullptr);
@@ -138,7 +137,11 @@ void VulkanCore::createInstance()
         .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
         .pEngineName = "No Engine",
         .engineVersion = VK_MAKE_VERSION(1, 0, 0),
-        .apiVersion = VK_API_VERSION_1_3,
+        #ifdef __APPLE__
+        .apiVersion = VK_API_VERSION_1_2, //MoltenVK only supports 1.2
+        #else 
+        .apiVersion = VK_API_VERSION_1_3, //On Windows and Linux, we can use 1.3
+        #endif
     };
 
     auto extensions = getRequiredExtensions();
@@ -396,89 +399,6 @@ void VulkanCore::createSwapchainImageViews()
         swapChainImage.InitImageView(swapChainImage.m_imageInfo.format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
     }
 }
-//
-// void VulkanCore::createRenderPass()
-//{
-//    VkAttachmentDescription colorAttachment {
-//        .format = swapChainImages[0].m_imageInfo.format,
-//        .samples = msaaSamples,
-//        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-//        .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-//        .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-//        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-//        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-//        .finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-//    };
-//
-//    VkAttachmentReference colorAttachmentRef {
-//        .attachment = 0,
-//        .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-//    };
-//
-//    VkAttachmentDescription depthAttachment {
-//        .format = findDepthFormat(),
-//        .samples = msaaSamples,
-//        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-//        .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-//        .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-//        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-//        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-//        .finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-//    };
-//
-//    VkAttachmentReference depthAttachmentRef {
-//        .attachment = 1,
-//        .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-//    };
-//
-//    VkAttachmentDescription colorAttachmentResolve {
-//        .format = swapChainImages[0].m_imageInfo.format,
-//        .samples = VK_SAMPLE_COUNT_1_BIT,
-//        .loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-//        .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-//        .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-//        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-//        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-//        .finalLayout = IsHeadless() ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-//    };
-//
-//    VkAttachmentReference colorAttachmentResolveRef {
-//        .attachment = 2,
-//        .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-//    };
-//
-//    VkSubpassDescription subpass {
-//        .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
-//        .colorAttachmentCount = 1,
-//        .pColorAttachments = &colorAttachmentRef,
-//        .pResolveAttachments = &colorAttachmentResolveRef,
-//        .pDepthStencilAttachment = &depthAttachmentRef,
-//    };
-//
-//    VkSubpassDependency dependency {
-//        .srcSubpass = VK_SUBPASS_EXTERNAL,
-//        .dstSubpass = 0,
-//        .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-//        .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-//        .srcAccessMask = 0,
-//        .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-//    };
-//
-//    std::array<VkAttachmentDescription, 3> attachments = { colorAttachment, depthAttachment, colorAttachmentResolve };
-//    VkRenderPassCreateInfo renderPassInfo {
-//        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-//        .attachmentCount = static_cast<uint32_t>(attachments.size()),
-//        .pAttachments = attachments.data(),
-//        .subpassCount = 1,
-//        .pSubpasses = &subpass,
-//        .dependencyCount = 1,
-//        .pDependencies = &dependency,
-//    };
-//
-//    if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
-//        throw std::runtime_error("failed to create render pass!");
-//    }
-//}
 
 void VulkanCore::createDescriptorSetLayout()
 {
@@ -1136,6 +1056,12 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer& commandBuffer, uint32_t im
         .pDepthAttachment = &depth_attachment_info,
     };
 
+#if __APPLE__
+    auto vkCmdBeginRendering = (PFN_vkCmdBeginRenderingKHR)vkGetInstanceProcAddr(instance, "vkCmdBeginRenderingKHR");
+    if (vkCmdBeginRendering == nullptr) {
+        throw std::runtime_error("failed to load vkCmdBeginRenderingKHR");
+    }
+#endif
     vkCmdBeginRendering(commandBuffer, &render_info);
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
@@ -1214,10 +1140,16 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer& commandBuffer, uint32_t im
         }
     }
 
+#if __APPLE__
+    auto vkCmdEndRendering = (PFN_vkCmdEndRenderingKHR)vkGetInstanceProcAddr(instance, "vkCmdEndRenderingKHR");
+    if (vkCmdEndRendering == nullptr) {
+        throw std::runtime_error("failed to load vkCmdEndRenderingKHR");
+    }
+#endif
     vkCmdEndRendering(commandBuffer);
 
-    if (!IsHeadless())
-        swapChainImages[imageIndex].TransitionLayout(commandBuffer, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, 1);
+        if (!IsHeadless())
+            swapChainImages[imageIndex].TransitionLayout(commandBuffer, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, 1);
 
     VK(vkEndCommandBuffer(commandBuffer));
 }
@@ -1402,6 +1334,7 @@ std::vector<const char*> VulkanCore::getRequiredExtensions()
     // Encountered VK_ERROR_INCOMPATIBLE_DRIVER on MacOS with MoltenVK
     // https://vulkan-tutorial.com/Drawing_a_triangle/Setup/Instance#:~:text=is%20created%20successfully.-,Encountered%20VK_ERROR_INCOMPATIBLE_DRIVER,-%3A
     extensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+    extensions.emplace_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 #endif // __APPLE__
 
     // VK_EXT_debug_utils

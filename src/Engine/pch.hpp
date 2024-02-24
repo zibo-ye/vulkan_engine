@@ -66,6 +66,7 @@
 #endif
 // #define VULKAN_HPP_NO_CONSTRUCTORS
 #include <vulkan/vulkan.h>
+#include <vulkan/vulkan_beta.h>
 #endif
 #include <vulkan/vk_enum_string_helper.h>
 

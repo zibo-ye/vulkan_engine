@@ -19,9 +19,15 @@ const std::vector<const char*> validationLayers = {
 };
 
 const std::vector<const char*> deviceExtensionsWithoutSwapchain = {
+#ifdef __APPLE__
+    VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME,
+#endif
     VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
 };
 const std::vector<const char*> deviceExtensions = {
+#ifdef __APPLE__
+    VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME,
+#endif
     VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };

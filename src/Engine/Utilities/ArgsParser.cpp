@@ -27,6 +27,13 @@ void ArgsParser::PrintArgs()
 
 ArgsParser::ArgsParser(int argc, const char** argv)
 {
+#ifdef VERBOSE
+    std::cout << "ArgsParser parsing the following parameters: " << std::endl;
+    for (int i = 0; i < argc; ++i) {
+        std::cout << argv[i] << " ";
+    }
+    std::cout << std::endl;
+#endif
     std::string currentKey;
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
@@ -41,7 +48,7 @@ ArgsParser::ArgsParser(int argc, const char** argv)
                 size_t firstSpacePos = arg.find('\x20'); // ascii space
                 if (firstSpacePos != std::string::npos) {
                     // Extract the key using the position of the first space
-                    currentKey = arg.substr(1, firstSpacePos - 2); // Remove -
+                    currentKey = arg.substr(1, firstSpacePos - 1); // Remove -
                     m_Args[currentKey].push_back(arg.substr(firstSpacePos + 1));
                 } else {
                     currentKey = arg.substr(1); // Remove -
