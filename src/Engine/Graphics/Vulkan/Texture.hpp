@@ -12,7 +12,8 @@ public:
     VkImageView imageView;
     VkSampler sampler;
     uint32_t mipLevels;
-    uint32_t texWidth, uint32_t texHeight;
+    uint32_t texWidth;
+    uint32_t texHeight;
 
     std::shared_ptr<VulkanCore> vulkanCore;
 };

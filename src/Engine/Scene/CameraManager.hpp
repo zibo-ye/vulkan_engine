@@ -64,7 +64,7 @@ public:
                 }
                 activeCamera = it->second;
 
-#if defined(DEBUG) || defined(_DEBUG) || !defined(NDEBUG)
+#ifndef NDEBUG
                 std::cout << "Switched to camera: " << activeCamera->getName() << std::endl;
 #endif
             }

@@ -30,9 +30,20 @@ struct UniformBufferObject {
     alignas(16) vkm::mat4 proj;
 };
 
+struct FrameData {
+    VkCommandBuffer commandBuffer;
+    VkDescriptorSet descriptorSet;
+    VkSemaphore imageAvailableSemaphore;
+    VkSemaphore renderFinishedSemaphore;
+    VkFence swapchainImageFence;
+
+    void Destroy(const VkDevice& device);
+};
+
 class VulkanCore {
 private:
     EngineCore::IApp* m_pApp = nullptr;
+
 
 private:
     VkInstance instance;
@@ -66,13 +77,10 @@ private:
     std::vector<void*> uniformBuffersMapped;
 
     VkDescriptorPool descriptorPool;
-    std::vector<VkDescriptorSet> descriptorSets;
 
-    std::vector<VkCommandBuffer> commandBuffers;
 
-    std::vector<VkSemaphore> imageAvailableSemaphores;
-    std::vector<VkSemaphore> renderFinishedSemaphores;
-    std::vector<VkFence> swapchainImageFences;
+
+    std::vector<FrameData> frames;
     uint32_t currentFrameInFlight = 0;
 
     VkImage depthImage;
@@ -141,7 +149,10 @@ public:
 
     void createDescriptorPool();
 
-    void createDescriptorSets();
+    void createFrameData();
+    void createFrameSyncObjects(VkSemaphore& imageAvailableSemaphore, VkSemaphore& renderFinishedSemaphore, VkFence& swapchainImageFence);
+
+    void InitializeDescriptorSets();
 
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) const;
 
@@ -156,11 +167,7 @@ public:
 
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const;
 
-    void createCommandBuffers();
-
-    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, Scene& scene);
-
-    void createSyncObjects();
+    void recordCommandBuffer(VkCommandBuffer& commandBuffer, uint32_t imageIndex, Scene& scene);
 
     void updateUniformBuffer(uint32_t currentImage);
 
