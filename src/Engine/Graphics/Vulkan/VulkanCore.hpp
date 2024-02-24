@@ -55,6 +55,8 @@ private:
     std::optional<VkSurfaceKHR> surface;
 
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+    VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
+
     VkDevice device;
 
     VkQueue graphicsQueue;
@@ -62,11 +64,7 @@ private:
 
     VkSwapchainKHR swapChain;
 
-    std::vector<VkDeviceMemory> swapChainImagesMemory;
-    std::vector<VkImage> swapChainImages;
-    VkFormat swapChainImageFormat;
-    VkExtent2D swapChainExtent;
-    std::vector<VkImageView> swapChainImageViews;
+    std::vector<Image> NewSwapChainImages;
     std::vector<VkFramebuffer> swapChainFramebuffers;
 
     VkRenderPass renderPass;
@@ -85,18 +83,10 @@ private:
     std::vector<FrameData> frames;
     uint32_t currentFrameInFlight = 0;
 
-    VkImage depthImage;
-    VkDeviceMemory depthImageMemory;
-    VkImageView depthImageView;
-
-    VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
-    VkImage colorImage;
-    VkDeviceMemory colorImageMemory;
-    VkImageView colorImageView;
+    Image newDepthImage;
+    Image newColorImage;
 
     DeletionQueue mainDeletionQueue;
-
-    Image drawImage;
 
 public:
     void Init(EngineCore::IApp* pApp);
@@ -143,11 +133,7 @@ public:
 
     VkFormat findDepthFormat();
 
-    std::unique_ptr<uint8_t[]> copyTextureToMemory(VkImage textureImage, uint32_t texWidth, uint32_t texHeight);
-
-    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
-
-    VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
+    std::unique_ptr<uint8_t[]> copyTextureToMemory(Image textureImage, uint32_t texWidth, uint32_t texHeight);
 
     void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
 
@@ -164,12 +150,10 @@ public:
 
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) const;
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-    void copyImageToBuffer(VkImage image, VkBuffer buffer, uint32_t width, uint32_t height);
+    void copyImageToBuffer(Image image, VkBuffer buffer, uint32_t width, uint32_t height);
     VkCommandBuffer beginSingleTimeCommands() const;
 
     void endSingleTimeCommands(VkCommandBuffer commandBuffer) const;
-
-    void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const;
 

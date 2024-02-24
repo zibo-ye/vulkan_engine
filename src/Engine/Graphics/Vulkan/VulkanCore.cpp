@@ -57,31 +57,21 @@ void VulkanCore::Init(EngineCore::IApp* pApp)
 
 void VulkanCore::cleanupSwapChain()
 {
-    vkDestroyImageView(device, colorImageView, nullptr);
-    vkDestroyImage(device, colorImage, nullptr);
-    vkFreeMemory(device, colorImageMemory, nullptr);
-
-    vkDestroyImageView(device, depthImageView, nullptr);
-    vkDestroyImage(device, depthImage, nullptr);
-    vkFreeMemory(device, depthImageMemory, nullptr);
+    newColorImage.Destroy();
+    newDepthImage.Destroy();
 
     for (auto framebuffer : swapChainFramebuffers) {
         vkDestroyFramebuffer(device, framebuffer, nullptr);
     }
 
-    for (auto imageView : swapChainImageViews) {
-        vkDestroyImageView(device, imageView, nullptr);
-    }
-
-    if (swapChain != VK_NULL_HANDLE)
-        vkDestroySwapchainKHR(device, swapChain, nullptr);
-    else {
-        for (auto swapChainImage : swapChainImages) {
-            vkDestroyImage(device, swapChainImage, nullptr);
+    if (swapChain != VK_NULL_HANDLE) {
+        for (auto swapChainImage : NewSwapChainImages) {
+            vkDestroyImageView(device, swapChainImage.imageView, nullptr);
         }
-
-        for (auto swapChainImageMemory : swapChainImagesMemory) {
-            vkFreeMemory(device, swapChainImageMemory, nullptr);
+        vkDestroySwapchainKHR(device, swapChain, nullptr);
+    } else {
+        for (auto swapChainImage : NewSwapChainImages) {
+            swapChainImage.Destroy();
         }
     }
 }
@@ -337,17 +327,16 @@ void VulkanCore::createSwapChain()
         // Headless mode does not have a surface, make a fake swap chain
         int width, height;
         m_pApp->info.window->GetWindowSize(width, height);
-        swapChainExtent = {
+        VkExtent2D extent = {
             static_cast<uint32_t>(width),
             static_cast<uint32_t>(height)
         };
-        swapChainImageFormat = VK_FORMAT_B8G8R8A8_SRGB;
 
         uint32_t imageCount = 3;
-        swapChainImages.resize(imageCount);
-        swapChainImagesMemory.resize(imageCount);
-        for (uint32_t i = 0; i < imageCount; i++) {
-            createImage(swapChainExtent.width, swapChainExtent.height, 1, VK_SAMPLE_COUNT_1_BIT, swapChainImageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, swapChainImages[i], swapChainImagesMemory[i]);
+        NewSwapChainImages.resize(imageCount);
+
+        for (auto& NewSwapChainImage : NewSwapChainImages) {
+            NewSwapChainImage.Init(this, extent, 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_B8G8R8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
         }
     } else {
         SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice, *surface);
@@ -359,6 +348,8 @@ void VulkanCore::createSwapChain()
         if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
             imageCount = swapChainSupport.capabilities.maxImageCount;
         }
+
+        NewSwapChainImages.resize(imageCount);
 
         VkSwapchainCreateInfoKHR createInfo {
             .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
@@ -391,27 +382,32 @@ void VulkanCore::createSwapChain()
         }
 
         vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
-        swapChainImages.resize(imageCount);
+        std::vector<VkImage> swapChainImages(imageCount);
         vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImages.data());
 
-        swapChainImageFormat = surfaceFormat.format;
-        swapChainExtent = extent;
+        // Borrow the Image class to save SwapchainImages
+        for (size_t i = 0; i < imageCount; i++) {
+            NewSwapChainImages[i].m_isValid = true;
+            NewSwapChainImages[i].m_pVulkanCore = this;
+            NewSwapChainImages[i].image = swapChainImages[i];
+            NewSwapChainImages[i].m_imageInfo.format = surfaceFormat.format;
+            NewSwapChainImages[i].m_imageInfo.imageType = VK_IMAGE_TYPE_2D;
+            NewSwapChainImages[i].m_imageInfo.extent = { extent.width, extent.height, 1 };
+        }
     }
 }
 
 void VulkanCore::createSwapchainImageViews()
 {
-    swapChainImageViews.resize(swapChainImages.size());
-
-    for (uint32_t i = 0; i < swapChainImages.size(); i++) {
-        swapChainImageViews[i] = createImageView(swapChainImages[i], swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+    for (auto& swapChainImage : NewSwapChainImages) {
+        swapChainImage.InitImageView(swapChainImage.m_imageInfo.format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
     }
 }
 
 void VulkanCore::createRenderPass()
 {
     VkAttachmentDescription colorAttachment {
-        .format = swapChainImageFormat,
+        .format = NewSwapChainImages[0].m_imageInfo.format,
         .samples = msaaSamples,
         .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
         .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -443,7 +439,7 @@ void VulkanCore::createRenderPass()
     };
 
     VkAttachmentDescription colorAttachmentResolve {
-        .format = swapChainImageFormat,
+        .format = NewSwapChainImages[0].m_imageInfo.format,
         .samples = VK_SAMPLE_COUNT_1_BIT,
         .loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
         .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -668,13 +664,13 @@ void VulkanCore::createGraphicsPipeline()
 
 void VulkanCore::createFramebuffers()
 {
-    swapChainFramebuffers.resize(swapChainImageViews.size());
+    swapChainFramebuffers.resize(NewSwapChainImages.size());
 
-    for (size_t i = 0; i < swapChainImageViews.size(); i++) {
+    for (size_t i = 0; i < NewSwapChainImages.size(); i++) {
         std::array<VkImageView, 3> attachments = {
-            colorImageView,
-            depthImageView,
-            swapChainImageViews[i],
+            newColorImage.imageView,
+            newDepthImage.imageView,
+            NewSwapChainImages[i].imageView,
         };
 
         VkFramebufferCreateInfo framebufferInfo {
@@ -682,14 +678,12 @@ void VulkanCore::createFramebuffers()
             .renderPass = renderPass,
             .attachmentCount = static_cast<uint32_t>(attachments.size()),
             .pAttachments = attachments.data(),
-            .width = swapChainExtent.width,
-            .height = swapChainExtent.height,
+            .width = NewSwapChainImages[i].m_imageInfo.extent.width,
+            .height = NewSwapChainImages[i].m_imageInfo.extent.height,
             .layers = 1,
         };
 
-        if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create framebuffer!");
-        }
+        VK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapChainFramebuffers[i]));
     }
 }
 
@@ -710,18 +704,18 @@ void VulkanCore::createCommandPool()
 
 void VulkanCore::createColorResources()
 {
-    VkFormat colorFormat = swapChainImageFormat;
+    VkFormat colorFormat = NewSwapChainImages[0].m_imageInfo.format;
 
-    createImage(swapChainExtent.width, swapChainExtent.height, 1, msaaSamples, colorFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colorImage, colorImageMemory);
-    colorImageView = createImageView(colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+    newColorImage.Init(this, NewSwapChainImages[0].GetImageExtent(), 1, msaaSamples, colorFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    newColorImage.InitImageView(colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 }
 
 void VulkanCore::createDepthResources()
 {
     VkFormat depthFormat = findDepthFormat();
-    createImage(swapChainExtent.width, swapChainExtent.height, 1, msaaSamples, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory);
-    depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
-    transitionImageLayout(depthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
+    newDepthImage.Init(this, NewSwapChainImages[0].GetImageExtent(), 1, msaaSamples, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    newDepthImage.InitImageView(depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+    newDepthImage.TransitionLayout(std::nullopt, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
 }
 
 VkFormat VulkanCore::findDepthFormat()
@@ -732,47 +726,7 @@ VkFormat VulkanCore::findDepthFormat()
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
-void VulkanCore::createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
-{
-    VkImageCreateInfo imageInfo {
-        .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-        .flags = 0,
-        .imageType = VK_IMAGE_TYPE_2D,
-        .format = format,
-        .extent {
-            .width = static_cast<uint32_t>(width),
-            .height = static_cast<uint32_t>(height),
-            .depth = 1 },
-        .mipLevels = mipLevels,
-        .arrayLayers = 1,
-        .samples = numSamples,
-        .tiling = tiling,
-        .usage = usage,
-        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-    };
-
-    if (vkCreateImage(device, &imageInfo, nullptr, &image) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create image!");
-    }
-
-    VkMemoryRequirements memRequirements;
-    vkGetImageMemoryRequirements(device, image, &memRequirements);
-
-    VkMemoryAllocateInfo allocInfo {
-        .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-        .allocationSize = memRequirements.size,
-        .memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties)
-    };
-
-    if (vkAllocateMemory(device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate image memory!");
-    }
-
-    vkBindImageMemory(device, image, imageMemory, 0);
-}
-
-std::unique_ptr<uint8_t[]> VulkanCore::copyTextureToMemory(VkImage textureImage, uint32_t texWidth, uint32_t texHeight)
+std::unique_ptr<uint8_t[]> VulkanCore::copyTextureToMemory(Image textureImage, uint32_t texWidth, uint32_t texHeight)
 {
     VkDeviceSize imageSize = texWidth * texHeight * 4; // Assuming 4 bytes per pixel (RGBA)
 
@@ -784,7 +738,7 @@ std::unique_ptr<uint8_t[]> VulkanCore::copyTextureToMemory(VkImage textureImage,
 
     createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
-    transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
+    textureImage.TransitionLayout(std::nullopt, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
 
     copyImageToBuffer(textureImage, stagingBuffer, texWidth, texHeight);
 
@@ -796,112 +750,9 @@ std::unique_ptr<uint8_t[]> VulkanCore::copyTextureToMemory(VkImage textureImage,
     vkDestroyBuffer(device, stagingBuffer, nullptr);
     vkFreeMemory(device, stagingBufferMemory, nullptr);
 
-    transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1);
+    textureImage.TransitionLayout(std::nullopt, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1);
 
     return bufferData; // Return the unique_ptr containing the copied texture data
-}
-
-void VulkanCore::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels)
-{
-    VkCommandBuffer commandBuffer = beginSingleTimeCommands();
-
-    VkImageMemoryBarrier barrier {
-        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-        .srcAccessMask = 0, // TODO
-        .dstAccessMask = 0, // TODO
-        .oldLayout = oldLayout,
-        .newLayout = newLayout,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image = image,
-        .subresourceRange {
-            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-            .baseMipLevel = 0,
-            .levelCount = mipLevels,
-            .baseArrayLayer = 0,
-            .layerCount = 1,
-        },
-    };
-
-    VkPipelineStageFlags sourceStage;
-    VkPipelineStageFlags destinationStage;
-
-    if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
-        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-
-        if (hasStencilComponent(format)) {
-            barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
-        }
-    } else {
-        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    }
-
-    if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
-        barrier.srcAccessMask = 0;
-        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-        sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-    } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-        sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-        destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    } else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
-        barrier.srcAccessMask = 0;
-        barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-        sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    } else if (oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
-        barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-        barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-
-        sourceStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-    } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) {
-        barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-        barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-
-        sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-        destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    } else {
-        throw std::invalid_argument("unsupported layout transition!");
-    }
-
-    vkCmdPipelineBarrier(
-        commandBuffer,
-        sourceStage, destinationStage,
-        0,
-        0, nullptr,
-        0, nullptr,
-        1, &barrier);
-    endSingleTimeCommands(commandBuffer);
-}
-
-VkImageView VulkanCore::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels)
-{
-    VkImageViewCreateInfo viewInfo {
-        .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-        .image = image,
-        .viewType = VK_IMAGE_VIEW_TYPE_2D,
-        .format = format,
-        .subresourceRange {
-            .aspectMask = aspectFlags,
-            .baseMipLevel = 0,
-            .levelCount = mipLevels,
-            .baseArrayLayer = 0,
-            .layerCount = 1,
-        },
-    };
-
-    VkImageView imageView;
-    if (vkCreateImageView(device, &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create texture image view!");
-    }
-
-    return imageView;
 }
 
 // it is uncommon in practice to generate the mipmap levels at runtime, but here it is.
@@ -1180,7 +1031,7 @@ void VulkanCore::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t widt
     endSingleTimeCommands(commandBuffer);
 }
 
-void VulkanCore::copyImageToBuffer(VkImage image, VkBuffer buffer, uint32_t width, uint32_t height)
+void VulkanCore::copyImageToBuffer(Image image, VkBuffer buffer, uint32_t width, uint32_t height)
 {
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
@@ -1205,7 +1056,7 @@ void VulkanCore::copyImageToBuffer(VkImage image, VkBuffer buffer, uint32_t widt
 
     vkCmdCopyImageToBuffer(
         commandBuffer,
-        image,
+        image.image,
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
         buffer,
         1,
@@ -1279,7 +1130,9 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer& commandBuffer, uint32_t im
         .framebuffer = swapChainFramebuffers[imageIndex],
         .renderArea {
             .offset = { 0, 0 },
-            .extent = swapChainExtent,
+            .extent = {
+                .width = NewSwapChainImages[0].m_imageInfo.extent.width,
+                .height = NewSwapChainImages[0].m_imageInfo.extent.height },
         }
     };
 
@@ -1302,8 +1155,8 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer& commandBuffer, uint32_t im
     VkViewport viewport {
         .x = 0.0f,
         .y = 0.0f,
-        .width = (float)swapChainExtent.width,
-        .height = (float)swapChainExtent.height,
+        .width = float(NewSwapChainImages[0].m_imageInfo.extent.width),
+        .height = float(NewSwapChainImages[0].m_imageInfo.extent.height),
         .minDepth = 0.0f,
         .maxDepth = 1.0f,
     };
@@ -1312,7 +1165,9 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer& commandBuffer, uint32_t im
 
     VkRect2D scissor {
         .offset = { 0, 0 },
-        .extent = swapChainExtent,
+        .extent = {
+            .width = NewSwapChainImages[0].m_imageInfo.extent.width,
+            .height = NewSwapChainImages[0].m_imageInfo.extent.height },
     };
 
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
@@ -1628,7 +1483,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL VulkanCore::debugCallback(VkDebugUtilsMessageSeve
 void VulkanCore::PresentImage()
 {
     // make the least-recently-available image in the swap chain available to be rendered to (after waiting for any rendering pending on this image to complete). This, effectively, starts a frame rendering.
-    nextImageIndex = (nextImageIndex + 1) % swapChainImages.size();
+    nextImageIndex = (nextImageIndex + 1) % NewSwapChainImages.size();
     readyForNextImage = true;
 }
 
@@ -1639,7 +1494,7 @@ void VulkanCore::SaveFrame(const std::string& savePath)
     uint32_t texWidth = static_cast<uint32_t>(m_pApp->args.windowSize.first);
     uint32_t texHeight = static_cast<uint32_t>(m_pApp->args.windowSize.second);
 
-    auto bufferData = copyTextureToMemory(swapChainImages[currentFrameInFlight], texWidth, texHeight);
+    auto bufferData = copyTextureToMemory(NewSwapChainImages[currentFrameInFlight], texWidth, texHeight);
 
     // Open the file in binary mode
     std::ofstream file(savePath, std::ios::out | std::ios::binary);
