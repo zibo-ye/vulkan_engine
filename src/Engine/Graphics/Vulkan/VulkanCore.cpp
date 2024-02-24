@@ -283,7 +283,7 @@ void VulkanCore::createLogicalDevice()
         .samplerAnisotropy = VK_TRUE,
     };
 
-    constexpr VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamic_rendering_feature {
+    constexpr VkPhysicalDeviceDynamicRenderingFeatures dynamic_rendering_feature {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES,
         .dynamicRendering = VK_TRUE,
     };
@@ -549,7 +549,8 @@ void VulkanCore::createGraphicsPipeline()
         throw std::runtime_error("failed to create pipeline layout!");
     }
 
-    const VkPipelineRenderingCreateInfoKHR pipeline_rendering_create_info {
+    const VkPipelineRenderingCreateInfo pipeline_rendering_create_info
+    {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
         .colorAttachmentCount = 1,
         .pColorAttachmentFormats = &colorImage.m_imageInfo.format,
@@ -1018,7 +1019,8 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer& commandBuffer, uint32_t im
 
     VK(vkBeginCommandBuffer(commandBuffer, &beginInfo));
 
-    swapChainImages[imageIndex].TransitionLayout(commandBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1);
+    if (!IsHeadless())
+        swapChainImages[imageIndex].TransitionLayout(commandBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1);
 
     const VkRenderingAttachmentInfo color_attachment_info {
         .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
@@ -1029,9 +1031,9 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer& commandBuffer, uint32_t im
         .resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
         .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
         .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-        .clearValue = {
-            .color = { { 0.0f, 0.0f, 0.0f, 1.0f } },
-        },
+            .clearValue = {
+                .color = { { 0.0f, 0.0f, 0.0f, 1.0f } },
+            },
     };
 
     const VkRenderingAttachmentInfo depth_attachment_info {
@@ -1049,11 +1051,12 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer& commandBuffer, uint32_t im
         .sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
         .renderArea = {
             .offset = { 0, 0 },
-            .extent = { swapChainImages[0].m_imageInfo.extent.width, swapChainImages[0].m_imageInfo.extent.height } },
+            .extent = { swapChainImages[0].m_imageInfo.extent.width, swapChainImages[0].m_imageInfo.extent.height } 
+        },
         .layerCount = 1,
         .colorAttachmentCount = 1,
         .pColorAttachments = &color_attachment_info,
-        .pDepthAttachment = &depth_attachment_info,
+        .pDepthAttachment = & depth_attachment_info,
     };
 
 #if __APPLE__
