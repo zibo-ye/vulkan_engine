@@ -54,7 +54,6 @@ void Mesh::LoadMeshData()
         }
     }
 
-
     // vertices -> indexed vertices
     std::unordered_map<NewVertex, uint32_t> uniqueVertices;
     std::vector<NewVertex> uniqueVertexList;

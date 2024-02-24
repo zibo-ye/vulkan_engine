@@ -21,7 +21,6 @@ void test_vkm_glm_compatibility();
 namespace glm = vkm;
 #endif
 
-
 void VulkanCore::Init(EngineCore::IApp* pApp)
 {
     if (!pApp) {
@@ -1397,9 +1396,12 @@ void VulkanCore::updateUniformBuffer(uint32_t currentImage)
 
 void VulkanCore::drawFrame(Scene& scene)
 {
-    if (IsHeadless()) {
-        drawFrameHeadless(scene);
-        return;
+    bool isHeadless = IsHeadless();
+    if (isHeadless) {
+        if (!m_pApp->args.limitFPS)
+            readyForNextImage = true;
+        if (!readyForNextImage)
+            return;
     }
 
     currentFrameInFlight = (currentFrameInFlight + 1) % MAX_FRAMES_IN_FLIGHT;
@@ -1409,13 +1411,16 @@ void VulkanCore::drawFrame(Scene& scene)
 
     uint32_t imageIndex = std::numeric_limits<uint32_t>::max(); // index of the swap chain image that will be used for the current frame
 
-    VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, frames[currentFrameInFlight].imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
-
-    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-        recreateSwapChain();
-        return;
-    } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-        throw std::runtime_error("failed to acquire swap chain image!");
+    if (isHeadless) {
+        imageIndex = AcquireNextImageIndex();
+    } else {
+        VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, frames[currentFrameInFlight].imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+        if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+            recreateSwapChain();
+            return;
+        } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+            throw std::runtime_error("failed to acquire swap chain image!");
+        }
     }
 
     updateUniformBuffer(currentFrameInFlight);
@@ -1427,13 +1432,13 @@ void VulkanCore::drawFrame(Scene& scene)
     VkSemaphore signalSemaphores[] = { frames[currentFrameInFlight].renderFinishedSemaphore };
     VkSubmitInfo submitInfo {
         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        .waitSemaphoreCount = 1,
-        .pWaitSemaphores = waitSemaphores, // will wait on these semaphores before the command buffer starts executing
+        .waitSemaphoreCount = isHeadless ? uint32_t(0) : 1,
+        .pWaitSemaphores = isHeadless ? nullptr : waitSemaphores, // will wait on these semaphores before the command buffer starts executing
         .pWaitDstStageMask = waitStages,
         .commandBufferCount = 1,
         .pCommandBuffers = &frames[currentFrameInFlight].commandBuffer,
-        .signalSemaphoreCount = 1,
-        .pSignalSemaphores = signalSemaphores, // will signal these semaphores after the command buffer has finished execution
+        .signalSemaphoreCount = isHeadless ? uint32_t(0) : 1,
+        .pSignalSemaphores = isHeadless ? nullptr : signalSemaphores, // will signal these semaphores after the command buffer has finished execution
     };
 
     if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, frames[currentFrameInFlight].swapchainImageFence) != VK_SUCCESS) {
@@ -1450,62 +1455,25 @@ void VulkanCore::drawFrame(Scene& scene)
         .pImageIndices = &imageIndex,
     };
 
-    result = vkQueuePresentKHR(presentQueue, &presentInfo);
+    if (isHeadless) {
+        if (m_pApp->events.windowResized) {
+            m_pApp->events.windowResized = false;
+            recreateSwapChain();
+        }
+        lastImageIndex = nextImageIndex;
+        readyForNextImage = false;
+    } else {
+        VkResult result = vkQueuePresentKHR(presentQueue, &presentInfo);
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_pApp->events.windowResized) {
-        m_pApp->events.windowResized = false;
-        recreateSwapChain();
-    } else if (result != VK_SUCCESS) {
-        throw std::runtime_error("failed to present swap chain image!");
-    }
-}
-
-void VulkanCore::drawFrameHeadless(Scene& scene)
-{
-    if (!m_pApp->args.limitFPS) readyForNextImage = true;
-    if (!readyForNextImage)
-        return;
-
-    currentFrameInFlight = (currentFrameInFlight + 1) % MAX_FRAMES_IN_FLIGHT;
-    // wait for the frame needed to use to be finished (if still in flight)
-    vkWaitForFences(device, 1, &frames[currentFrameInFlight].swapchainImageFence, VK_TRUE, UINT64_MAX);
-    vkResetFences(device, 1, &frames[currentFrameInFlight].swapchainImageFence);
-
-    uint32_t imageIndex = std::numeric_limits<uint32_t>::max(); // index of the swap chain image that will be used for the current frame
-
-    imageIndex = AcquireNextImageIndex();
-
-    if (m_pApp->events.windowResized) {
-        m_pApp->events.windowResized = false;
-        recreateSwapChain();
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_pApp->events.windowResized) {
+            m_pApp->events.windowResized = false;
+            recreateSwapChain();
+        } else if (result != VK_SUCCESS) {
+            throw std::runtime_error("failed to present swap chain image!");
+        }
     }
 
-    updateUniformBuffer(currentFrameInFlight);
-    vkResetCommandBuffer(frames[currentFrameInFlight].commandBuffer, /*VkCommandBufferResetFlagBits*/ 0);
-    recordCommandBuffer(frames[currentFrameInFlight].commandBuffer, imageIndex, scene);
-
-    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-    VkSubmitInfo submitInfo {
-        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        .waitSemaphoreCount = 0,
-        .pWaitSemaphores = nullptr, // will wait on these semaphores before the command buffer starts executing
-        .pWaitDstStageMask = waitStages,
-        .commandBufferCount = 1,
-        .pCommandBuffers = &frames[currentFrameInFlight].commandBuffer,
-        .signalSemaphoreCount = 0,
-        .pSignalSemaphores = nullptr, // will signal these semaphores after the command buffer has finished execution
-    };
-
-    if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, frames[currentFrameInFlight].swapchainImageFence) != VK_SUCCESS) {
-        throw std::runtime_error("failed to submit draw command buffer!");
-    }
-
-    if (m_pApp->events.windowResized) {
-        m_pApp->events.windowResized = false;
-        recreateSwapChain();
-    }
-    lastImageIndex = nextImageIndex;
-    readyForNextImage = false;
+    return;
 }
 
 VkShaderModule VulkanCore::createShaderModule(const std::vector<char>& code)

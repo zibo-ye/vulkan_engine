@@ -7,7 +7,7 @@ VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMes
 void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
 
 #ifndef NDEBUG
-#define VK(FN)                                                                                                                     \
+#define VK(FN)                                                                                                                                  \
     {                                                                                                                                           \
         if (VkResult result = FN) {                                                                                                             \
             throw std::runtime_error("Call '" #FN "' returned " + std::to_string(result) + " [" + std::string(string_VkResult(result)) + "]."); \

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "pch.hpp"
 #include "VulkanCore.hpp"
 #include "VulkanHelper.hpp"
+#include "pch.hpp"
 
-void createCommandBuffer(const VkDevice& device, const VkCommandPool & commandPool, VkCommandBuffer& commandBuffer)
+void createCommandBuffer(const VkDevice& device, const VkCommandPool& commandPool, VkCommandBuffer& commandBuffer)
 {
     VkCommandBufferAllocateInfo allocInfo {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,

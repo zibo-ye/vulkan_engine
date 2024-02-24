@@ -288,10 +288,10 @@ struct vec<4, T> : public vec_base<4, T> {
         : vec_base<4, T>({ x, y, z, w })
     {
     }
-     explicit vec(const vec_base<4, T>& base)
-         : vec_base<4, T>(base)
-     {
-     }
+    explicit vec(const vec_base<4, T>& base)
+        : vec_base<4, T>(base)
+    {
+    }
     T& x() { return this->data[0]; }
     T& r() { return this->data[0]; }
     T& y() { return this->data[1]; }

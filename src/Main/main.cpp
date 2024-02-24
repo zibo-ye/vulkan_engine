@@ -102,7 +102,7 @@ void MainApplication::RenderScene(void)
 {
     if (args.measureFPS) {
         static int frameCount = 0;
-        //static auto startTime = std::chrono::high_resolution_clock::now();
+        // static auto startTime = std::chrono::high_resolution_clock::now();
         static auto lastOutputTime = std::chrono::high_resolution_clock::now();
         auto currentTime = std::chrono::high_resolution_clock::now();
         float DeltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastOutputTime).count();
@@ -118,7 +118,7 @@ void MainApplication::RenderScene(void)
             frameCount = 0;
             lastOutputTime = currentTime;
         }
-	}
+    }
     m_VulkanCore.drawFrame(*m_Scene);
 }
 
@@ -135,9 +135,9 @@ void MainApplication::SetPlaybackTimeAndRate(float playbackTime, float playbackR
 void MainApplication::SaveFrame(std::string savePath)
 {
     if (args.profiling) {
-		//std::cerr << "Profiling is enabled. Ignoring save frame request." << std::endl;
-		return;
-	}
+        // std::cerr << "Profiling is enabled. Ignoring save frame request." << std::endl;
+        return;
+    }
     m_VulkanCore.SaveFrame(savePath);
 }
 

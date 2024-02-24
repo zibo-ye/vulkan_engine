@@ -44,7 +44,6 @@ class VulkanCore {
 private:
     EngineCore::IApp* m_pApp = nullptr;
 
-
 private:
     VkInstance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
@@ -77,8 +76,6 @@ private:
     std::vector<void*> uniformBuffersMapped;
 
     VkDescriptorPool descriptorPool;
-
-
 
     std::vector<FrameData> frames;
     uint32_t currentFrameInFlight = 0;
@@ -172,7 +169,7 @@ public:
     void updateUniformBuffer(uint32_t currentImage);
 
     void drawFrame(Scene& scene);
-    void drawFrameHeadless(Scene& scene);
+
     VkShaderModule createShaderModule(const std::vector<char>& code);
 
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
