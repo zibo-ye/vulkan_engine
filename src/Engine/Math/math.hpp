@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <limits>
+#include <functional> // For std::hash
 
 namespace vkm {
 using std::size_t;
@@ -288,7 +289,7 @@ struct vec<4, T> : public vec_base<4, T> {
         : vec_base<4, T>({ x, y, z, w })
     {
     }
-#ifndef __APPLE__
+#ifdef _WIN32
     explicit vec(const vec_base<4, T>& base)
         : vec_base<4, T>(base)
     {
@@ -656,15 +657,15 @@ mat4 inverse(const mat4& m);
 } // namespace vkm
 
 namespace std {
-template <std::size_t L, typename T>
-struct hash<vkm::vec<L, T>> {
-    size_t operator()(const vkm::vec<L, T>& v) const
-    {
-        size_t hash = 0;
-        for (size_t i = 0; i < L; ++i) {
-            hash ^= std::hash<T>()(v.data[i]) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+    template <std::size_t L, typename T>
+    struct hash<vkm::vec<L, T>> {
+        size_t operator()(const vkm::vec<L, T>& v) const noexcept {
+            size_t hash = 0;
+            for (size_t i = 0; i < L; ++i) {
+                // Combine the hash of the current element with the existing hash
+                hash ^= std::hash<T>{}(v.data[i]) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+            }
+            return hash;
         }
-        return hash;
-    }
-};
+    };
 } // namespace std

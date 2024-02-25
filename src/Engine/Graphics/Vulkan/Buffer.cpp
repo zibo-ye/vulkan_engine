@@ -26,7 +26,7 @@ bool Buffer::Init(const VulkanCore* pVulkanCore, VkDeviceSize size, VkBufferUsag
         .memoryTypeIndex = m_pVulkanCore->findMemoryType(memRequirements.memoryTypeBits, properties),
     };
 
-    VK(vkAllocateMemory(m_pVulkanCore->GetDevice(), &allocInfo, nullptr, &bufferMemory))
+    VK(vkAllocateMemory(m_pVulkanCore->GetDevice(), &allocInfo, nullptr, &bufferMemory));
 
     vkBindBufferMemory(m_pVulkanCore->GetDevice(), buffer, bufferMemory, 0);
     m_isValid = true;
