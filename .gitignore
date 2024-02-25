@@ -14,7 +14,6 @@ vsxmake2022
 
 shader_build/**
 *.ppm
-data/
 objs/**
 maek-cache.json
 vc140.pdb
