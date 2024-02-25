@@ -18,67 +18,37 @@ public:
     bool uploadModelToGPU(const VulkanCore* vulkanCore);
     bool releaseModelFromGPU();
 
-    VkBuffer vertexBuffer;
-    std::optional<VkBuffer> indexBuffer;
+    Buffer vertexBuffer;
+    std::optional<Buffer> indexBuffer;
     // #TODO: buffer's lifecycle is limited by vulkanCore.
 private:
-    void createVertexBuffer(const VulkanCore* vulkanCore);
-    void createIndexBuffer(const VulkanCore* vulkanCore);
+    void createVertexBuffer();
+    void createIndexBuffer();
 
 private:
     bool isOnGPU = false;
     const VulkanCore* m_pVulkanCore = nullptr;
-    VkDeviceMemory vertexBufferMemory;
-    std::optional<VkDeviceMemory> indexBufferMemory;
 };
 
 template <typename VertexType, typename IndexType /*= uint32_t*/>
-void MeshData<VertexType, IndexType>::createIndexBuffer(const VulkanCore* vulkanCore)
+void MeshData<VertexType, IndexType>::createIndexBuffer()
 {
     if (!indices.has_value())
         return;
     VkDeviceSize bufferSize = sizeof(indices.value()[0]) * indices.value().size();
 
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    vulkanCore->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-    void* data;
-    vkMapMemory(vulkanCore->GetDevice(), stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, indices.value().data(), (size_t)bufferSize);
-    vkUnmapMemory(vulkanCore->GetDevice(), stagingBufferMemory);
-
-    indexBuffer = VkBuffer();
-    indexBufferMemory = VkDeviceMemory();
-
-    vulkanCore->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer.value(), indexBufferMemory.value());
-
-    vulkanCore->copyBuffer(stagingBuffer, indexBuffer.value(), bufferSize);
-
-    vkDestroyBuffer(vulkanCore->GetDevice(), stagingBuffer, nullptr);
-    vkFreeMemory(vulkanCore->GetDevice(), stagingBufferMemory, nullptr);
+    indexBuffer = Buffer();
+    indexBuffer->Init(m_pVulkanCore, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    indexBuffer->UploadData(indices.value().data(), (size_t)bufferSize);
 }
 
 template <typename VertexType, typename IndexType /*= uint32_t*/>
-void MeshData<VertexType, IndexType>::createVertexBuffer(const VulkanCore* vulkanCore)
+void MeshData<VertexType, IndexType>::createVertexBuffer()
 {
     VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    vulkanCore->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-    void* data;
-    vkMapMemory(vulkanCore->GetDevice(), stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, vertices.data(), (size_t)bufferSize);
-    vkUnmapMemory(vulkanCore->GetDevice(), stagingBufferMemory);
-
-    vulkanCore->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
-
-    vulkanCore->copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
-
-    vkDestroyBuffer(vulkanCore->GetDevice(), stagingBuffer, nullptr);
-    vkFreeMemory(vulkanCore->GetDevice(), stagingBufferMemory, nullptr);
+    vertexBuffer.Init(m_pVulkanCore, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    vertexBuffer.UploadData(vertices.data(), (size_t)bufferSize);
 }
 
 template <typename VertexType, typename IndexType /*= uint32_t*/>
@@ -90,13 +60,9 @@ bool MeshData<VertexType, IndexType>::releaseModelFromGPU()
 
     auto device = m_pVulkanCore->GetDevice();
     if (device != VK_NULL_HANDLE) {
-        if (indexBuffer.has_value())
-            vkDestroyBuffer(device, indexBuffer.value(), nullptr);
-        if (indexBufferMemory.has_value())
-            vkFreeMemory(device, indexBufferMemory.value(), nullptr);
-
-        vkDestroyBuffer(device, vertexBuffer, nullptr);
-        vkFreeMemory(device, vertexBufferMemory, nullptr);
+        if (indexBuffer)
+            indexBuffer->Destroy();
+        vertexBuffer.Destroy();
     }
     return true;
 }
@@ -106,12 +72,12 @@ bool MeshData<VertexType, IndexType>::uploadModelToGPU(const VulkanCore* vulkanC
 {
     if (isOnGPU)
         return true;
-    createVertexBuffer(vulkanCore);
+    m_pVulkanCore = vulkanCore;
+    createVertexBuffer();
 
     if (indices.has_value())
-        createIndexBuffer(vulkanCore);
+        createIndexBuffer();
 
     isOnGPU = true;
-    m_pVulkanCore = vulkanCore;
     return true;
 }

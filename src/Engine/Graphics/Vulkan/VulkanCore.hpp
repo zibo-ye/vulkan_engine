@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Buffer.hpp"
 #include "Image.hpp"
 #include "VulkanHelper.hpp"
 #include "Window/IWindow.hpp"
@@ -106,9 +107,7 @@ private:
 
     VkCommandPool commandPool;
 
-    std::vector<VkBuffer> uniformBuffers;
-    std::vector<VkDeviceMemory> uniformBuffersMemory;
-    std::vector<void*> uniformBuffersMapped;
+    std::vector<Buffer> uniformBuffers;
 
     VkDescriptorPool descriptorPool;
 
@@ -129,12 +128,6 @@ private:
 
     void createDepthResources();
 
-    VkFormat findDepthFormat();
-
-    std::unique_ptr<uint8_t[]> copyTextureToMemory(Image textureImage, uint32_t texWidth, uint32_t texHeight);
-
-    void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
-
     void createUniformBuffers();
 
     void InitializeDescriptorSets();
@@ -142,14 +135,8 @@ private:
 
     void updateUniformBuffer(uint32_t currentImage);
 
-public:
-    // #TODO: Buffer abstraction
-    void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) const;
-    void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) const;
-    void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-    void copyImageToBuffer(Image image, VkBuffer buffer, uint32_t width, uint32_t height);
-
 public: // Helper
+    VkFormat findDepthFormat();
     VkCommandBuffer beginSingleTimeCommands() const;
     void endSingleTimeCommands(VkCommandBuffer commandBuffer) const;
 
@@ -177,10 +164,11 @@ public: // Helper
 
 public:
     VkDevice GetDevice() const { return device; }
+    VkPhysicalDevice GetPhysicalDevice() const { return physicalDevice; }
     VkInstance GetInstance() const { return instance; }
-    bool IsHeadless() const { return (m_pApp && m_pApp->info.window->IsHeadless()); }
 
 public:
+    bool IsHeadless() const { return (m_pApp && m_pApp->info.window->IsHeadless()); }
     void PresentImage();
     void SaveFrame(const std::string& savePath);
     bool readyForNextImage = false;

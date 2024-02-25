@@ -294,7 +294,10 @@ struct vec<4, T> : public vec_base<4, T> {
     {
     }
 #endif
-    T& x() { return this->data[0]; }
+    T& x()
+    {
+        return this->data[0];
+    }
     T& r() { return this->data[0]; }
     T& y() { return this->data[1]; }
     T& g() { return this->data[1]; }

@@ -86,8 +86,7 @@ void VulkanCore::Shutdown()
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        vkDestroyBuffer(device, uniformBuffers[i], nullptr);
-        vkFreeMemory(device, uniformBuffersMemory[i], nullptr);
+        uniformBuffers[i].Destroy();
     }
 
     vkDestroyDescriptorPool(device, descriptorPool, nullptr);
@@ -137,11 +136,11 @@ void VulkanCore::createInstance()
         .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
         .pEngineName = "No Engine",
         .engineVersion = VK_MAKE_VERSION(1, 0, 0),
-        #ifdef __APPLE__
-        .apiVersion = VK_API_VERSION_1_2, //MoltenVK only supports 1.2
-        #else 
-        .apiVersion = VK_API_VERSION_1_3, //On Windows and Linux, we can use 1.3
-        #endif
+#ifdef __APPLE__
+        .apiVersion = VK_API_VERSION_1_2, // MoltenVK only supports 1.2
+#else
+        .apiVersion = VK_API_VERSION_1_3, // On Windows and Linux, we can use 1.3
+#endif
     };
 
     auto extensions = getRequiredExtensions();
@@ -549,8 +548,7 @@ void VulkanCore::createGraphicsPipeline()
         throw std::runtime_error("failed to create pipeline layout!");
     }
 
-    const VkPipelineRenderingCreateInfo pipeline_rendering_create_info
-    {
+    const VkPipelineRenderingCreateInfo pipeline_rendering_create_info {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
         .colorAttachmentCount = 1,
         .pColorAttachmentFormats = &colorImage.m_imageInfo.format,
@@ -623,143 +621,14 @@ VkFormat VulkanCore::findDepthFormat()
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
-std::unique_ptr<uint8_t[]> VulkanCore::copyTextureToMemory(Image textureImage, uint32_t texWidth, uint32_t texHeight)
-{
-    VkDeviceSize imageSize = texWidth * texHeight * 4; // Assuming 4 bytes per pixel (RGBA)
-
-    // Allocate memory for the texture data
-    auto bufferData = std::make_unique<uint8_t[]>(imageSize);
-
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-
-    createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-    textureImage.TransitionLayout(std::nullopt, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
-
-    copyImageToBuffer(textureImage, stagingBuffer, texWidth, texHeight);
-
-    void* data;
-    vkMapMemory(device, stagingBufferMemory, 0, imageSize, 0, &data);
-    memcpy(bufferData.get(), data, static_cast<size_t>(imageSize)); // Copy data into the unique_ptr buffer
-    vkUnmapMemory(device, stagingBufferMemory);
-
-    vkDestroyBuffer(device, stagingBuffer, nullptr);
-    vkFreeMemory(device, stagingBufferMemory, nullptr);
-
-    textureImage.TransitionLayout(std::nullopt, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1);
-
-    return bufferData; // Return the unique_ptr containing the copied texture data
-}
-
-// it is uncommon in practice to generate the mipmap levels at runtime, but here it is.
-void VulkanCore::generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels)
-{
-    // Check if image format supports linear blitting
-    VkFormatProperties formatProperties;
-    vkGetPhysicalDeviceFormatProperties(physicalDevice, imageFormat, &formatProperties);
-    if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {
-        throw std::runtime_error("texture image format does not support linear blitting!");
-    }
-
-    VkCommandBuffer commandBuffer = beginSingleTimeCommands();
-
-    VkImageMemoryBarrier barrier {
-        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image = image,
-        .subresourceRange = {
-            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-            .levelCount = 1,
-            .baseArrayLayer = 0,
-            .layerCount = 1,
-        }
-    };
-
-    int32_t mipWidth = texWidth;
-    int32_t mipHeight = texHeight;
-
-    // generate mipmap using blit from 1->2, 2->3, ...
-    for (uint32_t i = 1; i < mipLevels; i++) {
-        barrier.subresourceRange.baseMipLevel = i - 1;
-        barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-
-        vkCmdPipelineBarrier(commandBuffer,
-            VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
-            0, nullptr,
-            0, nullptr,
-            1, &barrier);
-        VkImageBlit blit {
-            .srcSubresource = {
-                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                .mipLevel = i - 1,
-                .baseArrayLayer = 0,
-                .layerCount = 1,
-            },
-            .srcOffsets = { VkOffset3D { 0, 0, 0 }, { mipWidth, mipHeight, 1 } },
-            .dstSubresource = {
-                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                .mipLevel = i,
-                .baseArrayLayer = 0,
-                .layerCount = 1,
-            },
-            .dstOffsets = { VkOffset3D { 0, 0, 0 }, { mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1 } },
-        };
-        vkCmdBlitImage(commandBuffer,
-            image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-            image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            1, &blit,
-            VK_FILTER_LINEAR);
-
-        barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-        barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-        barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
-        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
-
-        vkCmdPipelineBarrier(commandBuffer,
-            VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
-            0, nullptr,
-            0, nullptr,
-            1, &barrier);
-
-        if (mipWidth > 1)
-            mipWidth /= 2;
-        if (mipHeight > 1)
-            mipHeight /= 2;
-    }
-
-    // handle last level mipmap barrier
-    barrier.subresourceRange.baseMipLevel = mipLevels - 1,
-    barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-    barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-    barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-    barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
-
-    vkCmdPipelineBarrier(commandBuffer,
-        VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
-        0, nullptr,
-        0, nullptr,
-        1, &barrier);
-
-    endSingleTimeCommands(commandBuffer);
-}
-
 void VulkanCore::createUniformBuffers()
 {
     VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
     uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-    uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
-    uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffers[i], uniformBuffersMemory[i]);
-
-        vkMapMemory(device, uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffersMapped[i]);
+        uniformBuffers[i].Init(this, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true);
     }
 }
 
@@ -819,7 +688,7 @@ void VulkanCore::InitializeDescriptorSets()
 {
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         VkDescriptorBufferInfo bufferInfo {
-            .buffer = uniformBuffers[i],
+            .buffer = uniformBuffers[i].buffer,
             .offset = 0,
             .range = sizeof(UniformBufferObject),
         };
@@ -853,113 +722,6 @@ void VulkanCore::InitializeDescriptorSets()
 
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
-}
-
-void VulkanCore::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) const
-{
-    VkBufferCreateInfo bufferInfo {
-        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        .size = size,
-        .usage = usage,
-        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-    };
-
-    if (vkCreateBuffer(device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create buffer!");
-    }
-
-    VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
-
-    VkMemoryAllocateInfo allocInfo {
-        .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-        .allocationSize = memRequirements.size,
-        .memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties),
-    };
-
-    if (vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate buffer memory!");
-    }
-
-    vkBindBufferMemory(device, buffer, bufferMemory, 0);
-}
-
-void VulkanCore::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) const
-{
-    VkCommandBuffer commandBuffer = beginSingleTimeCommands();
-
-    VkBufferCopy copyRegion { .size = size };
-    vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
-
-    endSingleTimeCommands(commandBuffer);
-}
-
-void VulkanCore::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
-{
-    VkCommandBuffer commandBuffer = beginSingleTimeCommands();
-
-    VkBufferImageCopy region {
-        .bufferOffset = 0,
-        .bufferRowLength = 0,
-        .bufferImageHeight = 0,
-
-        .imageSubresource {
-            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-            .mipLevel = 0,
-            .baseArrayLayer = 0,
-            .layerCount = 1,
-        },
-
-        .imageOffset = { 0, 0, 0 },
-        .imageExtent = {
-            width,
-            height,
-            1 },
-    };
-
-    vkCmdCopyBufferToImage(
-        commandBuffer,
-        buffer,
-        image,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        1,
-        &region);
-
-    endSingleTimeCommands(commandBuffer);
-}
-
-void VulkanCore::copyImageToBuffer(Image image, VkBuffer buffer, uint32_t width, uint32_t height)
-{
-    VkCommandBuffer commandBuffer = beginSingleTimeCommands();
-
-    VkBufferImageCopy region {
-        .bufferOffset = 0,
-        .bufferRowLength = 0,
-        .bufferImageHeight = 0,
-
-        .imageSubresource {
-            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-            .mipLevel = 0,
-            .baseArrayLayer = 0,
-            .layerCount = 1,
-        },
-
-        .imageOffset = { 0, 0, 0 },
-        .imageExtent = {
-            width,
-            height,
-            1 },
-    };
-
-    vkCmdCopyImageToBuffer(
-        commandBuffer,
-        image.image,
-        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-        buffer,
-        1,
-        &region);
-
-    endSingleTimeCommands(commandBuffer);
 }
 
 VkCommandBuffer VulkanCore::beginSingleTimeCommands() const
@@ -1031,9 +793,9 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer& commandBuffer, uint32_t im
         .resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
         .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
         .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue = {
-                .color = { { 0.0f, 0.0f, 0.0f, 1.0f } },
-            },
+        .clearValue = {
+            .color = { { 0.0f, 0.0f, 0.0f, 1.0f } },
+        },
     };
 
     const VkRenderingAttachmentInfo depth_attachment_info {
@@ -1051,12 +813,11 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer& commandBuffer, uint32_t im
         .sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
         .renderArea = {
             .offset = { 0, 0 },
-            .extent = { swapChainImages[0].m_imageInfo.extent.width, swapChainImages[0].m_imageInfo.extent.height } 
-        },
+            .extent = { swapChainImages[0].m_imageInfo.extent.width, swapChainImages[0].m_imageInfo.extent.height } },
         .layerCount = 1,
         .colorAttachmentCount = 1,
         .pColorAttachments = &color_attachment_info,
-        .pDepthAttachment = & depth_attachment_info,
+        .pDepthAttachment = &depth_attachment_info,
     };
 
 #if __APPLE__
@@ -1124,7 +885,7 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer& commandBuffer, uint32_t im
         if (!meshData->uploadModelToGPU(this))
             continue;
 
-        VkBuffer vertexBuffers[] = { meshData->vertexBuffer };
+        VkBuffer vertexBuffers[] = { meshData->vertexBuffer.buffer };
         VkDeviceSize offsets[] = { 0 };
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
@@ -1135,7 +896,7 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer& commandBuffer, uint32_t im
 
         if (meshData->indices.has_value()) // Has indices
         {
-            vkCmdBindIndexBuffer(commandBuffer, meshData->indexBuffer.value(), 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindIndexBuffer(commandBuffer, meshData->indexBuffer->buffer, 0, VK_INDEX_TYPE_UINT32);
             vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(meshData->indices.value().size()), 1, 0, 0, 0);
         } else // No indices
         {
@@ -1151,8 +912,8 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer& commandBuffer, uint32_t im
 #endif
     vkCmdEndRendering(commandBuffer);
 
-        if (!IsHeadless())
-            swapChainImages[imageIndex].TransitionLayout(commandBuffer, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, 1);
+    if (!IsHeadless())
+        swapChainImages[imageIndex].TransitionLayout(commandBuffer, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, 1);
 
     VK(vkEndCommandBuffer(commandBuffer));
 }
@@ -1172,7 +933,8 @@ void VulkanCore::updateUniformBuffer(uint32_t currentImage)
     };
     // ubo.proj[1][1] *= -1;
 
-    memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
+    assert(uniformBuffers[currentImage].m_pMappedData);
+    memcpy(*uniformBuffers[currentImage].m_pMappedData, &ubo, sizeof(ubo));
 }
 
 void VulkanCore::drawFrame(Scene& scene)
@@ -1418,7 +1180,7 @@ void VulkanCore::SaveFrame(const std::string& savePath)
     uint32_t texWidth = static_cast<uint32_t>(m_pApp->args.windowSize.first);
     uint32_t texHeight = static_cast<uint32_t>(m_pApp->args.windowSize.second);
 
-    auto bufferData = copyTextureToMemory(swapChainImages[currentFrameInFlight], texWidth, texHeight);
+    auto bufferData = swapChainImages[currentFrameInFlight].copyToMemory();
 
     // Open the file in binary mode
     std::ofstream file(savePath, std::ios::out | std::ios::binary);

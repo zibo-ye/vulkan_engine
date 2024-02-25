@@ -2,6 +2,7 @@
 
 #include "pch.hpp"
 
+class Buffer;
 class VulkanCore;
 
 using ExtentVariant = std::variant<uint32_t, VkExtent2D, VkExtent3D>;
@@ -14,6 +15,13 @@ public:
     void InitImageView(VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
     void TransitionLayout(std::optional<VkCommandBuffer> commandBuffer, VkImageLayout newLayout, uint32_t mipLevels);
     ExtentVariant GetImageExtent();
+
+public:
+    void CopyToBuffer(Buffer& buffer);
+
+    std::unique_ptr<uint8_t[]> copyToMemory();
+    // void UploadData(const void* data, VkDeviceSize size); //#TODO
+    void GenerateMipmaps(std::optional<VkCommandBuffer> commandBuffer, uint32_t mipLevels);
 
 public:
     bool m_isValid = false;
