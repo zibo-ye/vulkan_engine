@@ -39,7 +39,7 @@ public:
     {
         name = jsonObj["name"].getString();
 
-        if (jsonObj.getObject().find("perspective") != jsonObj.getObject().end()) {
+        if (jsonObj.hasKey("perspective")) {
             auto& persp = jsonObj["perspective"];
             perspective = {
                 .aspect = persp["aspect"].getFloat(),

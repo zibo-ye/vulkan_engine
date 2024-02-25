@@ -111,6 +111,7 @@
 #include <set>
 #include <stdexcept>
 #include <vector>
+#include <limits>
 
 #include "Utility.hpp"
 // #include "VectorMath.hpp"

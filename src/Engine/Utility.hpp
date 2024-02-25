@@ -168,6 +168,10 @@ namespace json {
         static JsonArray parseArray(const std::string& json, size_t& pos);
         static JsonValue parseNumber(const std::string& json, size_t& pos);
         static JsonValue parseValue(const std::string& json, size_t& pos);
+
+    public:
+        bool hasKey(const std::string& key) const;
+        std::optional<JsonValue> getOptionalValue(const std::string& key) const;
     };
 
 } // namespace json

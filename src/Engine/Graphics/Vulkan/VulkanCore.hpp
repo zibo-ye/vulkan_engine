@@ -50,7 +50,7 @@ struct FrameData {
     VkSemaphore imageAvailableSemaphore;
     VkSemaphore renderFinishedSemaphore;
     VkFence swapchainImageFence;
-    DeletionQueue deletionQueue;
+    DeletionStack deletionStack;
 
     void Destroy(const VkDevice& device);
 };
@@ -83,6 +83,7 @@ public: // High level
 
     VkQueue graphicsQueue;
     VkQueue presentQueue;
+    DeletionStack mainDeletionStack;
 
 private: // Swapchain
     void createSwapChain();
@@ -93,7 +94,7 @@ private: // Swapchain
     VkSwapchainKHR swapChain;
     std::vector<Image> swapChainImages;
 
-private:
+private: // Frame
     void createFrameData();
     void createFrameSyncObjects(VkSemaphore& imageAvailableSemaphore, VkSemaphore& renderFinishedSemaphore, VkFence& swapchainImageFence);
 
@@ -113,8 +114,6 @@ private:
 
     Image depthImage;
     Image colorImage;
-
-    DeletionQueue mainDeletionQueue;
 
 private:
     void createDescriptorSetLayout();

@@ -2,6 +2,11 @@
 #include "Scene.hpp"
 #include "CameraManager.hpp"
 #include "EngineCore.hpp"
+#include "Mesh.hpp"
+#include "Camera.hpp"
+#include "Material.hpp"
+#include "Environment.hpp"
+
 
 void Scene::Init(const Utility::json::JsonValue& jsonObj)
 {
@@ -37,7 +42,16 @@ void Scene::Init(const Utility::json::JsonValue& jsonObj)
             for (auto& root : val["roots"].getArray()) {
                 roots.push_back(root.getInt());
             }
-        }
+        } else if (val["type"].getString() == "MATERIAL") {
+			auto pMaterial = std::make_shared<Material>(shared_from_this(), i, val);
+			materials[i] = pMaterial;
+			sceneObjs[i] = pMaterial;
+        } else if (val["type"].getString() == "ENVIRONMENT") {
+			environment = std::make_shared<Environment>(shared_from_this(), i, val);
+			sceneObjs[i] = environment;
+        } else {
+			throw std::runtime_error("Unknown Scene Object Type");
+		}
     }
 }
 
@@ -148,20 +162,20 @@ Node::Node(std::weak_ptr<Scene> pScene, size_t index, const Utility::json::JsonV
 {
     name = jsonObj["name"].getString();
 
-    if (jsonObj.getObject().find("translation") != jsonObj.getObject().end()) {
+    if (jsonObj.hasKey("translation")) {
         auto vec = jsonObj["translation"].getVecFloat();
         translation = vkm::vec3(vec[0], vec[1], vec[2]);
     }
-    if (jsonObj.getObject().find("rotation") != jsonObj.getObject().end()) {
+    if (jsonObj.hasKey("rotation")) {
         auto vec = jsonObj["rotation"].getVecFloat();
         rotation = vkm::quat(vec[0], vec[1], vec[2], vec[3]);
     }
-    if (jsonObj.getObject().find("scale") != jsonObj.getObject().end()) {
+    if (jsonObj.hasKey("scale")) {
         auto vec = jsonObj["scale"].getVecFloat();
         scale = vkm::vec3(vec[0], vec[1], vec[2]);
     }
 
-    if (jsonObj.getObject().find("children") != jsonObj.getObject().end()) {
+    if (jsonObj.hasKey("children")) {
         for (auto& child : jsonObj["children"].getArray()) {
             auto idx = child.getInt();
             childrenIdx.push_back(idx);
@@ -169,13 +183,16 @@ Node::Node(std::weak_ptr<Scene> pScene, size_t index, const Utility::json::JsonV
         }
     }
 
-    if (jsonObj.getObject().find("mesh") != jsonObj.getObject().end()) {
+    if (jsonObj.hasKey("mesh")) {
         meshIdx = jsonObj["mesh"].getInt();
         pScene.lock()->nodeParents[meshIdx.value()].push_back(index);
     }
-    if (jsonObj.getObject().find("camera") != jsonObj.getObject().end()) {
+    if (jsonObj.hasKey("camera")) {
         cameraIdx = jsonObj["camera"].getInt();
         pScene.lock()->nodeParents[cameraIdx.value()].push_back(index);
+    }
+    if (jsonObj.hasKey("environment")) {
+        envIdx = jsonObj["environment"].getInt();
     }
 }
 
@@ -216,7 +233,7 @@ Driver::Driver(std::weak_ptr<Scene> pScene, size_t index, const Utility::json::J
     channel = GetDriverChannelType(jsonObj["channel"].getString());
     times = jsonObj["times"].getVecFloat();
     values = jsonObj["values"].getVecFloat();
-    if (jsonObj.getObject().find("interpolation") != jsonObj.getObject().end()) {
+    if (jsonObj.hasKey("interpolation")) {
         interpolation = GetDriverInterpolationType(jsonObj["interpolation"].getString());
     }
 

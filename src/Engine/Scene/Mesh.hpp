@@ -4,7 +4,6 @@
 #include "SceneEnum.hpp"
 #include "SceneObj.hpp"
 #include "pch.hpp"
-#include <limits>
 
 struct MeshIndices {
     MeshIndices() = default;
@@ -29,7 +28,7 @@ enum class MeshAttributeType {
     POSITION,
     NORMAL,
     COLOR,
-    UV,
+    TEXCOORD,
     TANGENT,
     BITANGENT,
     JOINTS,
@@ -38,13 +37,15 @@ enum class MeshAttributeType {
 };
 
 struct NewVertex {
-    vkm::vec3 position;
-    vkm::vec3 normal;
-    vkm::u8vec4 color;
+    vkm::vec3 position;     // POSITION: position stream
+    vkm::vec3 normal;       // NORMAL: vertex normal
+    vkm::vec4 tangent;      // TANGENT: tangent (xyz) + bitangent sign (w)
+    vkm::vec2 texCoord;     // TEXCOORD: texture coordinates
+    vkm::u8vec4 color; 	    // COLOR: vertex color
 
     bool operator==(const NewVertex& other) const
     {
-        return position == other.position && normal == other.normal && color == other.color;
+        return position == other.position && normal == other.normal && color == other.color && texCoord == other.texCoord && tangent == other.tangent;
     }
 
     static VkVertexInputBindingDescription getBindingDescription()
@@ -58,9 +59,9 @@ struct NewVertex {
         return bindingDescription;
     }
 
-    static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions()
+    static std::array<VkVertexInputAttributeDescription, 5> getAttributeDescriptions()
     {
-        std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions {
+        std::array<VkVertexInputAttributeDescription, 5> attributeDescriptions {
             VkVertexInputAttributeDescription {
                 .location = 0,
                 .binding = 0,
@@ -75,6 +76,18 @@ struct NewVertex {
             },
             {
                 .location = 2,
+                .binding = 0,
+                .format = VK_FORMAT_R32G32B32A32_SFLOAT,
+                .offset = offsetof(NewVertex, tangent),
+            },
+            {
+                .location = 3,
+                .binding = 0,
+                .format = VK_FORMAT_R32G32_SFLOAT,
+                .offset = offsetof(NewVertex, texCoord),
+            },
+            {
+                .location = 4,
                 .binding = 0,
                 .format = VK_FORMAT_R8G8B8A8_UNORM,
                 .offset = offsetof(NewVertex, color),
@@ -93,6 +106,10 @@ struct NewVertex {
             return offsetof(NewVertex, normal);
         case MeshAttributeType::COLOR:
             return offsetof(NewVertex, color);
+        case MeshAttributeType::TEXCOORD:
+            return offsetof(NewVertex, texCoord);
+        case MeshAttributeType::TANGENT:
+            return offsetof(NewVertex, tangent);
         default:
             return -1;
         }
@@ -106,6 +123,10 @@ struct NewVertex {
             return offsetof(NewVertex, normal);
         else if (type == "COLOR")
             return offsetof(NewVertex, color);
+        else if (type == "TEXCOORD")
+            return offsetof(NewVertex, texCoord);
+		else if (type == "TANGENT")
+			return offsetof(NewVertex, tangent);
         else
             return -1;
     }
@@ -119,9 +140,11 @@ struct hash<NewVertex> {
         size_t h1 = hash<vkm::vec3>()(vertex.position);
         size_t h2 = hash<vkm::vec3>()(vertex.normal);
         size_t h3 = hash<vkm::u8vec4>()(vertex.color);
+        size_t h4 = hash<vkm::vec2>()(vertex.texCoord);
+        size_t h5 = hash<vkm::vec4>()(vertex.tangent);
 
         // Combine the hash values
-        return ((h1 ^ (h2 << 1)) >> 1) ^ h3;
+        return h1 ^ (h2 << 1) ^ (h3 << 2) ^ (h4 << 3) ^ (h5 << 4);
     }
 };
 }
@@ -135,6 +158,7 @@ public:
     size_t count;
     std::optional<MeshIndices> indiceDescription;
     std::unordered_map<std::string, MeshAttributes> attributeDescriptions;
+    std::optional<int> materialIdx;
 
     std::shared_ptr<MeshData<NewVertex, uint32_t>> meshData;
     void LoadMeshData();
@@ -145,6 +169,7 @@ public:
 
 private:
     void UpdateBounds(const NewVertex& vertex);
+    bool isUsingSimpleMaterial() const;
 };
 
 inline static VkPipelineVertexInputStateCreateInfo getVertexInputInfo()

@@ -1,15 +1,19 @@
 #pragma once
-#include "Camera.hpp"
-#include "Mesh.hpp"
 #include "SceneEnum.hpp"
 #include "SceneObj.hpp"
 #include "pch.hpp"
 
+class SceneCamera;
 class Node;
 class Mesh;
 struct MeshInstance;
 class Driver;
 class Scene;
+class Material;
+class Environment;
+namespace EngineCore {
+	class IApp;
+}
 
 class Node : public SceneObj {
 public:
@@ -22,6 +26,7 @@ public:
     std::optional<int> meshIdx;
     std::optional<int> cameraIdx;
     std::vector<int> childrenIdx;
+    std::optional<int> envIdx;
 
     vkm::mat4 GetTransform() const;
     void Traverse(vkm::mat4 transform, std::vector<MeshInstance>& meshInsts);
@@ -54,6 +59,8 @@ public:
     std::unordered_map<size_t, std::shared_ptr<SceneCamera>> cameras;
     std::unordered_map<size_t, std::shared_ptr<Mesh>> meshes;
     std::unordered_map<size_t, std::shared_ptr<Driver>> drivers;
+    std::unordered_map<size_t, std::shared_ptr<Material>> materials;
+    std::shared_ptr<Environment> environment;
 
     static std::shared_ptr<Scene> loadSceneFromFile(const std::string& path);
     void PrintStatistics() const;

@@ -80,7 +80,7 @@ void VulkanCore::Shutdown()
     WaitIdle();
     cleanupSwapChain();
 
-    mainDeletionQueue.flush();
+    mainDeletionStack.flush();
 
     vkDestroyPipeline(device, graphicsPipeline, nullptr);
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
@@ -601,16 +601,15 @@ void VulkanCore::createColorResources()
 {
     VkFormat colorFormat = swapChainImages[0].m_imageInfo.format;
 
-    colorImage.Init(this, swapChainImages[0].GetImageExtent(), 1, msaaSamples, colorFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    colorImage.Init(this, swapChainImages[0].GetImageExtent(), 1, msaaSamples, colorFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     colorImage.InitImageView(colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 }
 
 void VulkanCore::createDepthResources()
 {
     VkFormat depthFormat = findDepthFormat();
-    depthImage.Init(this, swapChainImages[0].GetImageExtent(), 1, msaaSamples, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    depthImage.Init(this, swapChainImages[0].GetImageExtent(), 1, msaaSamples, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
     depthImage.InitImageView(depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
-    depthImage.TransitionLayout(std::nullopt, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
 }
 
 VkFormat VulkanCore::findDepthFormat()
@@ -951,7 +950,7 @@ void VulkanCore::drawFrame(Scene& scene)
     // wait for the frame needed to use to be finished (if still in flight)
     vkWaitForFences(device, 1, &frames[currentFrameInFlight].swapchainImageFence, VK_TRUE, UINT64_MAX);
     vkResetFences(device, 1, &frames[currentFrameInFlight].swapchainImageFence);
-    frames[currentFrameInFlight].deletionQueue.flush(); // delete all temporary data
+    frames[currentFrameInFlight].deletionStack.flush(); // delete all temporary data
 
     uint32_t imageIndex = std::numeric_limits<uint32_t>::max(); // index of the swap chain image that will be used for the current frame
 

@@ -1,4 +1,5 @@
 #include "Mesh.hpp"
+#include "Material.hpp"
 
 Mesh::Mesh(std::weak_ptr<Scene> pScene, size_t index, const Utility::json::JsonValue& jsonObj)
     : SceneObj(pScene, index, ESceneObjType::MESH)
@@ -7,13 +8,17 @@ Mesh::Mesh(std::weak_ptr<Scene> pScene, size_t index, const Utility::json::JsonV
     topology = GetVkPrimitiveTopology(jsonObj["topology"].getString());
     count = jsonObj["count"].getInt();
 
-    if (jsonObj.getObject().find("indices") != jsonObj.getObject().end()) {
+    if (jsonObj.hasKey("indices")) {
         indiceDescription = MeshIndices(jsonObj["indices"]);
     }
 
     auto& attributes = jsonObj["attributes"];
     for (auto& [attrName, attrVal] : attributes.getObject()) {
         this->attributeDescriptions[attrName] = MeshAttributes(attrVal, pScene.lock()->src);
+    }
+
+    if (jsonObj.hasKey("material")) {
+        materialIdx = jsonObj["material"].getInt();
     }
 
     LoadMeshData();
@@ -54,6 +59,7 @@ void Mesh::LoadMeshData()
         }
     }
 
+
     // vertices -> indexed vertices
     std::unordered_map<NewVertex, uint32_t> uniqueVertices;
     std::vector<NewVertex> uniqueVertexList;
@@ -90,6 +96,11 @@ void Mesh::UpdateBounds(const NewVertex& vertex)
         max.y() = vertex.position.y();
     if (vertex.position.z() > max.z())
         max.z() = vertex.position.z();
+}
+
+bool Mesh::isUsingSimpleMaterial() const
+{
+    return !materialIdx.has_value() || pScene.lock()->materials[*materialIdx]->isSimple;
 }
 
 MeshIndices::MeshIndices(const Utility::json::JsonValue& jsonObj)
