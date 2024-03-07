@@ -9,4 +9,4 @@ source ~/.zshrc
 cd "$SCRIPT_DIR"/..
 
 # Execute the command
-xmake run Main -scene ../s72/examples/sphereflake_animated.s72
+xmake run Main -scene ../s72/examples/sphereflake_animated.s72 -headless "script/example.events"
