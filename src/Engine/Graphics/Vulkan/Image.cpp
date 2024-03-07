@@ -53,7 +53,7 @@ bool Image::Init(VulkanCore* pVulkanCore, ExtentVariant extent, uint32_t mipLeve
 
     m_isValid = true;
     m_currentLayout = initialLayout;
-
+    createTextureSampler();
     // #MAYBE: m_pVulkanCore->AddResizeHandler(), m_pVulkanCore->AddShutdownHandler()
     return true;
 }
@@ -61,6 +61,7 @@ bool Image::Init(VulkanCore* pVulkanCore, ExtentVariant extent, uint32_t mipLeve
 void Image::Destroy()
 {
     assert(m_isValid);
+    vkDestroySampler(m_pVulkanCore->GetDevice(), sampler, nullptr);
     vkDestroyImageView(m_pVulkanCore->GetDevice(), imageView, nullptr);
     vkDestroyImage(m_pVulkanCore->GetDevice(), image, nullptr);
     vkFreeMemory(m_pVulkanCore->GetDevice(), imageMemory, nullptr);
@@ -86,6 +87,33 @@ void Image::InitImageView(VkFormat format, VkImageAspectFlags aspectFlags, uint3
     };
 
     VK(vkCreateImageView(m_pVulkanCore->GetDevice(), &viewInfo, nullptr, &imageView));
+}
+
+void Image::createTextureSampler()
+{
+    // #MAYBE: TextureSampler can be reused for multiple textures, maybe use a hash map to store them, with hash of VkSamplerCreateInfo as key and VkSampler as value
+    VkPhysicalDeviceProperties properties {};
+    vkGetPhysicalDeviceProperties(m_pVulkanCore->GetPhysicalDevice(), &properties);
+
+    VkSamplerCreateInfo samplerInfo {
+        .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        .magFilter = VK_FILTER_LINEAR,
+        .minFilter = VK_FILTER_LINEAR,
+        .mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR,
+        .addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        .addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        .addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        .mipLodBias = 0.0f,
+        .anisotropyEnable = VK_TRUE,
+        .maxAnisotropy = properties.limits.maxSamplerAnisotropy,
+        .compareEnable = VK_FALSE,
+        .compareOp = VK_COMPARE_OP_ALWAYS,
+        .minLod = 0.0f,
+        .maxLod = static_cast<float>(m_imageInfo.mipLevels),
+        .borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+        .unnormalizedCoordinates = VK_FALSE,
+    };
+    VK(vkCreateSampler(m_pVulkanCore->GetDevice(), &samplerInfo, nullptr, &sampler));
 }
 
 std::pair<VkAccessFlags, VkPipelineStageFlags> getMinimalAccessMaskAndStage(VkImageLayout layout)
@@ -117,7 +145,7 @@ std::pair<VkAccessFlags, VkPipelineStageFlags> getMinimalAccessMaskAndStage(VkIm
     }
 }
 
-void Image::TransitionLayout(std::optional<VkCommandBuffer> commandBuffer, VkImageLayout newLayout, uint32_t mipLevels)
+void Image::TransitionLayout(std::optional<VkCommandBuffer> commandBuffer, VkImageLayout newLayout)
 {
     assert(m_isValid);
     VkCommandBuffer cmd;
@@ -145,7 +173,7 @@ void Image::TransitionLayout(std::optional<VkCommandBuffer> commandBuffer, VkIma
         .subresourceRange {
             .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
             .baseMipLevel = 0,
-            .levelCount = mipLevels,
+            .levelCount = m_imageInfo.mipLevels,
             .baseArrayLayer = 0,
             .layerCount = 1,
         },
@@ -202,7 +230,7 @@ void Image::CopyToBuffer(Buffer& buffer)
 
         .imageSubresource {
             .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-            .mipLevel = 0,
+            .mipLevel = 0, // TODO: support mipmaps
             .baseArrayLayer = 0,
             .layerCount = 1,
         },
@@ -233,9 +261,9 @@ std::unique_ptr<uint8_t[]> Image::copyToMemory()
     stagingBuffer.Init(m_pVulkanCore, imageSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     auto oldLayout = m_currentLayout;
-    this->TransitionLayout(std::nullopt, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
+    this->TransitionLayout(std::nullopt, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
     this->CopyToBuffer(stagingBuffer);
-    this->TransitionLayout(std::nullopt, oldLayout, 1);
+    this->TransitionLayout(std::nullopt, oldLayout);
 
     void* data = stagingBuffer.Map();
     memcpy(bufferData.get(), data, static_cast<size_t>(imageSize)); // Copy data into the unique_ptr buffer
@@ -243,6 +271,25 @@ std::unique_ptr<uint8_t[]> Image::copyToMemory()
     stagingBuffer.Destroy();
 
     return bufferData; // Return the unique_ptr containing the copied texture data
+}
+
+void Image::UploadData(const void* data, VkDeviceSize size)
+{
+    // Create a staging buffer
+    Buffer stagingBuffer;
+    stagingBuffer.Init(m_pVulkanCore, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    // Map memory and copy data to the staging buffer
+    void* mappedData = stagingBuffer.Map();
+    memcpy(mappedData, data, static_cast<size_t>(size));
+    stagingBuffer.Unmap();
+
+    this->TransitionLayout(std::nullopt, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    stagingBuffer.CopyToImage(*this);
+    this->TransitionLayout(std::nullopt, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+    // Clean up the staging buffer
+    stagingBuffer.Destroy();
 }
 
 // it is uncommon in practice to generate the mipmap levels at runtime, but here it is.

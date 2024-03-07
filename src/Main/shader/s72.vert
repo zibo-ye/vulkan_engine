@@ -14,6 +14,7 @@ layout(location = 4) in vec4 inColor;
 layout(location = 0) out vec3 fragPosition;
 layout(location = 1) out vec3 fragNormal;
 layout(location = 2) out vec4 fragColor;
+layout(location = 3) out vec2 fragTexCoord;
 
 layout( push_constant ) uniform constants
 {
@@ -24,5 +25,6 @@ void main() {
     fragPosition = vec3(PushConstants.model * vec4(inPosition, 1.0)); // Transform position by light matrix
     fragNormal = mat3(PushConstants.model) * inNormal; // Transform normal by light matrix (3x3 part)
     fragColor = inColor; // Pass color directly
+    fragTexCoord = inTexCoord;
     gl_Position = ubo.proj * ubo.view * PushConstants.model * vec4(inPosition,  1.0);
 }

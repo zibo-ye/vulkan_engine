@@ -15,7 +15,7 @@ public:
     void Unmap();
     void UploadData(const void* data, VkDeviceSize size);
     void CopyToBuffer(Buffer& dstBuffer, VkDeviceSize size, VkDeviceSize srcOffset = 0, VkDeviceSize dstOffset = 0);
-    void CopyToImage(Image image, uint32_t width, uint32_t height);
+    void CopyToImage(Image& image);
 
 public:
     bool m_isValid = false;

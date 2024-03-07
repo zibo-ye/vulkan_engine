@@ -8,14 +8,13 @@ public:
     MeshData() = default;
     ~MeshData()
     {
-        if (isOnGPU)
-            releaseModelFromGPU();
+        // assert(!isOnGPU && "MeshData is still on GPU. Should call releaseModelFromGPU() before destroying the object.")
     }
     std::vector<VertexType> vertices;
     std::optional<std::vector<IndexType>> indices;
 
 public:
-    bool uploadModelToGPU(const VulkanCore* vulkanCore);
+    bool uploadModelToGPU(VulkanCore* vulkanCore);
     bool releaseModelFromGPU();
 
     Buffer vertexBuffer;
@@ -27,7 +26,7 @@ private:
 
 private:
     bool isOnGPU = false;
-    const VulkanCore* m_pVulkanCore = nullptr;
+    VulkanCore* m_pVulkanCore = nullptr;
 };
 
 template <typename VertexType, typename IndexType /*= uint32_t*/>
@@ -64,11 +63,12 @@ bool MeshData<VertexType, IndexType>::releaseModelFromGPU()
             indexBuffer->Destroy();
         vertexBuffer.Destroy();
     }
+    isOnGPU = false;
     return true;
 }
 
 template <typename VertexType, typename IndexType /*= uint32_t*/>
-bool MeshData<VertexType, IndexType>::uploadModelToGPU(const VulkanCore* vulkanCore)
+bool MeshData<VertexType, IndexType>::uploadModelToGPU(VulkanCore* vulkanCore)
 {
     if (isOnGPU)
         return true;
@@ -78,6 +78,9 @@ bool MeshData<VertexType, IndexType>::uploadModelToGPU(const VulkanCore* vulkanC
     if (indices.has_value())
         createIndexBuffer();
 
+    m_pVulkanCore->mainDeletionStack.push([=]() {
+        releaseModelFromGPU();
+    });
     isOnGPU = true;
     return true;
 }

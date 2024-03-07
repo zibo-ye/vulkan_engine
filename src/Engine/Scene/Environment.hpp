@@ -1,8 +1,8 @@
 #pragma once
 #include "Scene.hpp"
 #include "SceneObj.hpp"
-#include "pch.hpp"
 #include "Texture.hpp"
+#include "pch.hpp"
 
 class Environment : public SceneObj {
 public:

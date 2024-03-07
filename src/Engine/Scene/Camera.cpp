@@ -37,10 +37,20 @@ vkm::mat4 SceneCamera::getViewMatrix() const
         }
         auto parentIdxs = pSScene->nodeParents.at(childIdx);
 
-        // for (auto parentIdx : parentIdxs) {
-        auto parent = pSScene->nodes.at(parentIdxs[0]); // Assuming only one parent for now
-        InvViewMatrix = parent->GetTransform() * InvViewMatrix;
-        childIdx = parentIdxs[0];
+        if (parentIdxs.size() == 0) {
+            // No parent, so we are at the root node
+            InvViewMatrix = pSScene->nodes.at(childIdx)->GetTransform() * InvViewMatrix;
+            break;
+        } else {
+#if VERBOSE
+            if (parentIdxs.size() > 1) {
+                std::cerr << "SceneCamera::getViewMatrix: Multiple parents not supported" << std::endl;
+            }
+#endif
+            auto parent = pSScene->nodes.at(parentIdxs[0]); // Assuming only one parent for now
+            InvViewMatrix = parent->GetTransform() * InvViewMatrix;
+            childIdx = parentIdxs[0];
+        }
     }
 
     return vkm::inverse(InvViewMatrix);

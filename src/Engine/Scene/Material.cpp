@@ -8,11 +8,11 @@ Material::Material(std::weak_ptr<Scene> pScene, size_t index, const Utility::jso
     name = jsonObj["name"].getString();
 
     if (jsonObj.hasKey("normalMap")) {
-        normalMap = Texture(jsonObj["normalMap"]);
+        normalMap = Texture(jsonObj["normalMap"], pScene.lock()->src);
     }
 
     if (jsonObj.hasKey("displacementMap")) {
-        displacementMap = Texture(jsonObj["displacementMap"]);
+        displacementMap = Texture(jsonObj["displacementMap"], pScene.lock()->src);
     }
 
     if (jsonObj.hasKey("pbr")) {
@@ -34,15 +34,15 @@ Material::Material(std::weak_ptr<Scene> pScene, size_t index, const Utility::jso
         }
 
         if (jsonObj["pbr"].hasKey("albedoMap")) {
-            pbr->albedoMap = Texture(jsonObj["pbr"]["albedoMap"]);
+            pbr->albedoMap = Texture(jsonObj["pbr"]["albedoMap"], pScene.lock()->src);
         }
 
         if (jsonObj["pbr"].hasKey("roughnessMap")) {
-            pbr->roughnessMap = Texture(jsonObj["pbr"]["roughnessMap"]);
+            pbr->roughnessMap = Texture(jsonObj["pbr"]["roughnessMap"], pScene.lock()->src);
         }
 
         if (jsonObj["pbr"].hasKey("metalnessMap")) {
-            pbr->metalnessMap = Texture(jsonObj["pbr"]["metalnessMap"]);
+            pbr->metalnessMap = Texture(jsonObj["pbr"]["metalnessMap"], pScene.lock()->src);
         }
     }
 
@@ -55,7 +55,7 @@ Material::Material(std::weak_ptr<Scene> pScene, size_t index, const Utility::jso
         }
 
         if (jsonObj["lambertian"].hasKey("baseColorMap")) {
-            lambertian->baseColorMap = Texture(jsonObj["lambertian"]["baseColorMap"]);
+            lambertian->baseColorMap = Texture(jsonObj["lambertian"]["baseColorMap"], pScene.lock()->src);
         }
     }
 

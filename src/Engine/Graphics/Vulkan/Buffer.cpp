@@ -94,7 +94,7 @@ void Buffer::UploadData(const void* data, VkDeviceSize size)
     stagingBuffer.Destroy();
 }
 
-void Buffer::CopyToImage(Image image, uint32_t width, uint32_t height)
+void Buffer::CopyToImage(Image& image)
 {
     VkCommandBuffer commandBuffer = m_pVulkanCore->beginSingleTimeCommands();
 
@@ -105,7 +105,7 @@ void Buffer::CopyToImage(Image image, uint32_t width, uint32_t height)
 
         .imageSubresource {
             .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-            .mipLevel = 0,
+            .mipLevel = 0, // TODO: support mipmaps
             .baseArrayLayer = 0,
             .layerCount = 1,
         },

@@ -1,8 +1,8 @@
 #pragma once
 #include "Scene.hpp"
 #include "SceneObj.hpp"
-#include "pch.hpp"
 #include "Texture.hpp"
+#include "pch.hpp"
 
 class Material : public SceneObj {
 public:
@@ -35,5 +35,4 @@ public:
     bool isMirror = false;
     bool isEnvironment = false;
     bool isSimple = false;
-
 };

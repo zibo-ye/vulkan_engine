@@ -59,7 +59,6 @@ void Mesh::LoadMeshData()
         }
     }
 
-
     // vertices -> indexed vertices
     std::unordered_map<NewVertex, uint32_t> uniqueVertices;
     std::vector<NewVertex> uniqueVertexList;
@@ -112,6 +111,7 @@ MeshIndices::MeshIndices(const Utility::json::JsonValue& jsonObj)
 
 MeshAttributes::MeshAttributes(const Utility::json::JsonValue& jsonObj, const std::string& scenePath)
 {
+    // TODO: better way to handle path
     std::filesystem::path scenePathFS = scenePath;
     src = (scenePathFS.parent_path() / jsonObj["src"].getString()).string();
     offset = jsonObj["offset"].getInt();

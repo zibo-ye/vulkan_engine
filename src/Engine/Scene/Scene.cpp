@@ -1,12 +1,11 @@
 
 #include "Scene.hpp"
+#include "Camera.hpp"
 #include "CameraManager.hpp"
 #include "EngineCore.hpp"
-#include "Mesh.hpp"
-#include "Camera.hpp"
-#include "Material.hpp"
 #include "Environment.hpp"
-
+#include "Material.hpp"
+#include "Mesh.hpp"
 
 void Scene::Init(const Utility::json::JsonValue& jsonObj)
 {
@@ -43,15 +42,20 @@ void Scene::Init(const Utility::json::JsonValue& jsonObj)
                 roots.push_back(root.getInt());
             }
         } else if (val["type"].getString() == "MATERIAL") {
-			auto pMaterial = std::make_shared<Material>(shared_from_this(), i, val);
-			materials[i] = pMaterial;
-			sceneObjs[i] = pMaterial;
+            auto pMaterial = std::make_shared<Material>(shared_from_this(), i, val);
+            materials[i] = pMaterial;
+            sceneObjs[i] = pMaterial;
         } else if (val["type"].getString() == "ENVIRONMENT") {
-			environment = std::make_shared<Environment>(shared_from_this(), i, val);
-			sceneObjs[i] = environment;
+#if VERBOSE
+            if (environment) {
+                std::cerr << "Scene::Init: Multiple Environment Objects not supported" << std::endl;
+            }
+#endif
+            environment = std::make_shared<Environment>(shared_from_this(), i, val);
+            sceneObjs[i] = environment;
         } else {
-			throw std::runtime_error("Unknown Scene Object Type");
-		}
+            throw std::runtime_error("Unknown Scene Object Type");
+        }
     }
 }
 
@@ -91,10 +95,6 @@ void Scene::RegisterEventHandlers(EngineCore::IApp* pApp)
 
 void Scene::Cleanup() const
 {
-    for (auto& [_, pMesh] : meshes) {
-        if (pMesh->meshData)
-            pMesh->meshData->releaseModelFromGPU();
-    }
 }
 
 void Scene::Update(float deltaTime)

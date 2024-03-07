@@ -12,7 +12,7 @@ class Scene;
 class Material;
 class Environment;
 namespace EngineCore {
-	class IApp;
+class IApp;
 }
 
 class Node : public SceneObj {

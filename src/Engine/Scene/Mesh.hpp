@@ -37,11 +37,11 @@ enum class MeshAttributeType {
 };
 
 struct NewVertex {
-    vkm::vec3 position;     // POSITION: position stream
-    vkm::vec3 normal;       // NORMAL: vertex normal
-    vkm::vec4 tangent;      // TANGENT: tangent (xyz) + bitangent sign (w)
-    vkm::vec2 texCoord;     // TEXCOORD: texture coordinates
-    vkm::u8vec4 color; 	    // COLOR: vertex color
+    vkm::vec3 position; // POSITION: position stream
+    vkm::vec3 normal; // NORMAL: vertex normal
+    vkm::vec4 tangent; // TANGENT: tangent (xyz) + bitangent sign (w)
+    vkm::vec2 texCoord; // TEXCOORD: texture coordinates
+    vkm::u8vec4 color; // COLOR: vertex color
 
     bool operator==(const NewVertex& other) const
     {
@@ -125,8 +125,8 @@ struct NewVertex {
             return offsetof(NewVertex, color);
         else if (type == "TEXCOORD")
             return offsetof(NewVertex, texCoord);
-		else if (type == "TANGENT")
-			return offsetof(NewVertex, tangent);
+        else if (type == "TANGENT")
+            return offsetof(NewVertex, tangent);
         else
             return -1;
     }

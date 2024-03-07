@@ -64,6 +64,8 @@ public:
 private:
     EngineCore::IApp* m_pApp = nullptr;
 
+    void prepareDescriptorSet(uint32_t currentFrameInFlight, Scene& scene);
+
 public: // High level
     void createInstance();
     void setupDebugMessenger();
@@ -129,7 +131,6 @@ private:
 
     void createUniformBuffers();
 
-    void InitializeDescriptorSets();
     void recordCommandBuffer(VkCommandBuffer& commandBuffer, uint32_t imageIndex, Scene& scene);
 
     void updateUniformBuffer(uint32_t currentImage);

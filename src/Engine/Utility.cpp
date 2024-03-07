@@ -248,19 +248,19 @@ JsonValue JsonValue::parseValue(const std::string& json, size_t& pos)
 bool JsonValue::hasKey(const std::string& key) const
 {
     if (isObject()) {
-		return std::get<JsonObject>(*this).find(key) != std::get<JsonObject>(*this).end();
-	}
-	return false;
+        return std::get<JsonObject>(*this).find(key) != std::get<JsonObject>(*this).end();
+    }
+    return false;
 }
 
 std::optional<Utility::json::JsonValue> JsonValue::getOptionalValue(const std::string& key) const
 {
     if (isObject()) {
-		auto& obj = std::get<JsonObject>(*this);
-		auto iter = obj.find(key);
+        auto& obj = std::get<JsonObject>(*this);
+        auto iter = obj.find(key);
         if (iter != obj.end()) {
-			return iter->second;
-		}
-	}
-	return std::nullopt;
+            return iter->second;
+        }
+    }
+    return std::nullopt;
 }

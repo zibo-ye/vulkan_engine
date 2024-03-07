@@ -5,5 +5,5 @@ Environment::Environment(std::weak_ptr<Scene> pScene, size_t index, const Utilit
 {
     name = jsonObj["name"].getString();
 
-    radiance = Texture(jsonObj["radiance"]);
+    radiance = Texture(jsonObj["radiance"], pScene.lock()->src);
 }
