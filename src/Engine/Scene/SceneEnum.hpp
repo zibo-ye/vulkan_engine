@@ -32,9 +32,9 @@ VkFormat GetVkFormat(const std::string& typeStr);
 int GetVkFormatByteSize(VkFormat format);
 
 enum class EMaterialType {
-    PBR,
-    LAMBERTIAN,
-    MIRROR,
-    ENVIRONMENT,
-    SIMPLE,
+    PBR = 0,
+    LAMBERTIAN = 1,
+    MIRROR = 2,
+    ENVIRONMENT = 3,
+    SIMPLE = 4,
 };

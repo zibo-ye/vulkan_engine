@@ -39,9 +39,11 @@ const bool enableValidationLayers = false;
 const bool enableValidationLayers = true;
 #endif
 
-struct UniformBufferObject {
+struct CameraUBO {
     alignas(16) vkm::mat4 view;
     alignas(16) vkm::mat4 proj;
+    alignas(16) vkm::mat4 viewproj;
+    alignas(4) vkm::vec4 position;
 };
 
 struct FrameData {
@@ -51,6 +53,7 @@ struct FrameData {
     VkSemaphore renderFinishedSemaphore;
     VkFence swapchainImageFence;
     DeletionStack deletionStack;
+    Buffer uniformBuffer;
 
     void Destroy(const VkDevice& device);
 };
@@ -108,8 +111,6 @@ private:
 
     VkCommandPool commandPool;
 
-    std::vector<Buffer> uniformBuffers;
-
     VkDescriptorPool descriptorPool;
 
     Image depthImage;
@@ -127,9 +128,9 @@ private:
 
     void createDepthResources();
 
-    void createUniformBuffers();
-
     void recordCommandBuffer(VkCommandBuffer& commandBuffer, uint32_t imageIndex, Scene& scene);
+
+    void createUniformBuffers(Buffer& uniformBuffer);
 
     void updateUniformBuffer(uint32_t currentImage);
 

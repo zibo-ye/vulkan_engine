@@ -57,14 +57,17 @@ bool Texture::releaseTextureFromGPU()
 void Texture::createImage()
 {
     if (type == "2D") {
-        VkDeviceSize imageSize = texWidth * texHeight * 4;
-        textureImage.Init(m_pVulkanCore, VkExtent2D { (uint32_t)texWidth, (uint32_t)texHeight }, mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-        textureImage.InitImageView(VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+        VkDeviceSize imageSize = texWidth * texHeight * texChannels;
+        VkFormat format = VK_FORMAT_R8G8B8A8_SRGB; // TODO: channel = 1 & normal & roughness
+
+        textureImage.Init(m_pVulkanCore, VkExtent2D { (uint32_t)texWidth, (uint32_t)texHeight }, mipLevels, VK_SAMPLE_COUNT_1_BIT, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        textureImage.InitImageView(format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
         textureImage.UploadData(textureData.get(), imageSize);
-    } else if (type == "cube") { // TODO: support cube?
-        VkDeviceSize imageSize = texWidth * texHeight * 4 * 6;
-        textureImage.Init(m_pVulkanCore, VkExtent2D { (uint32_t)texWidth, (uint32_t)texHeight }, mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, true);
-        textureImage.InitImageView(VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, 1, VK_IMAGE_VIEW_TYPE_CUBE);
+    } else if (type == "cube") { // Cube map
+        VkDeviceSize imageSize = texWidth * texHeight * texChannels * 6;
+        VkFormat format = VK_FORMAT_R8G8B8A8_SRGB; // TODO: channel = 1 & normal & roughness
+        textureImage.Init(m_pVulkanCore, VkExtent2D { (uint32_t)texWidth, (uint32_t)texHeight }, mipLevels, VK_SAMPLE_COUNT_1_BIT, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, true);
+        textureImage.InitImageView(format, VK_IMAGE_ASPECT_COLOR_BIT, 1, VK_IMAGE_VIEW_TYPE_CUBE);
         textureImage.UploadData(textureData.get(), imageSize);
     } else {
         throw std::runtime_error("Unsupported texture type");

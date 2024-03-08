@@ -18,6 +18,7 @@ public:
     virtual void update(float deltaTime) = 0;
     virtual vkm::mat4 getViewMatrix() const = 0;
     virtual vkm::mat4 getProjectionMatrix() const = 0;
+    virtual vkm::vec3 getPosition() const = 0;
     virtual bool FrustumCulling(std::shared_ptr<Mesh> pMesh, vkm::mat4& worldTransform);
 };
 
@@ -61,6 +62,7 @@ public:
     {
         return perspective.getProjectionMatrix();
     }
+    vkm::vec3 getPosition() const override;
 
     // Existing properties and methods from your original Camera class
     std::string name;
@@ -104,4 +106,6 @@ public:
     // vkm::vec3 fromPos = vkm::vec3(4.0f, 4.0f, 4.0f);
     vkm::vec3 lookAtPos = vkm::vec3(0.0f, 0.0f, 0.0f);
     Perspective perspective;
+
+    vkm::vec3 getPosition() const override;
 };

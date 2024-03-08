@@ -169,7 +169,9 @@ public:
 
 private:
     void UpdateBounds(const NewVertex& vertex);
-    bool isUsingSimpleMaterial() const;
+
+public:
+    EMaterialType GetMaterialType() const;
 };
 
 inline static VkPipelineVertexInputStateCreateInfo getVertexInputInfo()

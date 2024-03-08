@@ -97,9 +97,12 @@ void Mesh::UpdateBounds(const NewVertex& vertex)
         max.z() = vertex.position.z();
 }
 
-bool Mesh::isUsingSimpleMaterial() const
+EMaterialType Mesh::GetMaterialType() const
 {
-    return !materialIdx.has_value() || pScene.lock()->materials[*materialIdx]->isSimple;
+    if (materialIdx.has_value()) {
+        return pScene.lock()->materials[materialIdx.value()]->type;
+    }
+    return EMaterialType::SIMPLE;
 }
 
 MeshIndices::MeshIndices(const Utility::json::JsonValue& jsonObj)

@@ -43,6 +43,15 @@ struct vec_base {
     {
     }
 
+    template <std::size_t L2>
+    vec_base(const vec_base<L2, T>& other)
+    {
+        *this = vec_base();
+        for (std::size_t i = 0; i < L && i < L2; ++i) {
+            this->data[i] = other[i];
+        }
+    }
+
     T& operator[](std::size_t index)
     {
         return data[index];

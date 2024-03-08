@@ -25,6 +25,11 @@ void UserCamera::UpdateCameraParameters(UserCameraUpdateParameters params)
     }
 }
 
+vkm::vec3 UserCamera::getPosition() const
+{
+    return fromPos;
+}
+
 vkm::mat4 SceneCamera::getViewMatrix() const
 {
     vkm::mat4 InvViewMatrix;
@@ -54,6 +59,12 @@ vkm::mat4 SceneCamera::getViewMatrix() const
     }
 
     return vkm::inverse(InvViewMatrix);
+}
+
+vkm::vec3 SceneCamera::getPosition() const
+{
+    vkm::mat4 viewMatrix = getViewMatrix();
+    return vkm::vec3(viewMatrix[3]);
 }
 
 bool ICamera::FrustumCulling(std::shared_ptr<Mesh> pMesh, vkm::mat4& worldTransform)

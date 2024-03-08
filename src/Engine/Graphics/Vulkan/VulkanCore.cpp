@@ -48,7 +48,6 @@ void VulkanCore::Init(EngineCore::IApp* pApp)
     createDescriptorSetLayout();
     createGraphicsPipeline();
 
-    createUniformBuffers();
     createDescriptorPool();
     createFrameData();
 }
@@ -84,10 +83,6 @@ void VulkanCore::Shutdown()
 
     vkDestroyPipeline(device, graphicsPipeline, nullptr);
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        uniformBuffers[i].Destroy();
-    }
 
     vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 
@@ -417,7 +412,7 @@ void VulkanCore::createDescriptorSetLayout()
         .binding = 0,
         .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
         .descriptorCount = 1,
-        .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+        .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
         .pImmutableSamplers = nullptr,
     };
 
@@ -544,7 +539,7 @@ void VulkanCore::createGraphicsPipeline()
     };
 
     VkPushConstantRange push_constant {
-        .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+        .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
         .offset = 0,
         .size = sizeof(SPushConstant),
     };
@@ -632,17 +627,6 @@ VkFormat VulkanCore::findDepthFormat()
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
-void VulkanCore::createUniformBuffers()
-{
-    VkDeviceSize bufferSize = sizeof(UniformBufferObject);
-
-    uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        uniformBuffers[i].Init(this, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true);
-    }
-}
-
 void VulkanCore::createDescriptorPool()
 {
     std::array<VkDescriptorPoolSize, 2> poolSizes {
@@ -676,7 +660,14 @@ void VulkanCore::createFrameData()
         createCommandBuffer(device, commandPool, frames[i].commandBuffer);
         createDescriptorSet(device, descriptorSetLayout, descriptorPool, frames[i].descriptorSet);
         createFrameSyncObjects(frames[i].imageAvailableSemaphore, frames[i].renderFinishedSemaphore, frames[i].swapchainImageFence);
+        createUniformBuffers(frames[i].uniformBuffer);
     }
+}
+
+void VulkanCore::createUniformBuffers(Buffer& uniformBuffer)
+{
+    VkDeviceSize bufferSize = sizeof(CameraUBO);
+    uniformBuffer.Init(this, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true);
 }
 
 void VulkanCore::createFrameSyncObjects(VkSemaphore& imageAvailableSemaphore, VkSemaphore& renderFinishedSemaphore, VkFence& swapchainImageFence)
@@ -871,8 +862,10 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer& commandBuffer, uint32_t im
             .matNormal = vkm::transpose(vkm::inverse(MeshInst.matWorld))
         };
 
+        pushConstant.matNormal[3][3] = static_cast<float>(MeshInst.pMesh->GetMaterialType()); // A temp hack to pass material type to shader
+
         // upload the matrix to the GPU via push constants
-        vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(SPushConstant), &pushConstant);
+        vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SPushConstant), &pushConstant);
 
         if (meshData->indices.has_value()) // Has indices
         {
@@ -909,22 +902,24 @@ void VulkanCore::updateUniformBuffer(uint32_t currentImage)
         camera = CameraManager::GetInstance().GetDebugCamera();
 #endif
 
-    UniformBufferObject ubo {
+    vkm::vec3 cameraPos = camera->getPosition();
+    CameraUBO ubo {
         .view = camera->getViewMatrix(),
         .proj = camera->getProjectionMatrix(),
+        .viewproj = camera->getProjectionMatrix() * camera->getViewMatrix(),
+        .position = vkm::vec4(cameraPos.r(), cameraPos.g(), cameraPos.b(), 1.0f),
     };
-    // ubo.proj[1][1] *= -1;
 
-    assert(uniformBuffers[currentImage].m_pMappedData);
-    memcpy(*uniformBuffers[currentImage].m_pMappedData, &ubo, sizeof(ubo));
+    assert(frames[currentFrameInFlight].uniformBuffer.m_pMappedData);
+    memcpy(*frames[currentFrameInFlight].uniformBuffer.m_pMappedData, &ubo, sizeof(ubo));
 }
 
 void VulkanCore::updateDescriptorSet(uint32_t currentFrameInFlight, Scene& scene)
 {
     VkDescriptorBufferInfo bufferInfo {
-        .buffer = uniformBuffers[currentFrameInFlight].buffer,
+        .buffer = frames[currentFrameInFlight].uniformBuffer.buffer,
         .offset = 0,
-        .range = sizeof(UniformBufferObject),
+        .range = sizeof(CameraUBO),
     };
 
     scene.environment->radiance.uploadTextureToGPU(this);
@@ -1229,8 +1224,12 @@ uint32_t VulkanCore::AcquireNextImageIndex()
 
 void FrameData::Destroy(const VkDevice& device)
 {
-    // #TODO: commandBuffer & descriptorSet need to destroy?
+    // No need to destroy commandBuffer & descriptorSet because they are destroyed when the command pool and descriptor pool are destroyed
+    // vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+    // vkFreeDescriptorSets(device, descriptorPool, 1, &descriptorSet);
+
     vkDestroySemaphore(device, imageAvailableSemaphore, nullptr);
     vkDestroySemaphore(device, renderFinishedSemaphore, nullptr);
     vkDestroyFence(device, swapchainImageFence, nullptr);
+    uniformBuffer.Destroy();
 }

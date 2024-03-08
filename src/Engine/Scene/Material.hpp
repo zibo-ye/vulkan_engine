@@ -13,6 +13,8 @@ public:
     std::optional<Texture> normalMap;
     std::optional<Texture> displacementMap;
 
+    EMaterialType type = EMaterialType::SIMPLE;
+
     // PBR properties
     struct PBR {
         vkm::vec3 albedo = { 1.0f, 1.0f, 1.0f };
@@ -26,13 +28,8 @@ public:
 
     // Lambertian properties
     struct Lambertian {
-        vkm::vec3 baseColor = { 1.0f, 1.0f, 1.0f };
-        std::optional<Texture> baseColorMap;
+        vkm::vec3 albedo = { 1.0f, 1.0f, 1.0f };
+        std::optional<Texture> albedoMap;
     };
     std::optional<Lambertian> lambertian;
-
-    // Other material types
-    bool isMirror = false;
-    bool isEnvironment = false;
-    bool isSimple = false;
 };
