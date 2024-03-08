@@ -64,8 +64,6 @@ public:
 private:
     EngineCore::IApp* m_pApp = nullptr;
 
-    void prepareDescriptorSet(uint32_t currentFrameInFlight, Scene& scene);
-
 public: // High level
     void createInstance();
     void setupDebugMessenger();
@@ -135,7 +133,14 @@ private:
 
     void updateUniformBuffer(uint32_t currentImage);
 
+    void updateDescriptorSet(uint32_t currentFrameInFlight, Scene& scene);
+
 public: // Helper
+    struct SPushConstant {
+        vkm::mat4 matWorld;
+        vkm::mat4 matNormal;
+    };
+
     VkFormat findDepthFormat();
     VkCommandBuffer beginSingleTimeCommands() const;
     void endSingleTimeCommands(VkCommandBuffer commandBuffer) const;

@@ -2,22 +2,23 @@
 #include "Buffer.hpp"
 #include "VulkanCore.hpp"
 
-bool Image::Init(VulkanCore* pVulkanCore, ExtentVariant extent, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImageLayout initialLayout /* = VK_IMAGE_LAYOUT_UNDEFINED */)
+bool Image::Init(VulkanCore* pVulkanCore, ExtentVariant extent, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, bool isCube /*= false*/)
 {
     if (!pVulkanCore)
         return false;
     m_pVulkanCore = pVulkanCore;
+    m_isCube = isCube;
     VkImageCreateInfo imageInfo {
         .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-        .flags = 0,
+        .flags = isCube ? static_cast<VkImageCreateFlags>(VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT) : 0,
         .format = format,
         .mipLevels = mipLevels,
-        .arrayLayers = 1,
+        .arrayLayers = isCube ? 6u : 1u,
         .samples = numSamples,
         .tiling = tiling,
         .usage = usage,
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-        .initialLayout = initialLayout,
+        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
     };
 
     // Determine the type of extent and set imageInfo fields accordingly
@@ -52,8 +53,13 @@ bool Image::Init(VulkanCore* pVulkanCore, ExtentVariant extent, uint32_t mipLeve
     VK(vkBindImageMemory(m_pVulkanCore->GetDevice(), image, imageMemory, 0));
 
     m_isValid = true;
-    m_currentLayout = initialLayout;
+    m_currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+    // #TODO: ImageView
+
+    // Sampler
     createTextureSampler();
+
     // #MAYBE: m_pVulkanCore->AddResizeHandler(), m_pVulkanCore->AddShutdownHandler()
     return true;
 }
@@ -69,24 +75,26 @@ void Image::Destroy()
     m_currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 }
 
-void Image::InitImageView(VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels)
+void Image::InitImageView(VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels, VkImageViewType viewType /*= VK_IMAGE_VIEW_TYPE_2D*/)
 {
     assert(m_isValid);
     VkImageViewCreateInfo viewInfo {
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .image = image,
-        .viewType = VK_IMAGE_VIEW_TYPE_2D,
+        .viewType = viewType,
         .format = format,
         .subresourceRange {
             .aspectMask = aspectFlags,
             .baseMipLevel = 0,
             .levelCount = mipLevels,
             .baseArrayLayer = 0,
-            .layerCount = 1,
+            .layerCount = viewType == VK_IMAGE_VIEW_TYPE_CUBE ? 6u : 1u,
         },
     };
 
     VK(vkCreateImageView(m_pVulkanCore->GetDevice(), &viewInfo, nullptr, &imageView));
+
+    m_imageViewInfo = std::move(viewInfo);
 }
 
 void Image::createTextureSampler()
@@ -170,13 +178,7 @@ void Image::TransitionLayout(std::optional<VkCommandBuffer> commandBuffer, VkIma
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .image = image,
-        .subresourceRange {
-            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-            .baseMipLevel = 0,
-            .levelCount = m_imageInfo.mipLevels,
-            .baseArrayLayer = 0,
-            .layerCount = 1,
-        },
+        .subresourceRange = m_imageViewInfo.subresourceRange // Here I assume one image view per image. Can be extended to support multiple image views per image.
     };
 
     if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
@@ -229,10 +231,10 @@ void Image::CopyToBuffer(Buffer& buffer)
         .bufferImageHeight = 0,
 
         .imageSubresource {
-            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-            .mipLevel = 0, // TODO: support mipmaps
-            .baseArrayLayer = 0,
-            .layerCount = 1,
+            .aspectMask = m_imageViewInfo.subresourceRange.aspectMask,
+            .mipLevel = m_imageViewInfo.subresourceRange.baseMipLevel,
+            .baseArrayLayer = m_imageViewInfo.subresourceRange.baseArrayLayer,
+            .layerCount = m_imageViewInfo.subresourceRange.layerCount,
         },
 
         .imageOffset = { 0, 0, 0 },
@@ -310,12 +312,7 @@ void Image::GenerateMipmaps(std::optional<VkCommandBuffer> commandBuffer, uint32
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .image = image,
-        .subresourceRange = {
-            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-            .levelCount = 1,
-            .baseArrayLayer = 0,
-            .layerCount = 1,
-        }
+        .subresourceRange = m_imageViewInfo.subresourceRange,
     };
 
     int32_t mipWidth = m_imageInfo.extent.width;
@@ -337,17 +334,17 @@ void Image::GenerateMipmaps(std::optional<VkCommandBuffer> commandBuffer, uint32
             1, &barrier);
         VkImageBlit blit {
             .srcSubresource = {
-                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .aspectMask = m_imageViewInfo.subresourceRange.aspectMask,
                 .mipLevel = i - 1,
-                .baseArrayLayer = 0,
-                .layerCount = 1,
+                .baseArrayLayer = m_imageViewInfo.subresourceRange.baseArrayLayer,
+                .layerCount = m_imageViewInfo.subresourceRange.layerCount,
             },
             .srcOffsets = { VkOffset3D { 0, 0, 0 }, { mipWidth, mipHeight, mipDepth } },
             .dstSubresource = {
-                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .aspectMask = m_imageViewInfo.subresourceRange.aspectMask,
                 .mipLevel = i,
-                .baseArrayLayer = 0,
-                .layerCount = 1,
+                .baseArrayLayer = m_imageViewInfo.subresourceRange.baseArrayLayer,
+                .layerCount = m_imageViewInfo.subresourceRange.layerCount,
             },
             .dstOffsets = { VkOffset3D { 0, 0, 0 }, { mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, mipDepth > 1 ? mipDepth / 2 : 1 } },
         };

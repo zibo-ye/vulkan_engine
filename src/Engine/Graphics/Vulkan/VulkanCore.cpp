@@ -124,41 +124,6 @@ void VulkanCore::recreateSwapChain()
     createDepthResources();
 }
 
-void VulkanCore::prepareDescriptorSet(uint32_t currentFrameInFlight, Scene& scene)
-{
-    VkDescriptorBufferInfo bufferInfo {
-        .buffer = uniformBuffers[currentFrameInFlight].buffer,
-        .offset = 0,
-        .range = sizeof(UniformBufferObject),
-    };
-
-    scene.environment->radiance.uploadTextureToGPU(this);
-    VkDescriptorImageInfo imageInfo = scene.environment->radiance.textureImage.GetDescriptorImageInfo();
-
-    std::array<VkWriteDescriptorSet, 2> descriptorWrites {
-        VkWriteDescriptorSet {
-            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dstSet = frames[currentFrameInFlight].descriptorSet,
-            .dstBinding = 0,
-            .dstArrayElement = 0,
-            .descriptorCount = 1,
-            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .pBufferInfo = &bufferInfo,
-        },
-        {
-            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dstSet = frames[currentFrameInFlight].descriptorSet,
-            .dstBinding = 1,
-            .dstArrayElement = 0,
-            .descriptorCount = 1,
-            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .pImageInfo = &imageInfo,
-        }
-    };
-
-    vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-}
-
 void VulkanCore::createInstance()
 {
     if (enableValidationLayers && !checkValidationLayerSupport()) {
@@ -581,7 +546,7 @@ void VulkanCore::createGraphicsPipeline()
     VkPushConstantRange push_constant {
         .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
         .offset = 0,
-        .size = sizeof(vkm::mat4),
+        .size = sizeof(SPushConstant),
     };
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo {
@@ -901,10 +866,13 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer& commandBuffer, uint32_t im
         VkDeviceSize offsets[] = { 0 };
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-        vkm::mat4 matWorld = MeshInst.matWorld;
+        SPushConstant pushConstant = {
+            .matWorld = MeshInst.matWorld,
+            .matNormal = vkm::transpose(vkm::inverse(MeshInst.matWorld))
+        };
 
         // upload the matrix to the GPU via push constants
-        vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vkm::mat4), &matWorld);
+        vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(SPushConstant), &pushConstant);
 
         if (meshData->indices.has_value()) // Has indices
         {
@@ -951,6 +919,41 @@ void VulkanCore::updateUniformBuffer(uint32_t currentImage)
     memcpy(*uniformBuffers[currentImage].m_pMappedData, &ubo, sizeof(ubo));
 }
 
+void VulkanCore::updateDescriptorSet(uint32_t currentFrameInFlight, Scene& scene)
+{
+    VkDescriptorBufferInfo bufferInfo {
+        .buffer = uniformBuffers[currentFrameInFlight].buffer,
+        .offset = 0,
+        .range = sizeof(UniformBufferObject),
+    };
+
+    scene.environment->radiance.uploadTextureToGPU(this);
+    VkDescriptorImageInfo imageInfo = scene.environment->radiance.textureImage.GetDescriptorImageInfo();
+
+    std::array<VkWriteDescriptorSet, 2> descriptorWrites {
+        VkWriteDescriptorSet {
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = frames[currentFrameInFlight].descriptorSet,
+            .dstBinding = 0,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .pBufferInfo = &bufferInfo,
+        },
+        {
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = frames[currentFrameInFlight].descriptorSet,
+            .dstBinding = 1,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .pImageInfo = &imageInfo,
+        }
+    };
+
+    vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+}
+
 void VulkanCore::drawFrame(Scene& scene)
 {
     bool isHeadless = IsHeadless();
@@ -981,7 +984,7 @@ void VulkanCore::drawFrame(Scene& scene)
         }
     }
 
-    prepareDescriptorSet(currentFrameInFlight, scene);
+    updateDescriptorSet(currentFrameInFlight, scene);
 
     updateUniformBuffer(currentFrameInFlight);
     vkResetCommandBuffer(frames[currentFrameInFlight].commandBuffer, /*VkCommandBufferResetFlagBits*/ 0);

@@ -4,8 +4,8 @@
 #include <cassert>
 #include <cmath>
 #include <cstdlib>
-#include <limits>
 #include <functional> // For std::hash
+#include <limits>
 
 namespace vkm {
 using std::size_t;
@@ -632,6 +632,18 @@ mat<C, R, T> operator/(const mat<C, R, T>& matrix, const T& scalar)
     return result;
 }
 
+template <std::size_t C, std::size_t R, typename T>
+mat<R, C, T> transpose(const mat<C, R, T>& matrix)
+{
+    mat<R, C, T> result;
+    for (std::size_t col = 0; col < C; ++col) {
+        for (std::size_t row = 0; row < R; ++row) {
+            result[row][col] = matrix[col][row];
+        }
+    }
+    return result;
+}
+
 typedef mat<4, 4, float> mat4;
 typedef mat<3, 3, float> mat3;
 
@@ -657,15 +669,16 @@ mat4 inverse(const mat4& m);
 } // namespace vkm
 
 namespace std {
-    template <std::size_t L, typename T>
-    struct hash<vkm::vec<L, T>> {
-        size_t operator()(const vkm::vec<L, T>& v) const noexcept {
-            size_t hash = 0;
-            for (size_t i = 0; i < L; ++i) {
-                // Combine the hash of the current element with the existing hash
-                hash ^= std::hash<T>{}(v.data[i]) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
-            }
-            return hash;
+template <std::size_t L, typename T>
+struct hash<vkm::vec<L, T>> {
+    size_t operator()(const vkm::vec<L, T>& v) const noexcept
+    {
+        size_t hash = 0;
+        for (size_t i = 0; i < L; ++i) {
+            // Combine the hash of the current element with the existing hash
+            hash ^= std::hash<T> {}(v.data[i]) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
         }
-    };
+        return hash;
+    }
+};
 } // namespace std

@@ -11,20 +11,23 @@ layout(location = 2) in vec4 inTangent;
 layout(location = 3) in vec2 inTexCoord;
 layout(location = 4) in vec4 inColor;
 
-layout(location = 0) out vec3 fragPosition;
-layout(location = 1) out vec3 fragNormal;
-layout(location = 2) out vec4 fragColor;
-layout(location = 3) out vec2 fragTexCoord;
+struct FragData {
+    vec3 position;
+    vec3 normal;
+    vec4 color;
+    vec2 texCoord;
+};
+layout(location = 0) out FragData fragData;
 
-layout( push_constant ) uniform constants
-{
-	mat4 model;
-} PushConstants;
+layout(push_constant) uniform PushConstants {
+    mat4 matWorld;
+    mat4 matNormal; //transpose(inv(matWorld))
+} pushConstants;
 
 void main() {
-    fragPosition = vec3(PushConstants.model * vec4(inPosition, 1.0)); // Transform position by light matrix
-    fragNormal = mat3(PushConstants.model) * inNormal; // Transform normal by light matrix (3x3 part)
-    fragColor = inColor; // Pass color directly
-    fragTexCoord = inTexCoord;
-    gl_Position = ubo.proj * ubo.view * PushConstants.model * vec4(inPosition,  1.0);
+    fragData.position = vec3(pushConstants.matWorld * vec4(inPosition, 1.0)); // Transform position by light matrix
+    fragData.normal = mat3(pushConstants.matNormal) * inNormal; 
+    fragData.color = inColor; // Pass color directly
+    fragData.texCoord = inTexCoord;
+    gl_Position = ubo.proj * ubo.view * pushConstants.matWorld * vec4(inPosition,  1.0);
 }

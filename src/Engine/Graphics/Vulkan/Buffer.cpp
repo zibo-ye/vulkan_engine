@@ -104,10 +104,10 @@ void Buffer::CopyToImage(Image& image)
         .bufferImageHeight = 0,
 
         .imageSubresource {
-            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-            .mipLevel = 0, // TODO: support mipmaps
-            .baseArrayLayer = 0,
-            .layerCount = 1,
+            .aspectMask = image.m_imageViewInfo.subresourceRange.aspectMask,
+            .mipLevel = image.m_imageViewInfo.subresourceRange.baseMipLevel,
+            .baseArrayLayer = image.m_imageViewInfo.subresourceRange.baseArrayLayer,
+            .layerCount = image.m_imageViewInfo.subresourceRange.layerCount,
         },
 
         .imageOffset = { 0, 0, 0 },

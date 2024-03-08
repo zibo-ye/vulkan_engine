@@ -9,10 +9,10 @@ using ExtentVariant = std::variant<uint32_t, VkExtent2D, VkExtent3D>;
 
 class Image {
 public:
-    bool Init(VulkanCore* pVulkanCore, ExtentVariant extent, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED);
+    bool Init(VulkanCore* pVulkanCore, ExtentVariant extent, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, bool isCube = false);
     void Destroy();
 
-    void InitImageView(VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
+    void InitImageView(VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels, VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_2D);
     void createTextureSampler();
     void TransitionLayout(std::optional<VkCommandBuffer> commandBuffer, VkImageLayout newLayout);
     ExtentVariant GetImageExtent();
@@ -44,7 +44,9 @@ public:
     VkDeviceMemory imageMemory;
     VkSampler sampler;
     VkImageCreateInfo m_imageInfo;
+    VkImageViewCreateInfo m_imageViewInfo;
     VkImageLayout m_currentLayout;
 
     VulkanCore* m_pVulkanCore;
+    bool m_isCube = false;
 };
