@@ -17,19 +17,15 @@ public:
 
     // PBR properties
     struct PBR {
-        vkm::vec3 albedo = { 1.0f, 1.0f, 1.0f };
-        float roughness = 1.0f;
-        float metalness = 0.0f;
-        std::optional<Texture> albedoMap;
-        std::optional<Texture> roughnessMap;
-        std::optional<Texture> metalnessMap;
+        Texture albedoMap = Texture(vkm::vec3(1.0f, 1.0f, 1.0f));
+        Texture roughnessMap = Texture(1.0f);
+        Texture metalnessMap = Texture(0.0f);
     };
     std::optional<PBR> pbr;
 
     // Lambertian properties
     struct Lambertian {
-        vkm::vec3 albedo = { 1.0f, 1.0f, 1.0f };
-        std::optional<Texture> albedoMap;
+        Texture albedoMap = Texture(vkm::vec3(1.0f, 1.0f, 1.0f));
     };
     std::optional<Lambertian> lambertian;
 };

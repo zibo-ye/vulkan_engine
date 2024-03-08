@@ -23,7 +23,7 @@ Material::Material(std::weak_ptr<Scene> pScene, size_t index, const Utility::jso
             auto albedo = jsonObj["pbr"]["albedo"];
             if (albedo.isArray()) {
                 auto vec = albedo.getVecFloat();
-                pbr->albedo = vkm::vec3(vec[0], vec[1], vec[2]); // #TODO: generate a texture from pure color
+                pbr->albedoMap = Texture(vkm::vec3(vec[0], vec[1], vec[2]));
             } else {
                 pbr->albedoMap = Texture(albedo, pScene.lock()->src);
             }
@@ -32,7 +32,7 @@ Material::Material(std::weak_ptr<Scene> pScene, size_t index, const Utility::jso
         if (jsonObj["pbr"].hasKey("roughness")) {
             auto roughness = jsonObj["pbr"]["roughness"];
             if (roughness.isFloat()) {
-                pbr->roughness = roughness.getFloat();
+                pbr->roughnessMap = Texture(roughness.getFloat());
             } else {
                 pbr->roughnessMap = Texture(roughness, pScene.lock()->src);
             }
@@ -41,7 +41,7 @@ Material::Material(std::weak_ptr<Scene> pScene, size_t index, const Utility::jso
         if (jsonObj["pbr"].hasKey("metalness")) {
             auto metalness = jsonObj["pbr"]["metalness"];
             if (metalness.isFloat()) {
-                pbr->metalness = metalness.getFloat();
+                pbr->metalnessMap = Texture(metalness.getFloat());
             } else {
                 pbr->metalnessMap = Texture(metalness, pScene.lock()->src);
             }
@@ -54,7 +54,7 @@ Material::Material(std::weak_ptr<Scene> pScene, size_t index, const Utility::jso
             auto albedo = jsonObj["lambertian"]["albedo"];
             if (albedo.isArray()) {
                 auto vec = albedo.getVecFloat();
-                lambertian->albedo = vkm::vec3(vec[0], vec[1], vec[2]); // #TODO: generate a texture from pure color
+                lambertian->albedoMap = Texture(vkm::vec3(vec[0], vec[1], vec[2]));
             } else {
                 lambertian->albedoMap = Texture(albedo, pScene.lock()->src);
             }

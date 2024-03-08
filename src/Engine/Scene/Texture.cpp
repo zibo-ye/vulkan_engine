@@ -9,6 +9,30 @@ Texture::Texture(const Utility::json::JsonValue& jsonObj, const std::string& sce
     LoadTextureData();
 }
 
+Texture::Texture(const vkm::vec3& vec3Value)
+{
+    src = "";
+    type = "2D";
+    format = "linear";
+    texWidth = 1;
+    texHeight = 1;
+    texChannels = 3;
+    mipLevels = 1;
+    textureData = std::shared_ptr<stbi_uc>(new stbi_uc[3] { (stbi_uc)(vec3Value.x() * 255), (stbi_uc)(vec3Value.y() * 255), (stbi_uc)(vec3Value.z() * 255) }, stbi_image_free);
+}
+
+Texture::Texture(const float& floatValue)
+{
+    src = "";
+    type = "2D";
+    format = "linear";
+    texWidth = 1;
+    texHeight = 1;
+    texChannels = 1;
+    mipLevels = 1;
+    textureData = std::shared_ptr<stbi_uc>(new stbi_uc[1] { (stbi_uc)(floatValue * 255) }, stbi_image_free);
+}
+
 void Texture::LoadTextureData()
 {
     stbi_uc* pixels = stbi_load(src.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);

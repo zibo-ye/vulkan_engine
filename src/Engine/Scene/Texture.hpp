@@ -12,6 +12,8 @@ public:
     std::string format;
     Texture() = default;
     Texture(const Utility::json::JsonValue& jsonObj, const std::string& scenePath);
+    Texture(const vkm::vec3& vec3Value);
+    Texture(const float& floatValue);
 
     // Texture data from src
 public:

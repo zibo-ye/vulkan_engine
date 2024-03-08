@@ -13,7 +13,7 @@ layout (set = 1, binding = 0) uniform sampler2D ALBEDO;
 layout (set = 1, binding = 1) uniform sampler2D ROUGHNESS;
 layout (set = 1, binding = 2) uniform sampler2D METALNESS;
 layout (set = 1, binding = 3) uniform sampler2D NORMAL;
-layout (set = 1, binding = 4) uniform sampler2D DISPLACEMENT;
+// layout (set = 1, binding = 4) uniform sampler2D DISPLACEMENT;
 
 // uniform samplerCube LAMBERTIAN;
 // uniform samplerCube GGX;
@@ -39,21 +39,34 @@ layout(push_constant) uniform PushConstants {
 
 // layout(constant_id = 0) const int materialType = 4; // use a specialized constant to pass the material type so the uber shader won't be too big.
 
+vec3 sampleEnvMap(vec3 R) {
+    vec4 result = texture(cubeMapTexture, R); //RGBE
+    if (result == vec4(0.0, 0.0, 0.0, 0.0)) {
+        return vec3(0.0);
+    }
+    int exp = int(result.a * 255.0) - 128;
+    return vec3(
+        ldexp((result.r * 255.0 + 0.5) / 256.0, exp),
+        ldexp((result.g * 255.0 + 0.5) / 256.0, exp),
+        ldexp((result.b * 255.0 + 0.5) / 256.0, exp)
+    );
+}
+
 vec4 PBRMaterial()
 {
-    return texture(cubeMapTexture, fragData.normal);
+    return vec4(sampleEnvMap(fragData.normal),1);
 }
 
 vec4 LambertianMaterial()
 {
-    return texture(cubeMapTexture, fragData.normal);
+    return vec4(sampleEnvMap(fragData.normal),1);
 }
 
 vec4 MirrorMaterial()
 {
     vec3 inDir = normalize(fragData.position - ubo_cam.position.xyz);
     vec3 reflectDir = reflect(inDir, normalize(fragData.normal));
-    return texture(cubeMapTexture, reflectDir);
+    return vec4(sampleEnvMap(reflectDir),1);
 }
 
 vec4 SimpleMaterial()
@@ -65,7 +78,7 @@ vec4 SimpleMaterial()
 
 vec4 EnvironmentMaterial()
 {
-    return texture(cubeMapTexture, fragData.normal);
+    return vec4(sampleEnvMap(fragData.normal),1);
 }
 
 // input and output are all in srgb linear space
