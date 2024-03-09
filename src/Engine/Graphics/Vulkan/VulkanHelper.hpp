@@ -92,6 +92,9 @@ VkPhysicalDeviceMemoryProperties getAllMemoryProperties(VkPhysicalDevice device)
 VkFormat findSupportedFormat(VkPhysicalDevice device, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 bool hasStencilComponent(VkFormat format);
 
+std::vector<char> readShaderFile(const std::filesystem::path& filename);
+
+
 void printAllPhysicalDevices();
 void printAllAvailableInstanceExtensions();
 void printAllAvailableLayers();

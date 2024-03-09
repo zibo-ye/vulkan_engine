@@ -27,7 +27,27 @@ private:
 private:
     bool isOnGPU = false;
     VulkanCore* m_pVulkanCore = nullptr;
+
+public:
+    void draw(VkCommandBuffer commandBuffer);
 };
+
+template <typename VertexType, typename IndexType /*= uint32_t*/>
+void MeshData<VertexType, IndexType>::draw(VkCommandBuffer commandBuffer)
+{
+    if (!isOnGPU)
+        throw std::runtime_error("MeshData is not on GPU. Call uploadModelToGPU() before drawing.");
+
+    VkDeviceSize offsets[] = { 0 };
+    vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer.buffer, offsets);
+
+    if (indexBuffer.has_value()) {
+        vkCmdBindIndexBuffer(commandBuffer, indexBuffer.value().buffer, 0, sizeof(IndexType) == 2 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32);
+        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.value().size()), 1, 0, 0, 0);
+    } else {
+        vkCmdDraw(commandBuffer, static_cast<uint32_t>(vertices.size()), 1, 0, 0);
+    }
+}
 
 template <typename VertexType, typename IndexType /*= uint32_t*/>
 void MeshData<VertexType, IndexType>::createIndexBuffer()

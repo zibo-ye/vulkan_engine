@@ -9,6 +9,8 @@ layout(set = 0, binding = 0) uniform CameraData {
 
 layout (set = 0, binding = 1) uniform samplerCube ENV_RADIANCE;
 layout (set = 0, binding = 2) uniform samplerCube LAMBERTIAN;
+layout (set = 0, binding = 3) uniform samplerCube irradiance;
+layout (set = 0, binding = 4) uniform samplerCube prefilteredMap;
 
 layout (set = 1, binding = 0) uniform sampler2D ALBEDO;
 layout (set = 1, binding = 1) uniform sampler2D ROUGHNESS;
@@ -50,6 +52,31 @@ vec3 rgbe_to_float(vec4 rgbe) {
     );
 }
 
+vec4 float_to_rgbe(vec3 color) {
+    float d = max(color.r, max(color.g, color.b));
+
+    if (d <= 1e-32) {
+        return vec4(0, 0, 0, 0); // Early return for very small d
+    }
+
+    int e;
+    float m = frexp(d, e); // Extract mantissa and exponent
+    float fac = 255.999 * (m / d);
+
+    if (e > 127) {
+        return vec4(0xff, 0xff, 0xff, 0xff); // Clamp to bright white for large e
+    }
+
+    // Scale and store
+    return vec4(
+        max(0, int(color.r * fac))/255.0,
+        max(0, int(color.g * fac))/255.0,
+        max(0, int(color.b * fac))/255.0,
+        (e + 128)/255.0 // Add bias to exponent
+    );
+}
+
+
 // PBR Material is based on the implementation: https://github.com/SaschaWillems/Vulkan-glTF-PBR
 const float M_PI = 3.141592653589793;
 const float c_MinRoughness = 0.04;
@@ -75,18 +102,19 @@ struct PBRInfo
 // See our README.md on Environment Maps [3] for additional discussion.
 vec3 getIBLContribution(PBRInfo pbrInputs, vec3 n, vec3 reflection)
 {
-	float lod = (pbrInputs.perceptualRoughness * 1); //TODO: prefilteredCubeMipLevels
+	// float lod = (pbrInputs.perceptualRoughness * prefilteredCubeMipLevels); //TODO: prefilteredCubeMipLevels
+	float lod = (pbrInputs.perceptualRoughness * 1);
 	// retrieve a scale and bias to F0. See [1], Figure 3
 	// vec3 brdf = (texture(samplerBRDFLUT, vec2(pbrInputs.NdotV, 1.0 - pbrInputs.perceptualRoughness))).rgb; //TODO: samplerBRDFLUT
-	vec3 diffuseLight = rgbe_to_float(texture(ENV_RADIANCE, n));
+	vec3 diffuseLight = rgbe_to_float(texture(irradiance, n));
 
-	// vec3 specularLight = SRGBtoLINEAR(tonemap(textureLod(prefilteredMap, reflection, lod))).rgb;  //TODO: prefilteredMap
+	vec3 specularLight = rgbe_to_float(textureLod(prefilteredMap, reflection, lod)).rgb;
 
 	vec3 diffuse = diffuseLight * pbrInputs.diffuseColor;
 	// vec3 specular = specularLight * (pbrInputs.specularColor * brdf.x + brdf.y); //TODO: brdf
+	vec3 specular = specularLight;
 
-	// return diffuse + specular;
-	return diffuse;
+	return diffuse + specular;
 }
 
 // Basic Lambertian diffuse

@@ -13,12 +13,14 @@ public:
     void Destroy();
 
     void InitImageView(VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels, VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_2D);
-    void createTextureSampler();
-    void TransitionLayout(std::optional<VkCommandBuffer> commandBuffer, VkImageLayout newLayout);
+    void InitImageSampler(VkSamplerAddressMode addressMode);
+    void TransitionLayout(std::optional<VkCommandBuffer> commandBuffer, VkImageLayout newLayout, std::optional<VkImageLayout> forceOldLayout = std::nullopt);
+    void ReturnLayout(std::optional<VkCommandBuffer> commandBuffer);
     ExtentVariant GetImageExtent();
 
 public:
-    void CopyToBuffer(Buffer& buffer);
+	void CopyToBuffer(Buffer& buffer);
+	void CopyToImage(Image& dstImage, VkImageCopy imageCopy);
 
     std::unique_ptr<uint8_t[]> copyToMemory();
     void UploadData(const void* data, VkDeviceSize size); // #TODO
@@ -45,7 +47,8 @@ public:
     VkSampler sampler;
     VkImageCreateInfo m_imageInfo;
     VkImageViewCreateInfo m_imageViewInfo;
-    VkImageLayout m_currentLayout;
+	VkImageLayout m_currentLayout;
+	std::vector<VkImageLayout> m_historyLayouts;
 
     VulkanCore* m_pVulkanCore;
     bool m_isCube = false;

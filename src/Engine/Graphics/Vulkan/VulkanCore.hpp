@@ -133,6 +133,9 @@ private:
 
     void recordCommandBuffer(VkCommandBuffer& commandBuffer, uint32_t imageIndex, Scene& scene);
 
+    void BeginRendering(VkCommandBuffer& commandBuffer, const VkRenderingInfo render_info);
+	void EndRendering(VkCommandBuffer& commandBuffer);
+
     void createUniformBuffers(Buffer& uniformBuffer);
 
     void updateUniformBuffer(uint32_t currentImage);
@@ -166,8 +169,6 @@ public: // Helper
     std::vector<const char*> getRequiredExtensions();
 
     bool checkValidationLayerSupport();
-
-    static std::vector<char> readFile(const std::filesystem::path& filename);
 
 public:
     VkDevice GetDevice() const { return device; }

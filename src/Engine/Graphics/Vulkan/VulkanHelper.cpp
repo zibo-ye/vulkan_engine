@@ -198,6 +198,33 @@ bool hasStencilComponent(VkFormat format)
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
+std::vector<char> readShaderFile(const std::filesystem::path& filename)
+{
+	printf("Reading file: %s\n", filename.string().c_str());
+	// Check if the file exists and is not a directory
+	if (!std::filesystem::exists(filename)) {
+		printf("File not found!\n");
+		throw std::runtime_error("File not found!");
+	}
+	if (std::filesystem::is_directory(filename)) {
+		printf("File is a directory!\n");
+		throw std::runtime_error("File is a directory!");
+	}
+
+	std::ifstream file(filename.string(), std::ios::ate | std::ios::binary);
+
+	if (!file.is_open()) {
+		throw std::runtime_error("Failed to open file!");
+	}
+	size_t fileSize = (size_t)file.tellg();
+	std::vector<char> buffer(fileSize);
+	file.seekg(0);
+	file.read(buffer.data(), fileSize);
+	file.close();
+
+	return buffer;
+}
+
 void printAllPhysicalDevices()
 {
     VulkanCore core;

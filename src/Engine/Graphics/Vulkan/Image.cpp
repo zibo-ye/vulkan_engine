@@ -55,11 +55,6 @@ bool Image::Init(VulkanCore* pVulkanCore, ExtentVariant extent, uint32_t mipLeve
     m_isValid = true;
     m_currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-    // #TODO: ImageView
-
-    // Sampler
-    createTextureSampler();
-
     // #MAYBE: m_pVulkanCore->AddResizeHandler(), m_pVulkanCore->AddShutdownHandler()
     return true;
 }
@@ -97,7 +92,7 @@ void Image::InitImageView(VkFormat format, VkImageAspectFlags aspectFlags, uint3
     m_imageViewInfo = std::move(viewInfo);
 }
 
-void Image::createTextureSampler()
+void Image::InitImageSampler(VkSamplerAddressMode addressMode)
 {
     // #MAYBE: TextureSampler can be reused for multiple textures, maybe use a hash map to store them, with hash of VkSamplerCreateInfo as key and VkSampler as value
     VkPhysicalDeviceProperties properties {};
@@ -108,9 +103,9 @@ void Image::createTextureSampler()
         .magFilter = VK_FILTER_LINEAR,
         .minFilter = VK_FILTER_LINEAR,
         .mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR,
-        .addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT,
-        .addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT,
-        .addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        .addressModeU = addressMode,
+        .addressModeV = addressMode,
+        .addressModeW = addressMode,
         .mipLodBias = 0.0f,
         .anisotropyEnable = VK_TRUE,
         .maxAnisotropy = properties.limits.maxSamplerAnisotropy,
@@ -153,8 +148,9 @@ std::pair<VkAccessFlags, VkPipelineStageFlags> getMinimalAccessMaskAndStage(VkIm
     }
 }
 
-void Image::TransitionLayout(std::optional<VkCommandBuffer> commandBuffer, VkImageLayout newLayout)
+void Image::TransitionLayout(std::optional<VkCommandBuffer> commandBuffer, VkImageLayout newLayout, std::optional<VkImageLayout> forceOldLayout /*= std::nullopt*/)
 {
+    ;
     assert(m_isValid);
     VkCommandBuffer cmd;
     if (!commandBuffer)
@@ -162,10 +158,10 @@ void Image::TransitionLayout(std::optional<VkCommandBuffer> commandBuffer, VkIma
     else
         cmd = *commandBuffer;
 
-    if (newLayout == m_currentLayout)
-        return;
+    VkImageLayout oldLayout = forceOldLayout.value_or(m_currentLayout);
+	if (newLayout == oldLayout)
+		return;
 
-    VkImageLayout oldLayout = m_currentLayout;
     auto [srcAccessMask, sourceStage] = getMinimalAccessMaskAndStage(oldLayout);
     auto [dstAccessMask, destinationStage] = getMinimalAccessMaskAndStage(newLayout);
 
@@ -199,9 +195,30 @@ void Image::TransitionLayout(std::optional<VkCommandBuffer> commandBuffer, VkIma
         0, nullptr,
         1, &barrier);
 
+    m_historyLayouts.push_back(m_currentLayout);
     m_currentLayout = newLayout;
     if (!commandBuffer)
         m_pVulkanCore->endSingleTimeCommands(cmd);
+}
+
+void Image::ReturnLayout(std::optional<VkCommandBuffer> commandBuffer)
+{
+    assert(m_isValid);
+	if (m_historyLayouts.empty())
+		return;
+
+	VkCommandBuffer cmd;
+	if (!commandBuffer)
+		cmd = m_pVulkanCore->beginSingleTimeCommands();
+	else
+		cmd = *commandBuffer;
+
+	VkImageLayout newLayout = m_historyLayouts.back();
+	TransitionLayout(cmd, newLayout);
+
+	if (!commandBuffer)
+		m_pVulkanCore->endSingleTimeCommands(cmd);
+
 }
 
 ExtentVariant Image::GetImageExtent()
@@ -250,6 +267,28 @@ void Image::CopyToBuffer(Buffer& buffer)
         &region);
 
     m_pVulkanCore->endSingleTimeCommands(commandBuffer);
+}
+
+void Image::CopyToImage(Image& dstImage, VkImageCopy imageCopy)
+{
+	assert(m_isValid);
+	VkCommandBuffer commandBuffer = m_pVulkanCore->beginSingleTimeCommands();
+
+	auto oldLayout = m_currentLayout;
+	this->TransitionLayout(commandBuffer, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+    dstImage.TransitionLayout(commandBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	vkCmdCopyImage(
+        commandBuffer,
+		image,
+		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        dstImage.image,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		1,
+		&imageCopy);
+
+    this->ReturnLayout(commandBuffer);
+	dstImage.ReturnLayout(commandBuffer);
+	m_pVulkanCore->endSingleTimeCommands(commandBuffer);
 }
 
 std::unique_ptr<uint8_t[]> Image::copyToMemory()

@@ -1,0 +1,26 @@
+["s72-v1",
+{
+	"type":"MESH",
+	"name":"Cube",
+	"topology":"TRIANGLE_LIST",
+	"count":36,
+	"attributes":{
+		"POSITION":{ "src":"Box.Cube.pnc.b72", "offset":0, "stride":28, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"Box.Cube.pnc.b72", "offset":12, "stride":28, "format":"R32G32B32_SFLOAT" },
+		"COLOR":{ "src":"Box.Cube.pnc.b72", "offset":24, "stride":28, "format":"R8G8B8A8_UNORM" }
+	}
+},
+{
+	"type":"NODE",
+	"name":"Cube",
+	"translation":[0,0,0],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"mesh":1
+},
+{
+	"type":"SCENE",
+	"name":"D:\\dev\\Vulkan\\s72_mine\\Cube.blend",
+	"roots":[2]
+}
+]

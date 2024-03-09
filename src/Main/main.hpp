@@ -27,6 +27,8 @@ public:
 
     void SaveFrame(std::string savePath) override;
 
+    std::shared_ptr<Scene> GetScene() { return m_Scene; };
+
 private:
     void ProcessEvents();
 

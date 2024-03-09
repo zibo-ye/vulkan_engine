@@ -58,6 +58,7 @@
 #include <wrl/event.h>
 #endif
 
+#include "Const.hpp"
 #include "Math/math.hpp"
 
 #if USE_VULKAN

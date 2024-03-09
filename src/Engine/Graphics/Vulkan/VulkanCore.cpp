@@ -2,6 +2,7 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 #include "VulkanCore.hpp"
+#include "Shader.hpp"
 
 #include "EngineCore.hpp"
 #include "Scene/CameraManager.hpp"
@@ -10,6 +11,7 @@
 #include "Scene/Mesh.hpp"
 #include "Scene/Scene.hpp"
 #include "VulkanInitializer.hpp"
+#include "../Main/main.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "ThirdParty/stb_image.h"
@@ -53,6 +55,9 @@ void VulkanCore::Init(EngineCore::IApp* pApp)
     createFrameData();
 
     g_emptyTexture->uploadTextureToGPU(this);
+
+    auto pMainApp = static_cast<MainApplication*>(m_pApp);
+    pMainApp->GetScene()->environment->generateCubemaps(this);
 }
 
 void VulkanCore::cleanupSwapChain()
@@ -415,36 +420,18 @@ void VulkanCore::createDescriptorSetLayout()
 {
     // set = 0
     {
-        VkDescriptorSetLayoutBinding uboLayoutBinding {
-            .binding = 0,
-            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .descriptorCount = 1,
-            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-            .pImmutableSamplers = nullptr,
-        };
-
-        VkDescriptorSetLayoutBinding samplerLayoutBinding {
-            .binding = 1,
-            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .descriptorCount = 1,
-            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-            .pImmutableSamplers = nullptr,
-        };
-
-        VkDescriptorSetLayoutBinding samplerLayoutBinding2 {
-            .binding = 2,
-            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .descriptorCount = 1,
-            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-            .pImmutableSamplers = nullptr,
-        };
-
-        std::array<VkDescriptorSetLayoutBinding, 3> bindings = { uboLayoutBinding, samplerLayoutBinding, samplerLayoutBinding2 };
+		std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
+			{ 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr }, // UBO
+			{ 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
+			{ 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
+			{ 3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
+			{ 4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
+		};
 
         VkDescriptorSetLayoutCreateInfo layoutInfo {
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-            .bindingCount = static_cast<uint32_t>(bindings.size()),
-            .pBindings = bindings.data(),
+            .bindingCount = static_cast<uint32_t>(setLayoutBindings.size()),
+            .pBindings = setLayoutBindings.data(),
         };
 
         VK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayouts[0]));
@@ -476,13 +463,18 @@ void VulkanCore::createDescriptorSetLayout()
 
 void VulkanCore::createGraphicsPipeline()
 {
+    // Shader vertexShader(device, "s72.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+    // Shader fragmentShader(device, "s72.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+
+    // VkPipelineShaderStageCreateInfo shaderStages[] = { vertexShader.getShaderStageInfo(), fragmentShader.getShaderStageInfo() };
+
     std::filesystem::path cwd = std::filesystem::current_path();
     std::filesystem::path shaderPath = cwd / "shader_build";
     std::filesystem::path vertShaderPath = shaderPath / "s72.vert.spv";
     std::filesystem::path fragShaderPath = shaderPath / "s72.frag.spv";
 
-    auto vertShaderCode = readFile(vertShaderPath);
-    auto fragShaderCode = readFile(fragShaderPath);
+    auto vertShaderCode = readShaderFile(vertShaderPath);
+    auto fragShaderCode = readShaderFile(fragShaderPath);
 
     VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
     VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
@@ -648,6 +640,7 @@ void VulkanCore::createColorResources()
 
     colorImage.Init(this, swapChainImages[0].GetImageExtent(), 1, msaaSamples, colorFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     colorImage.InitImageView(colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+    colorImage.InitImageSampler(VK_SAMPLER_ADDRESS_MODE_REPEAT);
 }
 
 void VulkanCore::createDepthResources()
@@ -655,6 +648,7 @@ void VulkanCore::createDepthResources()
     VkFormat depthFormat = findDepthFormat();
     depthImage.Init(this, swapChainImages[0].GetImageExtent(), 1, msaaSamples, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     depthImage.InitImageView(depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+    depthImage.InitImageSampler(VK_SAMPLER_ADDRESS_MODE_REPEAT);
 }
 
 VkFormat VulkanCore::findDepthFormat()
@@ -820,15 +814,7 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer& commandBuffer, uint32_t im
         .pDepthAttachment = &depth_attachment_info,
     };
 
-#if __APPLE__
-    auto vkCmdBeginRenderingKHR = (PFN_vkCmdBeginRenderingKHR)vkGetInstanceProcAddr(instance, "vkCmdBeginRenderingKHR");
-    if (vkCmdBeginRenderingKHR == nullptr) {
-        throw std::runtime_error("failed to load vkCmdBeginRenderingKHR");
-    }
-    vkCmdEndRenderingKHR(commandBuffer);
-#else
-    vkCmdBeginRendering(commandBuffer, &render_info);
-#endif
+    BeginRendering(commandBuffer, render_info);
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
@@ -900,10 +886,6 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer& commandBuffer, uint32_t im
         pMaterial->InitDescriptorSet(this);
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &pMaterial->descriptorSet, 0, nullptr);
 
-        VkBuffer vertexBuffers[] = { meshData->vertexBuffer.buffer };
-        VkDeviceSize offsets[] = { 0 };
-        vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-
         SPushConstant pushConstant = {
             .matWorld = MeshInst.matWorld,
             .matNormal = vkm::transpose(vkm::inverse(MeshInst.matWorld))
@@ -914,30 +896,42 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer& commandBuffer, uint32_t im
         // upload the matrix to the GPU via push constants
         vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SPushConstant), &pushConstant);
 
-        if (meshData->indices.has_value()) // Has indices
-        {
-            vkCmdBindIndexBuffer(commandBuffer, meshData->indexBuffer->buffer, 0, VK_INDEX_TYPE_UINT32);
-            vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(meshData->indices.value().size()), 1, 0, 0, 0);
-        } else // No indices
-        {
-            vkCmdDraw(commandBuffer, static_cast<uint32_t>(meshData->vertices.size()), 1, 0, 0);
-        }
+        meshData->draw(commandBuffer);
     }
 
-#if __APPLE__
-    auto vkCmdEndRenderingKHR = (PFN_vkCmdEndRenderingKHR)vkGetInstanceProcAddr(instance, "vkCmdEndRenderingKHR");
-    if (vkCmdEndRenderingKHR == nullptr) {
-        throw std::runtime_error("failed to load vkCmdEndRenderingKHR");
-    }
-    vkCmdEndRenderingKHR(commandBuffer);
-#else
-    vkCmdEndRendering(commandBuffer);
-#endif
+    EndRendering(commandBuffer);
+
 
     if (!IsHeadless())
         swapChainImages[imageIndex].TransitionLayout(commandBuffer, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
     VK(vkEndCommandBuffer(commandBuffer));
+}
+
+void VulkanCore::BeginRendering(VkCommandBuffer& commandBuffer, const VkRenderingInfo render_info)
+{
+#if __APPLE__
+	auto vkCmdBeginRenderingKHR = (PFN_vkCmdBeginRenderingKHR)vkGetInstanceProcAddr(instance, "vkCmdBeginRenderingKHR");
+	if (vkCmdBeginRenderingKHR == nullptr) {
+		throw std::runtime_error("failed to load vkCmdBeginRenderingKHR");
+	}
+	vkCmdBeginRenderingKHR(commandBuffer);
+#else
+	vkCmdBeginRendering(commandBuffer, &render_info);
+#endif
+}
+
+void VulkanCore::EndRendering(VkCommandBuffer& commandBuffer)
+{
+#if __APPLE__
+	auto vkCmdEndRenderingKHR = (PFN_vkCmdEndRenderingKHR)vkGetInstanceProcAddr(instance, "vkCmdEndRenderingKHR");
+	if (vkCmdEndRenderingKHR == nullptr) {
+		throw std::runtime_error("failed to load vkCmdEndRenderingKHR");
+	}
+	vkCmdEndRenderingKHR(commandBuffer);
+#else
+	vkCmdEndRendering(commandBuffer);
+#endif
 }
 
 void VulkanCore::updateUniformBuffer(uint32_t currentImage)
@@ -970,11 +964,15 @@ void VulkanCore::updateDescriptorSet(uint32_t currentFrameInFlight, Scene& scene
     };
 
     scene.environment->radiance.uploadTextureToGPU(this);
-    scene.environment->lambertian.uploadTextureToGPU(this);
+	scene.environment->lambertian.uploadTextureToGPU(this);
+	scene.environment->irradiance.uploadTextureToGPU(this);
+	scene.environment->preFilteredEnv.uploadTextureToGPU(this);
     VkDescriptorImageInfo radianceImageInfo = scene.environment->radiance.textureImage.GetDescriptorImageInfo();
-    VkDescriptorImageInfo lambertianImageInfo = scene.environment->lambertian.textureImage.GetDescriptorImageInfo();
+	VkDescriptorImageInfo lambertianImageInfo = scene.environment->lambertian.textureImage.GetDescriptorImageInfo();
+	VkDescriptorImageInfo irradianceImageInfo = scene.environment->irradiance.textureImage.GetDescriptorImageInfo();
+	VkDescriptorImageInfo prefilteredMapImageInfo = scene.environment->preFilteredEnv.textureImage.GetDescriptorImageInfo();
 
-    std::array<VkWriteDescriptorSet, 3> descriptorWrites {
+    std::array<VkWriteDescriptorSet, 5> descriptorWrites {
         VkWriteDescriptorSet {
             .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             .dstSet = frames[currentFrameInFlight].descriptorSet,
@@ -1001,7 +999,24 @@ void VulkanCore::updateDescriptorSet(uint32_t currentFrameInFlight, Scene& scene
             .descriptorCount = 1,
             .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             .pImageInfo = &lambertianImageInfo,
-        }
+        },
+		{
+			.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+			.dstSet = frames[currentFrameInFlight].descriptorSet,
+			.dstBinding = 3,
+			.dstArrayElement = 0,
+			.descriptorCount = 1,
+			.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			.pImageInfo = &irradianceImageInfo,
+		},{
+			.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+			.dstSet = frames[currentFrameInFlight].descriptorSet,
+			.dstBinding = 4,
+			.dstArrayElement = 0,
+			.descriptorCount = 1,
+			.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			.pImageInfo = &prefilteredMapImageInfo,
+		},
     };
 
     vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
@@ -1202,33 +1217,6 @@ bool VulkanCore::checkValidationLayerSupport()
     }
 
     return true;
-}
-
-std::vector<char> VulkanCore::readFile(const std::filesystem::path& filename)
-{
-    printf("Reading file: %s\n", filename.string().c_str());
-    // Check if the file exists and is not a directory
-    if (!std::filesystem::exists(filename)) {
-        printf("File not found!\n");
-        throw std::runtime_error("File not found!");
-    }
-    if (std::filesystem::is_directory(filename)) {
-        printf("File is a directory!\n");
-        throw std::runtime_error("File is a directory!");
-    }
-
-    std::ifstream file(filename.string(), std::ios::ate | std::ios::binary);
-
-    if (!file.is_open()) {
-        throw std::runtime_error("Failed to open file!");
-    }
-    size_t fileSize = (size_t)file.tellg();
-    std::vector<char> buffer(fileSize);
-    file.seekg(0);
-    file.read(buffer.data(), fileSize);
-    file.close();
-
-    return buffer;
 }
 
 void VulkanCore::PresentImage()

@@ -78,6 +78,20 @@ void Scene::PrintStatistics() const
     std::cout << "Root Count: " << roots.size() << std::endl;
 }
 
+std::shared_ptr<Scene> Scene::defaultScene()
+{
+    static std::shared_ptr<Scene> pScene = nullptr;
+    if (!pScene)
+    {
+        pScene = std::make_shared<Scene>();
+		std::filesystem::path cwd = std::filesystem::current_path();
+		std::filesystem::path scenePath = cwd / "assets" / "Box.s72";
+		pScene->src = scenePath.string();
+		pScene->Init(Utility::json::JsonValue::parseJsonFromFile(scenePath.string()));
+    }
+	return pScene;
+}
+
 void Scene::RegisterEventHandlers(EngineCore::IApp* pApp)
 {
     pApp->RegisterEventHandler(EIOInputType::KEYBOARD, [this](IOInput input) {
@@ -150,12 +164,6 @@ void Scene::SetPlaybackTimeAndRate(float playbackTime, float playbackRate)
     m_elapsedTime = playbackTime;
     m_PlaybackSpeed = playbackRate;
 }
-
-// static std::shared_ptr<Scene> defaultScene()
-// {
-//     static std::shared_ptr<Scene> defScene = std::make_shared<Scene>();
-//     return defScene;
-// }
 
 Node::Node(std::weak_ptr<Scene> pScene, size_t index, const Utility::json::JsonValue& jsonObj)
     : SceneObj(pScene, index, ESceneObjType::NODE)
