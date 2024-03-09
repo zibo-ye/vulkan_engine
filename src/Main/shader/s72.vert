@@ -1,12 +1,14 @@
 #version 450
 
-layout(binding = 0) uniform CameraUBO {
+
+layout(set = 0, binding = 0) uniform CameraData {
     mat4 view;
     mat4 proj;
     mat4 viewproj; 
     vec4 position;
 } ubo_cam;
 
+layout (set = 1, binding = 3) uniform sampler2D NORMAL;
 
 layout(location = 0) in vec3 inPosition; 
 layout(location = 1) in vec3 inNormal;
@@ -29,6 +31,11 @@ layout(push_constant) uniform PushConstants {
     mat4 matNormal; //transpose(inv(matWorld))
 } pushConstants;
 
+vec3 adjustNormal(vec3 normal, vec3 tangent, vec3 bitangent, vec3 normalMap) {
+    mat3 tbn = mat3(tangent, bitangent, normal);
+    return normalize(tbn * (normalMap * 2.0 - 1.0));
+}
+
 void main() {
     fragData.position = vec3(pushConstants.matWorld * vec4(inPosition, 1.0)); // Transform position by light matrix
     fragData.normal = mat3(pushConstants.matNormal) * inNormal; 
@@ -36,5 +43,8 @@ void main() {
     fragData.texCoord = inTexCoord;
     fragData.tangent = mat3(pushConstants.matWorld) * inTangent.rgb;
     fragData.bitangent = inTangent.w * cross(fragData.normal, fragData.tangent);
+
+    fragData.normal = adjustNormal(fragData.normal, fragData.tangent, fragData.bitangent, texture(NORMAL, inTexCoord).xyz); // Adjust normal with normal map
+
     gl_Position = ubo_cam.proj * ubo_cam.view * pushConstants.matWorld * vec4(inPosition,  1.0);
 }

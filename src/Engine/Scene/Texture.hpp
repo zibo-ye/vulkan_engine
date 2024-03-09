@@ -18,7 +18,7 @@ public:
     // Texture data from src
 public:
     void LoadTextureData();
-    
+
     int texWidth, texHeight, texChannels;
     int mipLevels;
     std::shared_ptr<stbi_uc> textureData;

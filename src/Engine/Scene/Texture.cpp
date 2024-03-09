@@ -4,8 +4,8 @@ Texture::Texture(const Utility::json::JsonValue& jsonObj, const std::string& sce
 {
     std::filesystem::path scenePathFS = scenePath;
     src = (scenePathFS.parent_path() / jsonObj["src"].getString()).string();
-    type = jsonObj.hasKey("type") ? jsonObj["type"].getString() : "2D"; // Default to "2D"
-    format = jsonObj.hasKey("format") ? jsonObj["format"].getString() : "linear"; // Default to "linear"
+    type = jsonObj.hasKey("type") ? jsonObj["type"].getString() : "2D"; // Default to "2D", can be "cube"
+    format = jsonObj.hasKey("format") ? jsonObj["format"].getString() : "linear"; // Default to "linear", can be "rgbe"
     LoadTextureData();
 }
 
@@ -36,13 +36,6 @@ Texture::Texture(const float& floatValue)
 void Texture::LoadTextureData()
 {
     stbi_uc* pixels = stbi_load(src.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha); // TODO: single channel image
-    if (type == "cube") { // if it's a cube map, the width and height should be the same
-        texHeight = texHeight / 6;
-        assert(texWidth == texHeight);
-    }
-
-    mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
-
     if (!pixels) {
         throw std::runtime_error("failed to load texture image!");
     }
@@ -51,7 +44,25 @@ void Texture::LoadTextureData()
     {
         texChannels = 4;
     }
-    textureData = std::shared_ptr<stbi_uc>(pixels, stbi_image_free);
+
+    // stbi_load returns the image in top-to-bottom order, but Vulkan expects it bottom-to-top order
+    stbi_uc* rawData = new stbi_uc[4 * texWidth * texHeight];
+    textureData = std::shared_ptr<stbi_uc>(rawData, [](stbi_uc* p) { delete[] p; });
+    for (int y = 0; y < texHeight; y++) {
+        for (int x = 0; x < texWidth; x++) {
+            for (int c = 0; c < texChannels; c++) {
+                textureData.get()[4 * (y * texWidth + x) + c] = pixels[4 * ((texHeight - 1 - y) * texWidth + x) + c];
+            }
+        }
+    }
+
+    if (type == "cube") { // if it's a cube map, the width and height should be the same
+        texHeight = texHeight / 6;
+        assert(texWidth == texHeight);
+    }
+
+    mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
+    stbi_image_free(pixels);
 }
 
 bool Texture::uploadTextureToGPU(VulkanCore* vulkanCore)

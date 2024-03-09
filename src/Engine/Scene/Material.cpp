@@ -115,18 +115,6 @@ void Material::InitDescriptorSet(VulkanCore* pVulkanCore)
         };
         vkUpdateDescriptorSets(pVulkanCore->GetDevice(), 1, &descriptorWrite, 0, nullptr);
 
-        imageInfo = g_emptyTexture->textureImage.GetDescriptorImageInfo();
-        descriptorWrite = {
-            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dstSet = descriptorSet,
-            .dstBinding = 3,
-            .dstArrayElement = 0,
-            .descriptorCount = 1,
-            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .pImageInfo = &imageInfo,
-        };
-        vkUpdateDescriptorSets(pVulkanCore->GetDevice(), 1, &descriptorWrite, 0, nullptr);
-
     } else if (lambertian) {
         lambertian->albedoMap.uploadTextureToGPU(pVulkanCore);
         VkDescriptorImageInfo imageInfo = lambertian->albedoMap.textureImage.GetDescriptorImageInfo();
@@ -156,16 +144,6 @@ void Material::InitDescriptorSet(VulkanCore* pVulkanCore)
             .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             .dstSet = descriptorSet,
             .dstBinding = 2,
-            .dstArrayElement = 0,
-            .descriptorCount = 1,
-            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .pImageInfo = &imageInfo,
-        };
-        vkUpdateDescriptorSets(pVulkanCore->GetDevice(), 1, &descriptorWrite, 0, nullptr);
-        descriptorWrite = {
-            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dstSet = descriptorSet,
-            .dstBinding = 3,
             .dstArrayElement = 0,
             .descriptorCount = 1,
             .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -204,31 +182,19 @@ void Material::InitDescriptorSet(VulkanCore* pVulkanCore)
             .pImageInfo = &imageInfo,
         };
         vkUpdateDescriptorSets(pVulkanCore->GetDevice(), 1, &descriptorWrite, 0, nullptr);
-        descriptorWrite = {
-            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dstSet = descriptorSet,
-            .dstBinding = 3,
-            .dstArrayElement = 0,
-            .descriptorCount = 1,
-            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .pImageInfo = &imageInfo,
-        };
-        vkUpdateDescriptorSets(pVulkanCore->GetDevice(), 1, &descriptorWrite, 0, nullptr);
     }
-    if (normalMap) {
-        normalMap->uploadTextureToGPU(pVulkanCore);
-        VkDescriptorImageInfo imageInfo = normalMap->textureImage.GetDescriptorImageInfo();
-        VkWriteDescriptorSet descriptorWrite {
-            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dstSet = descriptorSet,
-            .dstBinding = 3,
-            .dstArrayElement = 0,
-            .descriptorCount = 1,
-            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .pImageInfo = &imageInfo,
-        };
-        vkUpdateDescriptorSets(pVulkanCore->GetDevice(), 1, &descriptorWrite, 0, nullptr);
-    }
+    normalMap.uploadTextureToGPU(pVulkanCore);
+    VkDescriptorImageInfo imageInfo = normalMap.textureImage.GetDescriptorImageInfo();
+    VkWriteDescriptorSet descriptorWrite {
+        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        .dstSet = descriptorSet,
+        .dstBinding = 3,
+        .dstArrayElement = 0,
+        .descriptorCount = 1,
+        .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+        .pImageInfo = &imageInfo,
+    };
+    vkUpdateDescriptorSets(pVulkanCore->GetDevice(), 1, &descriptorWrite, 0, nullptr);
 }
 
 std::shared_ptr<Material> g_SimpleMaterial = std::make_shared<Material>();

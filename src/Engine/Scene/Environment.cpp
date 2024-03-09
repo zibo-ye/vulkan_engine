@@ -1,6 +1,6 @@
 #include "Environment.hpp"
-#include <random>
 #include "Utilities/lambertian/blur_cube.h"
+#include <random>
 
 Environment::Environment(std::weak_ptr<Scene> pScene, size_t index, const Utility::json::JsonValue& jsonObj)
     : SceneObj(pScene, index, ESceneObjType::ENVIRONMENT)
@@ -9,7 +9,8 @@ Environment::Environment(std::weak_ptr<Scene> pScene, size_t index, const Utilit
 
     radiance = Texture(jsonObj["radiance"], pScene.lock()->src);
 
-	lambertian = GenerateLambertian2(radiance);
+    lambertian = GenerateLambertian2(radiance);
+    // lambertian = GenerateLambertian(radiance); // currently not producing the same result as GenerateLambertian2
 }
 
 #define M_PI 3.14159265358979323846f
@@ -74,7 +75,8 @@ Texture GenerateLambertian(Texture radiance, int lambertian_texWidth /*= 16*/)
     lambertian.texChannels = radiance.texChannels;
     lambertian.mipLevels = 1;
 
-    lambertian.textureData = std::make_shared<stbi_uc>(4 * lambertian_texWidth * lambertian_texWidth * 6);
+    stbi_uc* rawData = new stbi_uc[4 * lambertian_texWidth * lambertian_texWidth * 6];
+    lambertian.textureData = std::shared_ptr<stbi_uc>(rawData, [](stbi_uc* p) { delete[] p; });
 
     // Define sampling and bright direction handling as in the provided snippet
     std::function<vkm::vec3()> make_sample;
@@ -200,7 +202,7 @@ Texture GenerateLambertian(Texture radiance, int lambertian_texWidth /*= 16*/)
                 vkm::vec3 TY = vkm::cross(N, TX);
 
                 vkm::vec3 acc = vkm::vec3(0.0f);
-                int samples = 16;
+                int samples = 1000;
                 for (uint32_t i = 0; i < uint32_t(samples); ++i) {
                     // very inspired by the SampleGGX code in "Real Shading in Unreal" (https://cdn2.unrealengine.com/Resources/files/2013SiggraphPresentationsNotes-26915738.pdf):
 
@@ -229,21 +231,21 @@ Texture GenerateLambertian(Texture radiance, int lambertian_texWidth /*= 16*/)
 
 Texture GenerateLambertian2(Texture radiance)
 {
-	glm::ivec2 out_size = glm::ivec2(16, 16 * 6);
-	int32_t samples = 1024;
-	int32_t brightest = 10000;
+    glm::ivec2 out_size = glm::ivec2(16, 16 * 6);
+    int32_t samples = 1024;
+    int32_t brightest = 10000;
     std::string in_file = radiance.src;
 
-    //outfilename = in_file's filename + "_lambertian" + in_file's extension
+    // outfilename = in_file's filename + "_lambertian" + in_file's extension
     std::string out_file = in_file.substr(0, in_file.find_last_of('.')) + "_lambertian" + in_file.substr(in_file.find_last_of('.'));
 
     blur_cube("diffuse", out_size, samples, in_file, brightest, out_file);
 
     Texture lambertian = Texture();
     lambertian.src = out_file;
-	lambertian.type = radiance.type;
-	lambertian.format = radiance.format;
-	lambertian.LoadTextureData();
+    lambertian.type = radiance.type;
+    lambertian.format = radiance.format;
+    lambertian.LoadTextureData();
 
     return std::move(lambertian);
 }

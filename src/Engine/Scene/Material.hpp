@@ -13,7 +13,7 @@ public:
 
     std::string name;
 
-    std::optional<Texture> normalMap;
+    Texture normalMap = Texture(vkm::vec3(0.5f, 0.5f, 1.0f));
     std::optional<Texture> displacementMap;
 
     EMaterialType type = EMaterialType::SIMPLE;
