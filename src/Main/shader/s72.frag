@@ -7,7 +7,8 @@ layout(set = 0, binding = 0) uniform CameraData {
     vec4 position;
 } ubo_cam;
 
-layout (set = 0, binding = 1) uniform samplerCube cubeMapTexture;
+layout (set = 0, binding = 1) uniform samplerCube ENV_RADIANCE;
+layout (set = 0, binding = 2) uniform samplerCube LAMBERTIAN;
 
 layout (set = 1, binding = 0) uniform sampler2D ALBEDO;
 layout (set = 1, binding = 1) uniform sampler2D ROUGHNESS;
@@ -15,9 +16,7 @@ layout (set = 1, binding = 2) uniform sampler2D METALNESS;
 layout (set = 1, binding = 3) uniform sampler2D NORMAL;
 // layout (set = 1, binding = 4) uniform sampler2D DISPLACEMENT;
 
-// uniform samplerCube LAMBERTIAN;
 // uniform samplerCube GGX;
-// uniform samplerCube RADIANCE; //redundant with ggx but useful for debugging
 
 
 struct FragData {
@@ -39,34 +38,42 @@ layout(push_constant) uniform PushConstants {
 
 // layout(constant_id = 0) const int materialType = 4; // use a specialized constant to pass the material type so the uber shader won't be too big.
 
-vec3 sampleEnvMap(vec3 R) {
-    vec4 result = texture(cubeMapTexture, R); //RGBE
-    if (result == vec4(0.0, 0.0, 0.0, 0.0)) {
+vec3 rgbe_to_float(vec4 rgbe) {
+    if (rgbe == vec4(0.0, 0.0, 0.0, 0.0)) {
         return vec3(0.0);
     }
-    int exp = int(result.a * 255.0) - 128;
+    int exp = int(rgbe.a * 255.0) - 128;
     return vec3(
-        ldexp((result.r * 255.0 + 0.5) / 256.0, exp),
-        ldexp((result.g * 255.0 + 0.5) / 256.0, exp),
-        ldexp((result.b * 255.0 + 0.5) / 256.0, exp)
+        ldexp((rgbe.r * 255.0 + 0.5) / 256.0, exp),
+        ldexp((rgbe.g * 255.0 + 0.5) / 256.0, exp),
+        ldexp((rgbe.b * 255.0 + 0.5) / 256.0, exp)
     );
 }
 
 vec4 PBRMaterial()
 {
-    return vec4(sampleEnvMap(fragData.normal),1);
+    vec4 result = texture(ALBEDO, fragData.texCoord);
+    return result;
 }
 
 vec4 LambertianMaterial()
 {
-    return vec4(sampleEnvMap(fragData.normal),1);
+    vec3 inDir = normalize(fragData.position - ubo_cam.position.xyz);
+    vec3 reflectDir = reflect(inDir, normalize(fragData.normal));
+
+    vec3 lambertian_sample_light = rgbe_to_float(texture(LAMBERTIAN, reflectDir));
+    vec4 albedo = texture(ALBEDO, fragData.texCoord);
+
+    return vec4(albedo.rgb * lambertian_sample_light, albedo.a);
 }
 
 vec4 MirrorMaterial()
 {
     vec3 inDir = normalize(fragData.position - ubo_cam.position.xyz);
     vec3 reflectDir = reflect(inDir, normalize(fragData.normal));
-    return vec4(sampleEnvMap(reflectDir),1);
+
+    vec4 result = texture(ENV_RADIANCE, reflectDir); //RGBE
+    return vec4(rgbe_to_float(result),1);
 }
 
 vec4 SimpleMaterial()
@@ -78,7 +85,8 @@ vec4 SimpleMaterial()
 
 vec4 EnvironmentMaterial()
 {
-    return vec4(sampleEnvMap(fragData.normal),1);
+    vec4 result = texture(ENV_RADIANCE, fragData.normal); //RGBE
+    return vec4(rgbe_to_float(result),1);
 }
 
 // input and output are all in srgb linear space

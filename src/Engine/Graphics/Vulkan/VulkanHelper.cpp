@@ -344,3 +344,175 @@ void printAllMemoryProperties(VkPhysicalDeviceMemoryProperties& memProperties)
         std::cout << std::endl;
     }
 }
+
+VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* callbackData, void* pUserData)
+{
+    // https://www.lunarg.com/wp-content/uploads/2018/05/Vulkan-Debug-Utils_05_18_v1.pdf
+    char prefix[64] = ""; // Initialize with an empty string to ensure it's null-terminated
+    size_t prefixSize = sizeof(prefix);
+
+    size_t messageSize = strlen(callbackData->pMessage) + 500;
+    char* message = (char*)malloc(messageSize);
+    assert(message);
+
+    if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT) {
+        strcpy_s(prefix, "VERBOSE : ");
+    } else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
+        strcpy_s(prefix, "INFO : ");
+    } else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
+        strcpy_s(prefix, "WARNING : ");
+    } else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
+        strcpy_s(prefix, "ERROR : ");
+    }
+
+    if (messageType & VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT) {
+        strcat_s(prefix, "GENERAL");
+    } else {
+        // if (messageType & VK_DEBUG_UTILS_MESSAGE_TYPE_SPECIFICATION_BIT_EXT) {
+        //	strcat_s(prefix, "SPEC");
+        //	validation_error = 1;
+        // }
+        if (messageType & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT) {
+            // if (messageType & VK_DEBUG_UTILS_MESSAGE_TYPE_SPECIFICATION_BIT_EXT) {
+            //	strcat_s(prefix, "|");
+            // }
+            strcat_s(prefix, "PERF");
+        }
+    }
+    sprintf_s(message, messageSize,
+        "%s - Message ID Number %d, Message ID String %s:\n%s",
+        prefix,
+        callbackData->messageIdNumber,
+        callbackData->pMessageIdName,
+        callbackData->pMessage);
+    if (callbackData->objectCount > 0) {
+        char tmp_message[500];
+        sprintf_s(tmp_message, sizeof(tmp_message), "\n Objects - %d\n", callbackData->objectCount);
+        strcat_s(message, messageSize, tmp_message);
+        for (uint32_t object = 0; object < callbackData->objectCount; ++object) {
+            sprintf_s(tmp_message,
+                " Object[%d] - Type %s, Value %p, Name \"%s\"\n",
+                object,
+                DebugAnnotObjectToString(
+                    callbackData->pObjects[object].objectType),
+                (void*)(callbackData->pObjects[object].objectHandle),
+                callbackData->pObjects[object].pObjectName);
+            strcat_s(message, messageSize, tmp_message);
+        }
+    }
+    if (callbackData->cmdBufLabelCount > 0) {
+        char tmp_message[500];
+        sprintf_s(tmp_message, sizeof(tmp_message),
+            "\n Command Buffer Labels - %d\n",
+            callbackData->cmdBufLabelCount);
+        strcat_s(message, messageSize, tmp_message);
+        for (uint32_t label = 0; label < callbackData->cmdBufLabelCount; ++label) {
+            sprintf_s(tmp_message,
+                " Label[%d] - %s { %f, %f, %f, %f}\n",
+                label,
+                callbackData->pCmdBufLabels[label].pLabelName,
+                callbackData->pCmdBufLabels[label].color[0],
+                callbackData->pCmdBufLabels[label].color[1],
+                callbackData->pCmdBufLabels[label].color[2],
+                callbackData->pCmdBufLabels[label].color[3]);
+            strcat_s(message, messageSize, tmp_message);
+        }
+    }
+    printf("%s\n", message);
+    fflush(stdout);
+    free(message);
+    // Don't bail out, but keep going.
+    return VK_FALSE;
+}
+
+const char* DebugAnnotObjectToString(VkObjectType t)
+{
+    switch (t) {
+    case VK_OBJECT_TYPE_UNKNOWN:
+        return "VK_OBJECT_TYPE_UNKNOWN";
+    case VK_OBJECT_TYPE_INSTANCE:
+        return "VK_OBJECT_TYPE_INSTANCE";
+    case VK_OBJECT_TYPE_PHYSICAL_DEVICE:
+        return "VK_OBJECT_TYPE_PHYSICAL_DEVICE";
+    case VK_OBJECT_TYPE_DEVICE:
+        return "VK_OBJECT_TYPE_DEVICE";
+    case VK_OBJECT_TYPE_QUEUE:
+        return "VK_OBJECT_TYPE_QUEUE";
+    case VK_OBJECT_TYPE_SEMAPHORE:
+        return "VK_OBJECT_TYPE_SEMAPHORE";
+    case VK_OBJECT_TYPE_COMMAND_BUFFER:
+        return "VK_OBJECT_TYPE_COMMAND_BUFFER";
+    case VK_OBJECT_TYPE_FENCE:
+        return "VK_OBJECT_TYPE_FENCE";
+    case VK_OBJECT_TYPE_DEVICE_MEMORY:
+        return "VK_OBJECT_TYPE_DEVICE_MEMORY";
+    case VK_OBJECT_TYPE_BUFFER:
+        return "VK_OBJECT_TYPE_BUFFER";
+    case VK_OBJECT_TYPE_IMAGE:
+        return "VK_OBJECT_TYPE_IMAGE";
+    case VK_OBJECT_TYPE_EVENT:
+        return "VK_OBJECT_TYPE_EVENT";
+    case VK_OBJECT_TYPE_QUERY_POOL:
+        return "VK_OBJECT_TYPE_QUERY_POOL";
+    case VK_OBJECT_TYPE_BUFFER_VIEW:
+        return "VK_OBJECT_TYPE_BUFFER_VIEW";
+    case VK_OBJECT_TYPE_IMAGE_VIEW:
+        return "VK_OBJECT_TYPE_IMAGE_VIEW";
+    case VK_OBJECT_TYPE_SHADER_MODULE:
+        return "VK_OBJECT_TYPE_SHADER_MODULE";
+    case VK_OBJECT_TYPE_PIPELINE_CACHE:
+        return "VK_OBJECT_TYPE_PIPELINE_CACHE";
+    case VK_OBJECT_TYPE_PIPELINE_LAYOUT:
+        return "VK_OBJECT_TYPE_PIPELINE_LAYOUT";
+    case VK_OBJECT_TYPE_RENDER_PASS:
+        return "VK_OBJECT_TYPE_RENDER_PASS";
+    case VK_OBJECT_TYPE_PIPELINE:
+        return "VK_OBJECT_TYPE_PIPELINE";
+    case VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT:
+        return "VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT";
+    case VK_OBJECT_TYPE_SAMPLER:
+        return "VK_OBJECT_TYPE_SAMPLER";
+    case VK_OBJECT_TYPE_DESCRIPTOR_POOL:
+        return "VK_OBJECT_TYPE_DESCRIPTOR_POOL";
+    case VK_OBJECT_TYPE_DESCRIPTOR_SET:
+        return "VK_OBJECT_TYPE_DESCRIPTOR_SET";
+    case VK_OBJECT_TYPE_FRAMEBUFFER:
+        return "VK_OBJECT_TYPE_FRAMEBUFFER";
+    case VK_OBJECT_TYPE_COMMAND_POOL:
+        return "VK_OBJECT_TYPE_COMMAND_POOL";
+    case VK_OBJECT_TYPE_SAMPLER_YCBCR_CONVERSION:
+        return "VK_OBJECT_TYPE_SAMPLER_YCBCR_CONVERSION";
+    case VK_OBJECT_TYPE_DESCRIPTOR_UPDATE_TEMPLATE:
+        return "VK_OBJECT_TYPE_DESCRIPTOR_UPDATE_TEMPLATE";
+    case VK_OBJECT_TYPE_SURFACE_KHR:
+        return "VK_OBJECT_TYPE_SURFACE_KHR";
+    case VK_OBJECT_TYPE_SWAPCHAIN_KHR:
+        return "VK_OBJECT_TYPE_SWAPCHAIN_KHR";
+    case VK_OBJECT_TYPE_DISPLAY_KHR:
+        return "VK_OBJECT_TYPE_DISPLAY_KHR";
+    case VK_OBJECT_TYPE_DISPLAY_MODE_KHR:
+        return "VK_OBJECT_TYPE_DISPLAY_MODE_KHR";
+    case VK_OBJECT_TYPE_DEBUG_REPORT_CALLBACK_EXT:
+        return "VK_OBJECT_TYPE_DEBUG_REPORT_CALLBACK_EXT";
+#ifdef VK_NVX_device_generated_commands
+    case VK_OBJECT_TYPE_OBJECT_TABLE_NVX:
+        return "VK_OBJECT_TYPE_OBJECT_TABLE_NVX";
+    case VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_NVX:
+        return "VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_NVX";
+#endif
+    case VK_OBJECT_TYPE_DEBUG_UTILS_MESSENGER_EXT:
+        return "VK_OBJECT_TYPE_DEBUG_UTILS_MESSENGER_EXT";
+    case VK_OBJECT_TYPE_VALIDATION_CACHE_EXT:
+        return "VK_OBJECT_TYPE_VALIDATION_CACHE_EXT";
+#ifdef VK_NV_ray_tracing
+    case VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_NV:
+        return "VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_NV";
+#endif
+        //	case VK_OBJECT_TYPE_RANGE_SIZE:
+    case VK_OBJECT_TYPE_MAX_ENUM:
+        break;
+    default:
+        break;
+    }
+    return "UNKNOWNTYPE";
+}

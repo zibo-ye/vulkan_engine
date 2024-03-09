@@ -105,6 +105,14 @@ EMaterialType Mesh::GetMaterialType() const
     return EMaterialType::SIMPLE;
 }
 
+std::shared_ptr<Material> Mesh::GetMaterial() const
+{
+    if (materialIdx.has_value()) {
+        return pScene.lock()->materials[materialIdx.value()];
+    }
+    return g_SimpleMaterial;
+}
+
 MeshIndices::MeshIndices(const Utility::json::JsonValue& jsonObj)
 {
     src = jsonObj["src"].getString();

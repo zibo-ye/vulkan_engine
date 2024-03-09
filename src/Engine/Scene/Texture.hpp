@@ -18,7 +18,7 @@ public:
     // Texture data from src
 public:
     void LoadTextureData();
-
+    
     int texWidth, texHeight, texChannels;
     int mipLevels;
     std::shared_ptr<stbi_uc> textureData;
@@ -37,3 +37,5 @@ private:
     bool isOnGPU = false;
     VulkanCore* m_pVulkanCore = nullptr;
 };
+
+extern std::shared_ptr<Texture> g_emptyTexture;

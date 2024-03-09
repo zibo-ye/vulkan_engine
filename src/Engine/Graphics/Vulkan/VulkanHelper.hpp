@@ -10,6 +10,7 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 #define VK(FN)                                                                                                                                  \
     {                                                                                                                                           \
         if (VkResult result = FN) {                                                                                                             \
+            std::cerr << "Call '" #FN "' returned " << result << " [" << string_VkResult(result) << "]." << std::endl;                          \
             throw std::runtime_error("Call '" #FN "' returned " + std::to_string(result) + " [" + std::string(string_VkResult(result)) + "]."); \
         }                                                                                                                                       \
     }
@@ -104,3 +105,6 @@ void printAllMemoryProperties(VkPhysicalDeviceMemoryProperties& memoryProperties
 void printAllMemoryTypeProperties(VkMemoryPropertyFlags flags);
 void printAllMemoryHeapProperties(VkMemoryHeapFlags flags);
 void printAllPhysicalDevices(std::vector<VkPhysicalDevice> physicalDevices);
+
+extern VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* callbackData, void* pUserData);
+extern const char* DebugAnnotObjectToString(VkObjectType t);

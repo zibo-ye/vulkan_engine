@@ -1,4 +1,5 @@
 #pragma once
+#include "Graphics/Vulkan/VulkanCore.hpp"
 #include "Scene.hpp"
 #include "SceneObj.hpp"
 #include "Texture.hpp"
@@ -6,6 +7,8 @@
 
 class Material : public SceneObj {
 public:
+    Material()
+        : SceneObj(std::weak_ptr<Scene>(), 0, ESceneObjType::MATERIAL) {};
     Material(std::weak_ptr<Scene> pScene, size_t index, const Utility::json::JsonValue& jsonObj);
 
     std::string name;
@@ -28,4 +31,10 @@ public:
         Texture albedoMap = Texture(vkm::vec3(1.0f, 1.0f, 1.0f));
     };
     std::optional<Lambertian> lambertian;
+
+public:
+    VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
+    void InitDescriptorSet(VulkanCore* pVulkanCore);
 };
+
+extern std::shared_ptr<Material> g_SimpleMaterial;

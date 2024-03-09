@@ -172,6 +172,7 @@ private:
 
 public:
     EMaterialType GetMaterialType() const;
+    std::shared_ptr<Material> GetMaterial() const;
 };
 
 inline static VkPipelineVertexInputStateCreateInfo getVertexInputInfo()

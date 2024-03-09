@@ -6,6 +6,7 @@
 #include "EngineCore.hpp"
 #include "Scene/CameraManager.hpp"
 #include "Scene/Environment.hpp"
+#include "Scene/Material.hpp"
 #include "Scene/Mesh.hpp"
 #include "Scene/Scene.hpp"
 #include "VulkanInitializer.hpp"
@@ -50,6 +51,8 @@ void VulkanCore::Init(EngineCore::IApp* pApp)
 
     createDescriptorPool();
     createFrameData();
+
+    g_emptyTexture->uploadTextureToGPU(this);
 }
 
 void VulkanCore::cleanupSwapChain()
@@ -86,7 +89,9 @@ void VulkanCore::Shutdown()
 
     vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 
-    vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+    for (auto descriptorSetLayout : descriptorSetLayouts) {
+        vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+    }
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         frames[i].Destroy(device);
@@ -408,32 +413,64 @@ void VulkanCore::createSwapchainImageViews()
 
 void VulkanCore::createDescriptorSetLayout()
 {
-    VkDescriptorSetLayoutBinding uboLayoutBinding {
-        .binding = 0,
-        .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-        .descriptorCount = 1,
-        .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-        .pImmutableSamplers = nullptr,
-    };
+    // set = 0
+    {
+        VkDescriptorSetLayoutBinding uboLayoutBinding {
+            .binding = 0,
+            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+            .pImmutableSamplers = nullptr,
+        };
 
-    VkDescriptorSetLayoutBinding samplerLayoutBinding {
-        .binding = 1,
-        .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-        .descriptorCount = 1,
-        .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-        .pImmutableSamplers = nullptr,
-    };
+        VkDescriptorSetLayoutBinding samplerLayoutBinding {
+            .binding = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+            .pImmutableSamplers = nullptr,
+        };
 
-    std::array<VkDescriptorSetLayoutBinding, 2> bindings = { uboLayoutBinding, samplerLayoutBinding };
+        VkDescriptorSetLayoutBinding samplerLayoutBinding2 {
+            .binding = 2,
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+            .pImmutableSamplers = nullptr,
+        };
 
-    VkDescriptorSetLayoutCreateInfo layoutInfo {
-        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-        .bindingCount = static_cast<uint32_t>(bindings.size()),
-        .pBindings = bindings.data(),
-    };
+        std::array<VkDescriptorSetLayoutBinding, 3> bindings = { uboLayoutBinding, samplerLayoutBinding, samplerLayoutBinding2 };
 
-    if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create descriptor set layout!");
+        VkDescriptorSetLayoutCreateInfo layoutInfo {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            .bindingCount = static_cast<uint32_t>(bindings.size()),
+            .pBindings = bindings.data(),
+        };
+
+        VK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayouts[0]));
+    }
+
+    // set = 1
+    {
+        std::array<VkDescriptorSetLayoutBinding, 4> bindings;
+
+        for (uint32_t i = 0; i < bindings.size(); ++i) {
+            bindings[i] = {
+                .binding = i,
+                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+                .pImmutableSamplers = nullptr,
+            };
+        }
+
+        VkDescriptorSetLayoutCreateInfo layoutInfo {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            .bindingCount = static_cast<uint32_t>(bindings.size()),
+            .pBindings = bindings.data(),
+        };
+
+        VK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayouts[1]));
     }
 }
 
@@ -544,10 +581,11 @@ void VulkanCore::createGraphicsPipeline()
         .size = sizeof(SPushConstant),
     };
 
+    // A pipeline is defined by a pipeline layout, which specifies the complete set of resources that can be accessed by a pipeline.
     VkPipelineLayoutCreateInfo pipelineLayoutInfo {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        .setLayoutCount = 1,
-        .pSetLayouts = &descriptorSetLayout,
+        .setLayoutCount = 2,
+        .pSetLayouts = &descriptorSetLayouts[0],
         .pushConstantRangeCount = 1,
         .pPushConstantRanges = &push_constant,
     };
@@ -632,17 +670,17 @@ void VulkanCore::createDescriptorPool()
     std::array<VkDescriptorPoolSize, 2> poolSizes {
         VkDescriptorPoolSize {
             .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT),
+            .descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT + MAX_MATERIAL_TYPES * MAX_DESCRIPTORS_IN_MATERIAL),
         },
         {
             .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT),
+            .descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT + MAX_MATERIAL_TYPES * MAX_DESCRIPTORS_IN_MATERIAL),
         }
     };
 
     VkDescriptorPoolCreateInfo poolInfo {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-        .maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT),
+        .maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT + MAX_MATERIAL_TYPES),
         .poolSizeCount = static_cast<uint32_t>(poolSizes.size()),
         .pPoolSizes = poolSizes.data(),
     };
@@ -658,7 +696,7 @@ void VulkanCore::createFrameData()
     frames = std::vector<FrameData>(MAX_FRAMES_IN_FLIGHT);
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         createCommandBuffer(device, commandPool, frames[i].commandBuffer);
-        createDescriptorSet(device, descriptorSetLayout, descriptorPool, frames[i].descriptorSet);
+        createDescriptorSet(device, descriptorSetLayouts[0], descriptorPool, frames[i].descriptorSet);
         createFrameSyncObjects(frames[i].imageAvailableSemaphore, frames[i].renderFinishedSemaphore, frames[i].swapchainImageFence);
         createUniformBuffers(frames[i].uniformBuffer);
     }
@@ -853,6 +891,15 @@ void VulkanCore::recordCommandBuffer(VkCommandBuffer& commandBuffer, uint32_t im
         if (!meshData->uploadModelToGPU(this))
             continue;
 
+        // mesh - material - texture & descriptor set
+        auto pMaterial = MeshInst.pMesh->GetMaterial();
+        if (pMaterial == nullptr) {
+            std::cerr << "Material is nullptr" << std::endl;
+            continue;
+        }
+        pMaterial->InitDescriptorSet(this);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &pMaterial->descriptorSet, 0, nullptr);
+
         VkBuffer vertexBuffers[] = { meshData->vertexBuffer.buffer };
         VkDeviceSize offsets[] = { 0 };
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
@@ -923,9 +970,11 @@ void VulkanCore::updateDescriptorSet(uint32_t currentFrameInFlight, Scene& scene
     };
 
     scene.environment->radiance.uploadTextureToGPU(this);
-    VkDescriptorImageInfo imageInfo = scene.environment->radiance.textureImage.GetDescriptorImageInfo();
+    scene.environment->lambertian.uploadTextureToGPU(this);
+    VkDescriptorImageInfo radianceImageInfo = scene.environment->radiance.textureImage.GetDescriptorImageInfo();
+    VkDescriptorImageInfo lambertianImageInfo = scene.environment->lambertian.textureImage.GetDescriptorImageInfo();
 
-    std::array<VkWriteDescriptorSet, 2> descriptorWrites {
+    std::array<VkWriteDescriptorSet, 3> descriptorWrites {
         VkWriteDescriptorSet {
             .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             .dstSet = frames[currentFrameInFlight].descriptorSet,
@@ -942,7 +991,16 @@ void VulkanCore::updateDescriptorSet(uint32_t currentFrameInFlight, Scene& scene
             .dstArrayElement = 0,
             .descriptorCount = 1,
             .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .pImageInfo = &imageInfo,
+            .pImageInfo = &radianceImageInfo,
+        },
+        {
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = frames[currentFrameInFlight].descriptorSet,
+            .dstBinding = 2,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .pImageInfo = &lambertianImageInfo,
         }
     };
 
@@ -1171,13 +1229,6 @@ std::vector<char> VulkanCore::readFile(const std::filesystem::path& filename)
     file.close();
 
     return buffer;
-}
-
-VKAPI_ATTR VkBool32 VKAPI_CALL VulkanCore::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
-{
-    std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
-
-    return VK_FALSE;
 }
 
 void VulkanCore::PresentImage()

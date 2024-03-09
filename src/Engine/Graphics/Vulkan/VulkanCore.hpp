@@ -14,6 +14,8 @@ class IApp;
 class Image;
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
+const int MAX_MATERIAL_TYPES = 1024;
+const int MAX_DESCRIPTORS_IN_MATERIAL = 4;
 
 const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
@@ -104,14 +106,15 @@ private: // Frame
     std::vector<FrameData> frames;
     uint32_t currentFrameInFlight = 0;
 
+public:
+    std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts; // TEMP public, [1] is for material
+    VkDescriptorPool descriptorPool;
+
 private:
-    VkDescriptorSetLayout descriptorSetLayout;
     VkPipelineLayout pipelineLayout;
     VkPipeline graphicsPipeline;
 
     VkCommandPool commandPool;
-
-    VkDescriptorPool descriptorPool;
 
     Image depthImage;
     Image colorImage;
@@ -165,8 +168,6 @@ public: // Helper
     bool checkValidationLayerSupport();
 
     static std::vector<char> readFile(const std::filesystem::path& filename);
-
-    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
 
 public:
     VkDevice GetDevice() const { return device; }
