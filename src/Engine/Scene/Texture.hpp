@@ -11,9 +11,9 @@ public:
     std::string type;
     std::string format;
     Texture() = default;
-    Texture(const Utility::json::JsonValue& jsonObj, const std::string& scenePath);
-    Texture(const vkm::vec3& vec3Value);
-    Texture(const float& floatValue);
+    Texture(const Utility::json::JsonValue& jsonObj, const std::string& scenePath, VkFormat imageFormat);
+    Texture(const vkm::vec3& vec3Value, VkFormat imageFormat);
+    Texture(const float& floatValue, VkFormat imageFormat);
 
     // Texture data from src
 public:
@@ -29,6 +29,7 @@ public:
     bool releaseTextureFromGPU();
 
     Image textureImage;
+    VkFormat textureImageFormat;
 
 private:
     void createImage();

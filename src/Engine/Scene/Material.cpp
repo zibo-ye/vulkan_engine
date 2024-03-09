@@ -9,11 +9,11 @@ Material::Material(std::weak_ptr<Scene> pScene, size_t index, const Utility::jso
     name = jsonObj["name"].getString();
 
     if (jsonObj.hasKey("normalMap")) {
-        normalMap = Texture(jsonObj["normalMap"], pScene.lock()->src);
+        normalMap = Texture(jsonObj["normalMap"], pScene.lock()->src, VK_FORMAT_R8G8B8A8_UNORM);
     }
 
     if (jsonObj.hasKey("displacementMap")) {
-        displacementMap = Texture(jsonObj["displacementMap"], pScene.lock()->src);
+        displacementMap = Texture(jsonObj["displacementMap"], pScene.lock()->src, VK_FORMAT_R8G8B8A8_UNORM);
     }
 
     if (jsonObj.hasKey("pbr")) {
@@ -24,27 +24,27 @@ Material::Material(std::weak_ptr<Scene> pScene, size_t index, const Utility::jso
             auto albedo = jsonObj["pbr"]["albedo"];
             if (albedo.isArray()) {
                 auto vec = albedo.getVecFloat();
-                pbr->albedoMap = Texture(vkm::vec3(vec[0], vec[1], vec[2]));
+                pbr->albedoMap = Texture(vkm::vec3(vec[0], vec[1], vec[2]), VK_FORMAT_R8G8B8A8_SRGB);
             } else {
-                pbr->albedoMap = Texture(albedo, pScene.lock()->src);
+                pbr->albedoMap = Texture(albedo, pScene.lock()->src, VK_FORMAT_R8G8B8A8_SRGB);
             }
         }
 
         if (jsonObj["pbr"].hasKey("roughness")) {
             auto roughness = jsonObj["pbr"]["roughness"];
             if (roughness.isFloat()) {
-                pbr->roughnessMap = Texture(roughness.getFloat());
+                pbr->roughnessMap = Texture(roughness.getFloat(), VK_FORMAT_R8_UNORM);
             } else {
-                pbr->roughnessMap = Texture(roughness, pScene.lock()->src);
+                pbr->roughnessMap = Texture(roughness, pScene.lock()->src, VK_FORMAT_R8_UNORM);
             }
         }
 
         if (jsonObj["pbr"].hasKey("metalness")) {
             auto metalness = jsonObj["pbr"]["metalness"];
             if (metalness.isFloat()) {
-                pbr->metalnessMap = Texture(metalness.getFloat());
+                pbr->metalnessMap = Texture(metalness.getFloat(), VK_FORMAT_R8_UNORM);
             } else {
-                pbr->metalnessMap = Texture(metalness, pScene.lock()->src);
+                pbr->metalnessMap = Texture(metalness, pScene.lock()->src, VK_FORMAT_R8_UNORM);
             }
         }
     } else if (jsonObj.hasKey("lambertian")) {
@@ -55,9 +55,9 @@ Material::Material(std::weak_ptr<Scene> pScene, size_t index, const Utility::jso
             auto albedo = jsonObj["lambertian"]["albedo"];
             if (albedo.isArray()) {
                 auto vec = albedo.getVecFloat();
-                lambertian->albedoMap = Texture(vkm::vec3(vec[0], vec[1], vec[2]));
+                lambertian->albedoMap = Texture(vkm::vec3(vec[0], vec[1], vec[2]), VK_FORMAT_R8G8B8A8_SRGB);
             } else {
-                lambertian->albedoMap = Texture(albedo, pScene.lock()->src);
+                lambertian->albedoMap = Texture(albedo, pScene.lock()->src, VK_FORMAT_R8G8B8A8_SRGB);
             }
         }
     } else if (jsonObj.hasKey("mirror")) {

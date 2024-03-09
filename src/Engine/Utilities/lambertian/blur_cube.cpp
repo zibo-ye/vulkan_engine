@@ -6,7 +6,7 @@
 #include <functional>
 #include <iostream>
 #include <random>
-#define M_PI 3.14159265358979323846
+#define M_PI 3.14159265358979323846f
 
 void save_tone_mapped_png(std::string const& filename, glm::uvec2 size, std::vector<glm::vec3> const& data)
 {
@@ -43,7 +43,7 @@ enum Face {
 };
 
 // Borrowed from blur_cube.cpp: https://github.com/ixchow/15-466-ibl/blob/master/cubes/blur_cube.cpp
-int blur_cube(std::string mode, glm::ivec2& out_size, int32_t& samples, std::string& in_file, int32_t brightest, std::string out_file)
+void blur_cube(std::string mode, glm::ivec2& out_size, int32_t& samples, std::string& in_file, int32_t brightest, std::string out_file)
 {
     struct BrightDirection {
         glm::vec3 direction = glm::vec3(0.0f);
@@ -107,15 +107,18 @@ int blur_cube(std::string mode, glm::ivec2& out_size, int32_t& samples, std::str
         };
     } else {
         std::cerr << "Blur must be 'diffuse', 'bokeh', or 'sharp'." << std::endl;
-        return 1;
+        throw std::runtime_error("");
+        return;
     }
     if (out_size.x < 1) {
         std::cerr << "Output cube map size must be at least 1." << std::endl;
-        return 1;
+        throw std::runtime_error("");
+        return;
     }
     if (samples < 1) {
         std::cerr << "Samples per pixel must be at least 1." << std::endl;
-        return 1;
+        throw std::runtime_error("");
+        return;
     }
 
     glm::uvec2 in_size;
@@ -126,7 +129,8 @@ int blur_cube(std::string mode, glm::ivec2& out_size, int32_t& samples, std::str
 
     if (in_size.x * 6 != in_size.y) {
         std::cerr << "Expecting a 1x6 image." << std::endl;
-        return 1;
+        throw std::runtime_error("");
+        return;
     }
 
     // convert rgbe data to linear floating point data:

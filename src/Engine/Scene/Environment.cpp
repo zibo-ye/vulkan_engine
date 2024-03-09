@@ -7,7 +7,7 @@ Environment::Environment(std::weak_ptr<Scene> pScene, size_t index, const Utilit
 {
     name = jsonObj["name"].getString();
 
-    radiance = Texture(jsonObj["radiance"], pScene.lock()->src);
+    radiance = Texture(jsonObj["radiance"], pScene.lock()->src, VK_FORMAT_R8G8B8A8_SRGB);
 
     lambertian = GenerateLambertian2(radiance);
     // lambertian = GenerateLambertian(radiance); // currently not producing the same result as GenerateLambertian2
@@ -69,6 +69,7 @@ Texture GenerateLambertian(Texture radiance, int lambertian_texWidth /*= 16*/)
     Texture lambertian = Texture();
     lambertian.type = radiance.type;
     lambertian.format = radiance.format;
+    lambertian.textureImageFormat = radiance.textureImageFormat;
 
     lambertian.texWidth = lambertian_texWidth;
     lambertian.texHeight = lambertian_texWidth;
@@ -245,6 +246,7 @@ Texture GenerateLambertian2(Texture radiance)
     lambertian.src = out_file;
     lambertian.type = radiance.type;
     lambertian.format = radiance.format;
+    lambertian.textureImageFormat = radiance.textureImageFormat;
     lambertian.LoadTextureData();
 
     return std::move(lambertian);
