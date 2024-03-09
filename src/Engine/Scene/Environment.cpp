@@ -1,5 +1,6 @@
 #include "Environment.hpp"
 #include <random>
+#include "Utilities/lambertian/blur_cube.h"
 
 Environment::Environment(std::weak_ptr<Scene> pScene, size_t index, const Utility::json::JsonValue& jsonObj)
     : SceneObj(pScene, index, ESceneObjType::ENVIRONMENT)
@@ -8,8 +9,7 @@ Environment::Environment(std::weak_ptr<Scene> pScene, size_t index, const Utilit
 
     radiance = Texture(jsonObj["radiance"], pScene.lock()->src);
 
-    lambertian = radiance;
-    // lambertian = GenerateLambertian(radiance); //TODO: Lambertian generation seems wrong
+	lambertian = GenerateLambertian2(radiance);
 }
 
 #define M_PI 3.14159265358979323846f
@@ -225,4 +225,25 @@ Texture GenerateLambertian(Texture radiance, int lambertian_texWidth /*= 16*/)
         }
     }
     return lambertian;
+}
+
+Texture GenerateLambertian2(Texture radiance)
+{
+	glm::ivec2 out_size = glm::ivec2(16, 16 * 6);
+	int32_t samples = 1024;
+	int32_t brightest = 10000;
+    std::string in_file = radiance.src;
+
+    //outfilename = in_file's filename + "_lambertian" + in_file's extension
+    std::string out_file = in_file.substr(0, in_file.find_last_of('.')) + "_lambertian" + in_file.substr(in_file.find_last_of('.'));
+
+    blur_cube("diffuse", out_size, samples, in_file, brightest, out_file);
+
+    Texture lambertian = Texture();
+    lambertian.src = out_file;
+	lambertian.type = radiance.type;
+	lambertian.format = radiance.format;
+	lambertian.LoadTextureData();
+
+    return std::move(lambertian);
 }

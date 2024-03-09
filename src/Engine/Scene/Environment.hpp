@@ -11,5 +11,7 @@ public:
     Texture lambertian;
 
     Environment(std::weak_ptr<Scene> pScene, size_t index, const Utility::json::JsonValue& jsonObj);
+
 };
 Texture GenerateLambertian(Texture radiance, int lambertian_texWidth = 16);
+Texture GenerateLambertian2(Texture radiance);
