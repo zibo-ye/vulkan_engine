@@ -19,6 +19,10 @@ Environment::Environment(std::weak_ptr<Scene> pScene, size_t index, const Utilit
 
 void Environment::generateCubemaps(VulkanCore* pVulkanCore)
 {
+    irradiance = radiance;
+    preFilteredEnv = radiance;
+    return;
+
     enum Target { IRRADIANCE = 0,
         PREFILTEREDENV = 1 };
 
