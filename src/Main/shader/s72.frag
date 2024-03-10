@@ -11,6 +11,7 @@ layout (set = 0, binding = 1) uniform samplerCube ENV_RADIANCE;
 layout (set = 0, binding = 2) uniform samplerCube LAMBERTIAN;
 layout (set = 0, binding = 3) uniform samplerCube irradiance;
 layout (set = 0, binding = 4) uniform samplerCube prefilteredMap;
+layout (set = 0, binding = 5) uniform sampler2D samplerBRDFLUT;
 
 layout (set = 1, binding = 0) uniform sampler2D ALBEDO;
 layout (set = 1, binding = 1) uniform sampler2D ROUGHNESS;
@@ -29,7 +30,7 @@ struct FragData {
     vec3 tangent;
     vec3 bitangent;
 };
-layout(location = 0) in FragData fragData;
+layout(location = 0) in FragData inFragData;
 
 layout(location = 0) out vec4 outColor;
 
@@ -105,14 +106,13 @@ vec3 getIBLContribution(PBRInfo pbrInputs, vec3 n, vec3 reflection)
 	// float lod = (pbrInputs.perceptualRoughness * prefilteredCubeMipLevels); //TODO: prefilteredCubeMipLevels
 	float lod = (pbrInputs.perceptualRoughness * 1);
 	// retrieve a scale and bias to F0. See [1], Figure 3
-	// vec3 brdf = (texture(samplerBRDFLUT, vec2(pbrInputs.NdotV, 1.0 - pbrInputs.perceptualRoughness))).rgb; //TODO: samplerBRDFLUT
+	vec3 brdf = (texture(samplerBRDFLUT, vec2(pbrInputs.NdotV, 1.0 - pbrInputs.perceptualRoughness))).rgb;
 	vec3 diffuseLight = rgbe_to_float(texture(irradiance, n));
 
 	vec3 specularLight = rgbe_to_float(textureLod(prefilteredMap, reflection, lod)).rgb;
 
 	vec3 diffuse = diffuseLight * pbrInputs.diffuseColor;
-	// vec3 specular = specularLight * (pbrInputs.specularColor * brdf.x + brdf.y); //TODO: brdf
-	vec3 specular = specularLight;
+	vec3 specular = specularLight * (pbrInputs.specularColor * brdf.x + brdf.y); //TODO: brdf
 
 	return diffuse + specular;
 }
@@ -171,7 +171,7 @@ float convertMetallic(vec3 diffuse, vec3 specular, float maxSpecular) {
 	return clamp((-b + sqrt(D)) / (2.0 * a), 0.0, 1.0);
 }
 
-vec4 PBRMaterial()
+vec4 PBRMaterial(FragData fragData)
 {
     // vec4 result = texture(ALBEDO, fragData.texCoord);
     // return result;
@@ -248,7 +248,7 @@ vec4 PBRMaterial()
 	return vec4(color, baseColor.a);
 }
 
-vec4 LambertianMaterial()
+vec4 LambertianMaterial(FragData fragData)
 {
     vec3 lambertian_sample_light = rgbe_to_float(texture(LAMBERTIAN, fragData.normal));
     vec4 albedo = texture(ALBEDO, fragData.texCoord);
@@ -256,7 +256,7 @@ vec4 LambertianMaterial()
     return vec4(albedo.rgb * lambertian_sample_light, albedo.a);
 }
 
-vec4 MirrorMaterial()
+vec4 MirrorMaterial(FragData fragData)
 {
     vec3 inDir = normalize(fragData.position - ubo_cam.position.xyz);
     vec3 reflectDir = reflect(inDir, normalize(fragData.normal));
@@ -265,14 +265,14 @@ vec4 MirrorMaterial()
     return vec4(rgbe_to_float(result),1);
 }
 
-vec4 SimpleMaterial()
+vec4 SimpleMaterial(FragData fragData)
 {
     vec3 n = normalize(fragData.normal);
     vec3 light = mix(vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0), dot(n, vec3(0.0, 0.0, 1.0)) * 0.5 + 0.5);
     return vec4(fragData.color.rgb * light, fragData.color.a); 
 }
 
-vec4 EnvironmentMaterial()
+vec4 EnvironmentMaterial(FragData fragData)
 {
     vec4 result = texture(ENV_RADIANCE, fragData.normal); //RGBE
     return vec4(rgbe_to_float(result),1);
@@ -308,26 +308,34 @@ vec3 aces_tonemap(vec3 color){
 	return clamp(color, 0.0, 1.0);	
 }
 
+vec3 adjustNormal(vec3 normal, vec3 tangent, vec3 bitangent, vec3 normalMap) {
+    mat3 tbn = mat3(tangent, bitangent, normal);
+    return normalize(tbn * (normalMap * 2.0 - 1.0));
+}
+
 void main() {
     int materialType = int(pushConstants.matNormal[3][3]);
+    FragData fragData = inFragData;
+    fragData.normal = adjustNormal(fragData.normal, fragData.tangent, fragData.bitangent, texture(NORMAL, fragData.texCoord).xyz); 
+
     switch(materialType) {
         case 0: // PBR
-            outColor = PBRMaterial();
+            outColor = PBRMaterial(fragData);
             break;
         case 1: // LAMBERTIAN
-            outColor = LambertianMaterial();
+            outColor = LambertianMaterial(fragData);
             break;
         case 2: // MIRROR
-            outColor = MirrorMaterial();
+            outColor = MirrorMaterial(fragData);
             break;
         case 3: // ENVIRONMENT
-            outColor = EnvironmentMaterial();
+            outColor = EnvironmentMaterial(fragData);
             break;
         case 4: // SIMPLE
-            outColor = SimpleMaterial();
+            outColor = SimpleMaterial(fragData);
             break;
         default:
-            outColor = SimpleMaterial(); // Default case
+            outColor = SimpleMaterial(fragData); // Default case
     }
     outColor = vec4(aces_tonemap(outColor.rgb), outColor.a);
 }

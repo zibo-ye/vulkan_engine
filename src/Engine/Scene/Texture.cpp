@@ -101,17 +101,20 @@ void Texture::createImage()
 {
     if (type == "2D") {
         VkDeviceSize imageSize = texWidth * texHeight * texChannels;
-        textureImage.Init(m_pVulkanCore, VkExtent2D { (uint32_t)texWidth, (uint32_t)texHeight }, mipLevels, VK_SAMPLE_COUNT_1_BIT, textureImageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-        textureImage.InitImageView(textureImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+        textureImage.Init(m_pVulkanCore, VkExtent2D { (uint32_t)texWidth, (uint32_t)texHeight }, mipLevels, VK_SAMPLE_COUNT_1_BIT, textureImageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        textureImage.InitImageView(textureImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
         textureImage.InitImageSampler(VK_SAMPLER_ADDRESS_MODE_REPEAT);
         textureImage.UploadData(textureData.get(), imageSize);
+        textureImage.GenerateMipmaps(std::nullopt, mipLevels);
     } else if (type == "cube") { // Cube map
         VkDeviceSize imageSize = texWidth * texHeight * texChannels * 6;
-        textureImage.Init(m_pVulkanCore, VkExtent2D { (uint32_t)texWidth, (uint32_t)texHeight }, mipLevels, VK_SAMPLE_COUNT_1_BIT, textureImageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, true);
-        textureImage.InitImageView(textureImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1, VK_IMAGE_VIEW_TYPE_CUBE);
+        textureImage.Init(m_pVulkanCore, VkExtent2D { (uint32_t)texWidth, (uint32_t)texHeight }, mipLevels, VK_SAMPLE_COUNT_1_BIT, textureImageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, true);
+        textureImage.InitImageView(textureImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels, VK_IMAGE_VIEW_TYPE_CUBE);
         textureImage.InitImageSampler(VK_SAMPLER_ADDRESS_MODE_REPEAT);
         textureImage.UploadData(textureData.get(), imageSize);
-    } else {
+		textureImage.GenerateMipmaps(std::nullopt, mipLevels);
+	}
+	else {
         throw std::runtime_error("Unsupported texture type");
     }
 }

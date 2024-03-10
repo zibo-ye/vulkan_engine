@@ -8,9 +8,9 @@ Material::Material(std::weak_ptr<Scene> pScene, size_t index, const Utility::jso
 {
     name = jsonObj["name"].getString();
 
-    if (jsonObj.hasKey("normalMap")) {
-        normalMap = Texture(jsonObj["normalMap"], pScene.lock()->src, VK_FORMAT_R8G8B8A8_UNORM);
-    }
+	if (jsonObj.hasKey("normalMap")) {
+		normalMap = Texture(jsonObj["normalMap"], pScene.lock()->src, VK_FORMAT_R8G8B8A8_UNORM);
+	}
 
     if (jsonObj.hasKey("displacementMap")) {
         displacementMap = Texture(jsonObj["displacementMap"], pScene.lock()->src, VK_FORMAT_R8G8B8A8_UNORM);

@@ -14,7 +14,10 @@ public:
 
     void generateCubemaps(VulkanCore* pVulkanCore);
     Texture irradiance;
-    Texture preFilteredEnv;
+	Texture preFilteredEnv;
+	Texture lutBrdf;
+	void GetBRDFLut();
+
 };
 Texture GenerateLambertian(Texture radiance, int lambertian_texWidth = 16);
 Texture GenerateLambertian2(Texture radiance);

@@ -426,6 +426,7 @@ void VulkanCore::createDescriptorSetLayout()
 			{ 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
 			{ 3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
 			{ 4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
+			{ 5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
 		};
 
         VkDescriptorSetLayoutCreateInfo layoutInfo {
@@ -967,12 +968,14 @@ void VulkanCore::updateDescriptorSet(uint32_t currentFrameInFlight, Scene& scene
 	scene.environment->lambertian.uploadTextureToGPU(this);
 	scene.environment->irradiance.uploadTextureToGPU(this);
 	scene.environment->preFilteredEnv.uploadTextureToGPU(this);
+	scene.environment->lutBrdf.uploadTextureToGPU(this);
     VkDescriptorImageInfo radianceImageInfo = scene.environment->radiance.textureImage.GetDescriptorImageInfo();
 	VkDescriptorImageInfo lambertianImageInfo = scene.environment->lambertian.textureImage.GetDescriptorImageInfo();
 	VkDescriptorImageInfo irradianceImageInfo = scene.environment->irradiance.textureImage.GetDescriptorImageInfo();
 	VkDescriptorImageInfo prefilteredMapImageInfo = scene.environment->preFilteredEnv.textureImage.GetDescriptorImageInfo();
+	VkDescriptorImageInfo lutBrdfImageInfo = scene.environment->lutBrdf.textureImage.GetDescriptorImageInfo();
 
-    std::array<VkWriteDescriptorSet, 5> descriptorWrites {
+    std::array<VkWriteDescriptorSet, 6> descriptorWrites {
         VkWriteDescriptorSet {
             .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             .dstSet = frames[currentFrameInFlight].descriptorSet,
@@ -1016,6 +1019,14 @@ void VulkanCore::updateDescriptorSet(uint32_t currentFrameInFlight, Scene& scene
 			.descriptorCount = 1,
 			.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 			.pImageInfo = &prefilteredMapImageInfo,
+		},{
+			.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+			.dstSet = frames[currentFrameInFlight].descriptorSet,
+			.dstBinding = 5,
+			.dstArrayElement = 0,
+			.descriptorCount = 1,
+			.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			.pImageInfo = &lutBrdfImageInfo,
 		},
     };
 

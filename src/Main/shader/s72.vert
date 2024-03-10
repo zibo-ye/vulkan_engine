@@ -31,10 +31,6 @@ layout(push_constant) uniform PushConstants {
     mat4 matNormal; //transpose(inv(matWorld))
 } pushConstants;
 
-vec3 adjustNormal(vec3 normal, vec3 tangent, vec3 bitangent, vec3 normalMap) {
-    mat3 tbn = mat3(tangent, bitangent, normal);
-    return normalize(tbn * (normalMap * 2.0 - 1.0));
-}
 
 void main() {
     fragData.position = vec3(pushConstants.matWorld * vec4(inPosition, 1.0)); // Transform position by light matrix
@@ -43,8 +39,6 @@ void main() {
     fragData.texCoord = inTexCoord;
     fragData.tangent = mat3(pushConstants.matWorld) * inTangent.rgb;
     fragData.bitangent = inTangent.w * cross(fragData.normal, fragData.tangent);
-
-    fragData.normal = adjustNormal(fragData.normal, fragData.tangent, fragData.bitangent, texture(NORMAL, inTexCoord).xyz); // Adjust normal with normal map
 
     gl_Position = ubo_cam.proj * ubo_cam.view * pushConstants.matWorld * vec4(inPosition,  1.0);
 }

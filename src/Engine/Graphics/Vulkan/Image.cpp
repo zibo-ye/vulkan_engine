@@ -150,7 +150,6 @@ std::pair<VkAccessFlags, VkPipelineStageFlags> getMinimalAccessMaskAndStage(VkIm
 
 void Image::TransitionLayout(std::optional<VkCommandBuffer> commandBuffer, VkImageLayout newLayout, std::optional<VkImageLayout> forceOldLayout /*= std::nullopt*/)
 {
-    ;
     assert(m_isValid);
     VkCommandBuffer cmd;
     if (!commandBuffer)
@@ -358,6 +357,8 @@ void Image::GenerateMipmaps(std::optional<VkCommandBuffer> commandBuffer, uint32
     int32_t mipHeight = m_imageInfo.extent.height;
     int32_t mipDepth = m_imageInfo.extent.depth;
 
+    this->TransitionLayout(std::nullopt, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL); //TODO: still buggy
+    
     // generate mipmap using blit from 1->2, 2->3, ...
     for (uint32_t i = 1; i < mipLevels; i++) {
         barrier.subresourceRange.baseMipLevel = i - 1;
@@ -393,7 +394,9 @@ void Image::GenerateMipmaps(std::optional<VkCommandBuffer> commandBuffer, uint32
             1, &blit,
             VK_FILTER_LINEAR);
 
-        barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        // i-1 -> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		barrier.subresourceRange.baseMipLevel = i - 1;
+		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
         barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
         barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
@@ -404,7 +407,7 @@ void Image::GenerateMipmaps(std::optional<VkCommandBuffer> commandBuffer, uint32
             0, nullptr,
             1, &barrier);
 
-        if (mipWidth > 1)
+		if (mipWidth > 1)
             mipWidth /= 2;
         if (mipHeight > 1)
             mipHeight /= 2;

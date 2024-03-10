@@ -7,9 +7,9 @@
 class Texture {
     // Metadata from JSON
 public:
-    std::string src;
-    std::string type;
-    std::string format;
+    std::string src = "";
+    std::string type = "2D";
+    std::string format = "linear";
     Texture() = default;
     Texture(const Utility::json::JsonValue& jsonObj, const std::string& scenePath, VkFormat imageFormat);
     Texture(const vkm::vec3& vec3Value, VkFormat imageFormat);

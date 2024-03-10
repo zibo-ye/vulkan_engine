@@ -12,7 +12,9 @@ Environment::Environment(std::weak_ptr<Scene> pScene, size_t index, const Utilit
     radiance = Texture(jsonObj["radiance"], pScene.lock()->src, VK_FORMAT_R8G8B8A8_SRGB);
 
     lambertian = GenerateLambertian2(radiance);
-    // lambertian = GenerateLambertian(radiance); // currently not producing the same result as GenerateLambertian2
+	// lambertian = GenerateLambertian(radiance); // currently not producing the same result as GenerateLambertian2
+
+    GetBRDFLut();
 }
 
 void Environment::generateCubemaps(VulkanCore* pVulkanCore)
@@ -317,17 +319,10 @@ void Environment::generateCubemaps(VulkanCore* pVulkanCore)
         scissor.extent.width = dim;
         scissor.extent.height = dim;
 
-        VkImageSubresourceRange subresourceRange {};
-        subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        subresourceRange.baseMipLevel = 0;
-        subresourceRange.levelCount = numMips;
-        subresourceRange.layerCount = 6;
+		cubeMap.textureImage.TransitionLayout(std::nullopt, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-
-		for (uint32_t m = 0; m < 1; m++) {
-			//for (uint32_t m = 0; m < numMips; m++) {
+		for (uint32_t m = 0; m < numMips; m++) {
             printf("Generating mip %d\n", m);
-			cubeMap.textureImage.TransitionLayout(std::nullopt, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_UNDEFINED);
             for (uint32_t f = 0; f < 6; f++) {
                 printf("Generating face %d\n", f);
 
@@ -412,6 +407,21 @@ void Environment::generateCubemaps(VulkanCore* pVulkanCore)
         auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
         std::cout << "Generating cube map with " << numMips << " mip levels took " << tDiff << " ms" << std::endl;
     }
+}
+
+void Environment::GetBRDFLut()
+{
+	auto in_file = radiance.src;
+	// outfilename = in_file's folder + brdflut.png
+	std::filesystem::path p(in_file);
+	std::string out_file = p.parent_path().string() + "/brdflut.png";
+
+	lutBrdf = Texture();
+	lutBrdf.src = out_file;
+	lutBrdf.type = "2D";
+	lutBrdf.format = "linear";
+	lutBrdf.textureImageFormat = VK_FORMAT_R8G8B8A8_SRGB;
+	lutBrdf.LoadTextureData();
 }
 
 enum class CubeMapFace {
