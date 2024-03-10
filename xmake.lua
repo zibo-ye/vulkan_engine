@@ -6,6 +6,7 @@ set_languages("c++20")
 add_rules("mode.debug","mode.releasedbg", "mode.release")
 
 add_requires("vulkansdk", "glfw", "libpng")
+add_requires("glm")
 add_requires("glslang", {configs = {binaryonly = true}})
 
 target("Engine")
@@ -31,3 +32,9 @@ target("Main")
     add_files("src/Main/shader/*.vert", "src/Main/shader/*.frag")
     add_deps("Engine")
     set_rundir("$(projectdir)")
+
+
+target("brdflut")
+    set_kind("binary")
+    add_packages("glm")
+    add_files("utils/brdflut/main.cpp")
