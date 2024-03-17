@@ -916,7 +916,7 @@ void VulkanCore::BeginRendering(VkCommandBuffer& commandBuffer, const VkRenderin
 	if (vkCmdBeginRenderingKHR == nullptr) {
 		throw std::runtime_error("failed to load vkCmdBeginRenderingKHR");
 	}
-	vkCmdBeginRenderingKHR(commandBuffer);
+    vkCmdBeginRenderingKHR(commandBuffer, &render_info);
 #else
 	vkCmdBeginRendering(commandBuffer, &render_info);
 #endif

@@ -375,80 +375,40 @@ void printAllMemoryProperties(VkPhysicalDeviceMemoryProperties& memProperties)
 VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* callbackData, void* pUserData)
 {
     // https://www.lunarg.com/wp-content/uploads/2018/05/Vulkan-Debug-Utils_05_18_v1.pdf
-    char prefix[64] = ""; // Initialize with an empty string to ensure it's null-terminated
-    size_t prefixSize = sizeof(prefix);
-
-    size_t messageSize = strlen(callbackData->pMessage) + 500;
-    char* message = (char*)malloc(messageSize);
-    assert(message);
-
+    std::string prefix = "";
     if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT) {
-        strcpy_s(prefix, "VERBOSE : ");
+        prefix = "VERBOSE : ";
     } else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
-        strcpy_s(prefix, "INFO : ");
+        prefix = "INFO : ";
     } else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
-        strcpy_s(prefix, "WARNING : ");
+        prefix = "WARNING : ";
     } else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
-        strcpy_s(prefix, "ERROR : ");
+        prefix = "ERROR : ";
     }
-
     if (messageType & VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT) {
-        strcat_s(prefix, "GENERAL");
+        prefix += "GENERAL";
     } else {
-        // if (messageType & VK_DEBUG_UTILS_MESSAGE_TYPE_SPECIFICATION_BIT_EXT) {
-        //	strcat_s(prefix, "SPEC");
-        //	validation_error = 1;
-        // }
         if (messageType & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT) {
-            // if (messageType & VK_DEBUG_UTILS_MESSAGE_TYPE_SPECIFICATION_BIT_EXT) {
-            //	strcat_s(prefix, "|");
-            // }
-            strcat_s(prefix, "PERF");
+            prefix += "PERF";
         }
     }
-    sprintf_s(message, messageSize,
-        "%s - Message ID Number %d, Message ID String %s:\n%s",
-        prefix,
-        callbackData->messageIdNumber,
-        callbackData->pMessageIdName,
-        callbackData->pMessage);
+
+    std::string message = prefix + " - Message ID Number " + std::to_string(callbackData->messageIdNumber) + ", Message ID String " + callbackData->pMessageIdName + ":\n" + callbackData->pMessage;
     if (callbackData->objectCount > 0) {
-        char tmp_message[500];
-        sprintf_s(tmp_message, sizeof(tmp_message), "\n Objects - %d\n", callbackData->objectCount);
-        strcat_s(message, messageSize, tmp_message);
+        message += "\n Objects - " + std::to_string(callbackData->objectCount) + "\n";
         for (uint32_t object = 0; object < callbackData->objectCount; ++object) {
-            sprintf_s(tmp_message,
-                " Object[%d] - Type %s, Value %p, Name \"%s\"\n",
-                object,
-                DebugAnnotObjectToString(
-                    callbackData->pObjects[object].objectType),
-                (void*)(callbackData->pObjects[object].objectHandle),
-                callbackData->pObjects[object].pObjectName);
-            strcat_s(message, messageSize, tmp_message);
+            std::string objectMessage = " Object[" + std::to_string(object) + "] - Type " + DebugAnnotObjectToString(callbackData->pObjects[object].objectType) + ", Value " + std::to_string(reinterpret_cast<uint64_t>(callbackData->pObjects[object].objectHandle)) + ", Name \"" + callbackData->pObjects[object].pObjectName + "\"\n";
+            message += objectMessage;
         }
     }
     if (callbackData->cmdBufLabelCount > 0) {
-        char tmp_message[500];
-        sprintf_s(tmp_message, sizeof(tmp_message),
-            "\n Command Buffer Labels - %d\n",
-            callbackData->cmdBufLabelCount);
-        strcat_s(message, messageSize, tmp_message);
+        message += "\n Command Buffer Labels - " + std::to_string(callbackData->cmdBufLabelCount) + "\n";
         for (uint32_t label = 0; label < callbackData->cmdBufLabelCount; ++label) {
-            sprintf_s(tmp_message,
-                " Label[%d] - %s { %f, %f, %f, %f}\n",
-                label,
-                callbackData->pCmdBufLabels[label].pLabelName,
-                callbackData->pCmdBufLabels[label].color[0],
-                callbackData->pCmdBufLabels[label].color[1],
-                callbackData->pCmdBufLabels[label].color[2],
-                callbackData->pCmdBufLabels[label].color[3]);
-            strcat_s(message, messageSize, tmp_message);
+            std::string labelMessage = " Label[" + std::to_string(label) + "] - " + callbackData->pCmdBufLabels[label].pLabelName + " { " + std::to_string(callbackData->pCmdBufLabels[label].color[0]) + ", " + std::to_string(callbackData->pCmdBufLabels[label].color[1]) + ", " + std::to_string(callbackData->pCmdBufLabels[label].color[2]) + ", " + std::to_string(callbackData->pCmdBufLabels[label].color[3]) + "}\n";
+            message += labelMessage;
         }
     }
-    printf("%s\n", message);
-    fflush(stdout);
-    free(message);
-    // Don't bail out, but keep going.
+    std::cout << message << std::endl;
     return VK_FALSE;
 }
 
